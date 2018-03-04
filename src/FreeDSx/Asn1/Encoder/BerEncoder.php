@@ -62,14 +62,6 @@ class BerEncoder implements EncoderInterface
     ];
 
     /**
-     * @param array $options
-     */
-    public function __construct($options = [])
-    {
-        $this->options = array_merge($this->options, $options);
-    }
-
-    /**
      * {@inheritdoc}
      */
     public function decode($binary, array $tagMap = []) : AbstractType
