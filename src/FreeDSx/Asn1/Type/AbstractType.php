@@ -15,7 +15,7 @@ namespace FreeDSx\Asn1\Type;
  *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
-abstract class AbstractType
+abstract class AbstractType implements \Countable, \IteratorAggregate
 {
     public const TAG_CLASS_UNIVERSAL = 0x00;
 
@@ -102,6 +102,16 @@ abstract class AbstractType
     protected $taggingClass = self::TAG_CLASS_UNIVERSAL;
 
     /**
+     * @var bool
+     */
+    protected $isConstructed = false;
+
+    /**
+     * @var AbstractType[]
+     */
+    protected $children = [];
+
+    /**
      * @var null|string
      */
     protected $trailingData;
@@ -112,6 +122,25 @@ abstract class AbstractType
     public function __construct($value)
     {
         $this->value = $value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getIsConstructed() : bool
+    {
+        return $this->isConstructed;
+    }
+
+    /**
+     * @param bool $isConstructed
+     * @return $this
+     */
+    public function setIsConstructed(bool $isConstructed)
+    {
+        $this->isConstructed = $isConstructed;
+
+        return $this;
     }
 
     /**
@@ -177,5 +206,71 @@ abstract class AbstractType
     public function getValue()
     {
         return $this->value;
+    }
+
+    /**
+     * @param int $index
+     * @return bool
+     */
+    public function hasChild(int $index)
+    {
+        return isset($this->children[$index]);
+    }
+
+    /**
+     * @param AbstractType[] ...$types
+     * @return $this
+     */
+    public function setChildren(AbstractType ...$types)
+    {
+        $this->children = $types;
+
+        return $this;
+    }
+
+    /**
+     * @return AbstractType[]
+     */
+    public function getChildren() : array
+    {
+        return $this->children;
+    }
+
+    /**
+     * @param int $index
+     * @return null|AbstractType
+     */
+    public function getChild(int $index) : ?AbstractType
+    {
+        return $this->children[$index] ?? null;
+    }
+
+    /**
+     * @param AbstractType[] ...$types
+     * @return $this
+     */
+    public function addChild(AbstractType ...$types)
+    {
+        foreach ($types as $type) {
+            $this->children[] = $type;
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function count()
+    {
+        return count($this->children);
+    }
+
+    /**
+     * @return \ArrayIterator
+     */
+    public function getIterator()
+    {
+        return new \ArrayIterator($this->children);
     }
 }

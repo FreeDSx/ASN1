@@ -15,12 +15,19 @@ namespace FreeDSx\Asn1\Type;
  *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
-class SequenceType extends AbstractType implements ConstructedTypeInterface, \Countable, \IteratorAggregate
+class SequenceType extends AbstractType
 {
-    use ConstructedTypeTrait;
-
     /**
      * @var int
      */
     protected $tagNumber = self::TAG_TYPE_SEQUENCE;
+
+    /**
+     * @param AbstractType[] ...$types
+     */
+    public function __construct(AbstractType ...$types)
+    {
+        $this->isConstructed = true;
+        $this->setChildren(...$types);
+    }
 }

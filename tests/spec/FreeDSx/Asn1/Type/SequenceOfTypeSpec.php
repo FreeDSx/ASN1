@@ -29,9 +29,9 @@ class SequenceOfTypeSpec extends ObjectBehavior
         $this->shouldHaveType(SequenceOfType::class);
     }
 
-    function it_should_implement_constructed_type_interface()
+    function it_should_be_constructed()
     {
-        $this->shouldImplement(ConstructedTypeInterface::class);
+        $this->getIsConstructed()->shouldBeEqualTo(true);
     }
 
     function it_should_implement_countable()

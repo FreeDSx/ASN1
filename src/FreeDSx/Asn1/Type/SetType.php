@@ -15,9 +15,16 @@ namespace FreeDSx\Asn1\Type;
  *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
-class SetType extends AbstractType implements ConstructedTypeInterface, \Countable, \IteratorAggregate
+class SetType extends AbstractType
 {
-    use ConstructedTypeTrait;
-
     protected $tagNumber = self::TAG_TYPE_SET;
+
+    /**
+     * @param AbstractType[] ...$types
+     */
+    public function __construct(AbstractType ...$types)
+    {
+        $this->isConstructed = true;
+        $this->setChildren(...$types);
+    }
 }
