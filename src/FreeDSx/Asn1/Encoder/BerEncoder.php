@@ -14,6 +14,7 @@ use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\InvalidArgumentException;
 use FreeDSx\Asn1\Exception\PartialPduException;
 use FreeDSx\Asn1\Type\AbstractType;
+use FreeDSx\Asn1\Type\BitStringType;
 use FreeDSx\Asn1\Type\BooleanType;
 use FreeDSx\Asn1\Type\EnumeratedType;
 use FreeDSx\Asn1\Type\IncompleteType;
@@ -62,6 +63,21 @@ class BerEncoder implements EncoderInterface
     ];
 
     /**
+     * @var array
+     */
+    protected $options = [
+        'bitstring_padding' => '0',
+    ];
+
+    /**
+     * @param array $options
+     */
+    public function __construct(array $options = [])
+    {
+        $this->options = array_merge($this->options, $options);
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function decode($binary, array $tagMap = []) : AbstractType
@@ -82,7 +98,7 @@ class BerEncoder implements EncoderInterface
      */
     public function complete(IncompleteType $type, int $tagType, array $tagMap = []) : AbstractType
     {
-        return $this->getDecodedType($tagType, $type->getValue(), $tagMap)
+        return $this->getDecodedType($tagType, $type->getIsConstructed(), $type->getValue(), $tagMap)
             ->setTagNumber($type->getTagNumber())
             ->setTagClass($type->getTagClass());
     }
@@ -119,12 +135,13 @@ class BerEncoder implements EncoderInterface
      * Given a specific tag type / map, decode and construct the type.
      *
      * @param int|null $tagType
+     * @param bool $isConstructed
      * @param string $bytes
      * @param array $tagMap
      * @return AbstractType
      * @throws EncoderException
      */
-    protected function getDecodedType(?int $tagType, $bytes, array $tagMap) : AbstractType
+    protected function getDecodedType(?int $tagType, bool $isConstructed, $bytes, array $tagMap) : AbstractType
     {
         switch ($tagType) {
             case AbstractType::TAG_TYPE_BOOLEAN:
@@ -136,6 +153,9 @@ class BerEncoder implements EncoderInterface
             case AbstractType::TAG_TYPE_INTEGER:
                 $type = new IntegerType($this->decodeInteger($bytes));
                 break;
+            case AbstractType::TAG_TYPE_BIT_STRING:
+                $type = new BitStringType($this->decodeBitString($bytes));
+                break;
             case AbstractType::TAG_TYPE_ENUMERATED:
                 $type = new EnumeratedType($this->decodeInteger($bytes));
                 break;
@@ -143,10 +163,10 @@ class BerEncoder implements EncoderInterface
                 $type = new OctetStringType($bytes);
                 break;
             case AbstractType::TAG_TYPE_SEQUENCE:
-                $type = new SequenceType(...$this->decodeSequence($bytes, $tagMap));
+                $type = new SequenceType(...$this->decodeConstructedType($bytes, $tagMap));
                 break;
             case AbstractType::TAG_TYPE_SET:
-                $type = new SetType(...$this->decodeSequence($bytes, $tagMap));
+                $type = new SetType(...$this->decodeConstructedType($bytes, $tagMap));
                 break;
             case null:
                 $type = new IncompleteType($bytes);
@@ -182,6 +202,9 @@ class BerEncoder implements EncoderInterface
                 break;
             case $type->getIsConstructed():
                 $bytes = $this->encodeConstructedType($type);
+                break;
+            case $type instanceof BitStringType:
+                $bytes = $this->encodeBitString($type);
                 break;
             case $type instanceof NullType:
                 break;
@@ -223,7 +246,7 @@ class BerEncoder implements EncoderInterface
             }
         }
 
-        $data['type'] = $this->getDecodedType($tagType, substr($binary, 1 + $length['length_length'], $length['value_length']), $tagMap);
+        $data['type'] = $this->getDecodedType($tagType, $tag['constructed'], substr($binary, 1 + $length['length_length'], $length['value_length']), $tagMap);
         $data['type']->setTagClass($tag['class']);
         $data['type']->setTagNumber($tag['number']);
         $data['type']->setIsConstructed($tag['constructed']);
@@ -324,7 +347,7 @@ class BerEncoder implements EncoderInterface
         if ($num < 128) {
             return chr($num);
         } else {
-            return $this->encodeDefiniteLength($num);
+            return $this->encodeLongDefiniteLength($num);
         }
     }
 
@@ -333,7 +356,7 @@ class BerEncoder implements EncoderInterface
      * @return string
      * @throws EncoderException
      */
-    protected function encodeDefiniteLength(int $num)
+    protected function encodeLongDefiniteLength(int $num)
     {
         # Long definite length is base 256 encoded. This seems kinda inefficient. Found on base_convert comments.
         $num = base_convert($num, 10, 2);
@@ -379,6 +402,37 @@ class BerEncoder implements EncoderInterface
     protected function encodeBoolean(BooleanType $type)
     {
         return chr($type->getValue() ? 0xFF : 0x00);
+    }
+
+    /**
+     * @todo
+     * @param BitStringType $type
+     * @return string
+     */
+    protected function encodeBitString(BitStringType $type)
+    {
+        $length = strlen($type->getValue());
+        if ($length % 8 === 0) {
+            $data = $type->getValue();
+            $unused = 0;
+            for($i = $length -1; $i > 0; $i--) {
+                if ($data[$i] === '0') {
+                    $unused++;
+                } else {
+                    break;
+                }
+            }
+        } else {
+            $unused = 8 - ($length % 8);
+            $data = str_pad($type->getValue(), $length + $unused, '0');
+        }
+
+        $bytes = chr($unused);
+        for ($i = 0; $i < strlen($data) / 8; $i++) {
+            $bytes .= chr(bindec(substr($data, $i * 8, 8)));
+        }
+
+        return $bytes;
     }
 
     /**
@@ -429,6 +483,30 @@ class BerEncoder implements EncoderInterface
     protected function decodeBoolean($bytes) : bool
     {
         return ord($bytes[0]) !== 0;
+    }
+
+    /**
+     * @param $bytes
+     * @return string
+     */
+    protected function decodeBitString($bytes) : string
+    {
+        # The first byte represents the number of unused bits at the end.
+        $unused = ord($bytes[0]);
+        $bytes = substr($bytes, 1);
+        $length = strlen($bytes);
+
+        $bitstring = '';
+        for ($i = 0; $i < $length; $i++) {
+            $octet = sprintf( "%08d", decbin(ord($bytes[$i])));
+            if ($i === ($length - 1) && $unused) {
+                $bitstring .= substr($octet, 0, ($unused * -1));
+            } else {
+                $bitstring .= $octet;
+            }
+        }
+
+        return $bitstring;
     }
 
     /**
@@ -487,15 +565,15 @@ class BerEncoder implements EncoderInterface
      * @throws EncoderException
      * @throws PartialPduException
      */
-    protected function decodeSequence($bytes, array $tagMap)
+    protected function decodeConstructedType($bytes, array $tagMap)
     {
-        $sequences = [];
+        $children = [];
 
         while ($bytes) {
             list('type' => $type, 'bytes' => $bytes) = $this->decodeBytes($bytes, $tagMap);
-            $sequences[] = $type;
+            $children[] = $type;
         }
 
-        return $sequences;
+        return $children;
     }
 }

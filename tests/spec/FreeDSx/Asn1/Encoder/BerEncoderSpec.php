@@ -12,6 +12,7 @@ namespace spec\FreeDSx\Asn1\Encoder;
 
 use FreeDSx\Asn1\Encoder\BerEncoder;
 use FreeDSx\Asn1\Type\AbstractType;
+use FreeDSx\Asn1\Type\BitStringType;
 use FreeDSx\Asn1\Type\BooleanType;
 use FreeDSx\Asn1\Type\EnumeratedType;
 use FreeDSx\Asn1\Type\IncompleteType;
@@ -163,6 +164,22 @@ class BerEncoderSpec extends ObjectBehavior
             new IntegerType(2),
             new BooleanType(true)
         ))->shouldBeEqualTo(hex2bin('30090201010201020101ff'));
+    }
+
+    function it_should_encode_a_bit_string()
+    {
+        $this->encode(new BitStringType('011011100101110111'))->shouldBeEqualTo(hex2bin('0304066e5dc0'));
+        $this->encode(new BitStringType('11111111'))->shouldBeEqualTo(hex2bin('030200ff'));
+        $this->encode(new BitStringType('0'))->shouldBeEqualTo(hex2bin('03020700'));
+        $this->encode(new BitStringType(''))->shouldBeEqualTo(hex2bin('030100'));
+    }
+
+    function it_should_decode_a_bit_string()
+    {
+        $this->decode(hex2bin('0304066e5dc0'))->shouldBeLike(new BitStringType('011011100101110111'));
+        $this->decode(hex2bin('030200ff'))->shouldBeLike(new BitStringType('11111111'));
+        $this->decode(hex2bin('03020700'))->shouldBeLike(new BitStringType('0'));
+        $this->decode(hex2bin('030100'))->shouldBeLike(new BitStringType(''));
     }
 
     function it_should_decode_an_unknown_type()
