@@ -19,6 +19,7 @@ use FreeDSx\Asn1\Type\IncompleteType;
 use FreeDSx\Asn1\Type\IntegerType;
 use FreeDSx\Asn1\Type\NullType;
 use FreeDSx\Asn1\Type\OctetStringType;
+use FreeDSx\Asn1\Type\OidType;
 use FreeDSx\Asn1\Type\SequenceType;
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\PartialPduException;
@@ -180,6 +181,40 @@ class BerEncoderSpec extends ObjectBehavior
         $this->decode(hex2bin('030200ff'))->shouldBeLike(new BitStringType('11111111'));
         $this->decode(hex2bin('03020700'))->shouldBeLike(new BitStringType('0'));
         $this->decode(hex2bin('030100'))->shouldBeLike(new BitStringType(''));
+    }
+
+    function it_should_decode_an_oid()
+    {
+        $this->decode(hex2bin('06092b0601040182371514'))->shouldBeLike(new OidType('1.3.6.1.4.1.311.21.20'));
+        $this->decode(hex2bin('06062a864886f70d'))->shouldBeLike(new OidType('1.2.840.113549'));
+        $this->decode(hex2bin('06022a7f'))->shouldBeLike(new OidType('1.2.127'));
+        $this->decode(hex2bin('06032a8100'))->shouldBeLike(new OidType('1.2.128'));
+        $this->decode(hex2bin('06032ac000'))->shouldBeLike(new OidType('1.2.8192'));
+        $this->decode(hex2bin('06032aff7f'))->shouldBeLike(new OidType('1.2.16383'));
+        $this->decode(hex2bin('06052a81808000'))->shouldBeLike(new OidType('1.2.2097152'));
+        $this->decode(hex2bin('06052affffff7f'))->shouldBeLike(new OidType('1.2.268435455'));
+    }
+
+    function it_should_encode_an_oid()
+    {
+        $this->encode(new OidType('1.3.6.1.4.1.311.21.20'))->shouldBeEqualTo(hex2bin('06092b0601040182371514'));
+        $this->encode(new OidType('1.2.840.113549'))->shouldBeEqualTo(hex2bin('06062a864886f70d'));
+        $this->encode(new OidType('1.2.127'))->shouldBeEqualTo(hex2bin('06022a7f'));
+        $this->encode(new OidType('1.2.128'))->shouldBeEqualTo(hex2bin('06032a8100'));
+        $this->encode(new OidType('1.2.8192'))->shouldBeEqualTo(hex2bin('06032ac000'));
+        $this->encode(new OidType('1.2.16383'))->shouldBeEqualTo(hex2bin('06032aff7f'));
+        $this->encode(new OidType('1.2.2097152'))->shouldBeEqualTo(hex2bin('06052a81808000'));
+        $this->encode(new OidType('1.2.268435455'))->shouldBeEqualTo(hex2bin('06052affffff7f'));
+    }
+
+    function it_should_throw_an_encoder_exception_on_decoding_an_invalid_oid()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('0600')]);
+    }
+
+    function it_should_throw_an_encoder_exception_on_encoding_an_invalid_oid()
+    {
+        $this->shouldThrow(EncoderException::class)->during('encode', [new OidType('1')]);
     }
 
     function it_should_decode_an_unknown_type()

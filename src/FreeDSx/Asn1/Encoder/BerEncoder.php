@@ -21,6 +21,7 @@ use FreeDSx\Asn1\Type\IncompleteType;
 use FreeDSx\Asn1\Type\IntegerType;
 use FreeDSx\Asn1\Type\NullType;
 use FreeDSx\Asn1\Type\OctetStringType;
+use FreeDSx\Asn1\Type\OidType;
 use FreeDSx\Asn1\Type\SequenceType;
 use FreeDSx\Asn1\Type\SetType;
 
@@ -156,6 +157,9 @@ class BerEncoder implements EncoderInterface
             case AbstractType::TAG_TYPE_BIT_STRING:
                 $type = new BitStringType($this->decodeBitString($bytes));
                 break;
+            case AbstractType::TAG_TYPE_OID:
+                $type = new OidType($this->decodeOid($bytes));
+                break;
             case AbstractType::TAG_TYPE_ENUMERATED:
                 $type = new EnumeratedType($this->decodeInteger($bytes));
                 break;
@@ -205,6 +209,9 @@ class BerEncoder implements EncoderInterface
                 break;
             case $type instanceof BitStringType:
                 $bytes = $this->encodeBitString($type);
+                break;
+            case $type instanceof OidType:
+                $bytes = $this->encodeOid($type);
                 break;
             case $type instanceof NullType:
                 break;
@@ -337,6 +344,67 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
+     * Gets the bytes representing the VLQ value.
+     *
+     * @param $bytes
+     * @return string
+     * @throws EncoderException
+     */
+    protected function getVlqBytes($bytes)
+    {
+        $vlq = '';
+        $length = strlen($bytes);
+
+        for ($i = 0; $i < $length; $i++) {
+            # We have reached the last byte if the MSB is not set.
+            if ((ord($bytes[$i]) & 0x80) === 0) {
+                return $vlq.$bytes[$i];
+            } else {
+                $vlq .= $bytes[$i];
+            }
+        }
+
+        throw new EncoderException('Expected an ending byte to decode a VLQ, but none was found.');
+    }
+
+    /**
+     * Given the VLQ bytes, get the actual int it represents.
+     *
+     * @param string $bytes
+     * @return int
+     */
+    protected function getVlqInt($bytes) : int
+    {
+        $value = 0;
+
+        $length = strlen($bytes);
+        for ($i = 0; $i < $length; $i++) {
+            $value = ($value << 7) | (ord($bytes[$i]) & 0x7f);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Get the bytes that represent variable length quantity.
+     *
+     * @param int $int
+     * @return string
+     */
+    protected function intToVlqBytes(int $int)
+    {
+        $bytes = chr(0x7f & $int);
+        $int >>= 7;
+
+        while ($int > 0) {
+            $bytes = chr((0x7f & $int) | 0x80).$bytes;
+            $int >>= 7;
+        }
+
+        return $bytes;
+    }
+
+    /**
      * @param int $num
      * @return string
      * @throws EncoderException
@@ -436,6 +504,28 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
+     * @param OidType $type
+     * @return string
+     * @throws EncoderException
+     */
+    protected function encodeOid(OidType $type)
+    {
+        $oids = explode('.', $type->getValue());
+        if (count($oids) < 2) {
+            throw new EncoderException(sprintf('To encode the OID it must have at least 2 components: %s', $type->getValue()));
+        }
+
+        # The first and second components of the OID are represented by one byte using the formula: (X * 40) + Y
+        $bytes = chr(($oids[0] * 40) + $oids[1]);
+        $length = count($oids);
+        for ($i = 2; $i < $length; $i++) {
+            $bytes .= $this->intToVlqBytes((int) $oids[$i]);
+        }
+
+        return $bytes;
+    }
+
+    /**
      * Kinda ugly, but the LDAP max int is 32bit.
      *
      * @param AbstractType $type
@@ -474,6 +564,33 @@ class BerEncoder implements EncoderInterface
         }
 
         return $bytes;
+    }
+
+    /**
+     * @param string $bytes
+     * @return string
+     * @throws EncoderException
+     */
+    public function decodeOid($bytes) : string
+    {
+        if (strlen($bytes) === 0) {
+            throw new EncoderException('The encoded OID is invalid.');
+        }
+        $oid = [];
+
+        # The first 2 digits are contained within the first byte
+        $byte = ord($bytes[0]);
+        $oid[] = (int) ($byte / 40);
+        $oid[] =  $byte - (40 * $oid[0]);
+
+        $bytes = substr($bytes, 1);
+        while (strlen($bytes)) {
+            $vlqBytes = $this->getVlqBytes($bytes);
+            $oid[] = $this->getVlqInt($vlqBytes);
+            $bytes = substr($bytes, strlen($vlqBytes));
+        }
+
+        return implode('.', $oid);
     }
 
     /**
