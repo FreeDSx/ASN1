@@ -18,7 +18,7 @@ class BitStringTypeSpec extends ObjectBehavior
 {
     function let()
     {
-        $this->beConstructedWith('011011100101110111');
+        $this->beConstructedWith('011011100101110111000000');
     }
 
     function it_is_initializable()
@@ -36,6 +36,20 @@ class BitStringTypeSpec extends ObjectBehavior
     function it_should_get_the_packed_binary_representation()
     {
         $this->toBinary()->shouldBeEqualTo(hex2bin('6e5dc0'));
+    }
+
+    function it_should_get_the_bit_string_from_binary()
+    {
+        $this->beConstructedThrough('fromBinary',[hex2bin('6e5dc0')]);
+
+        $this->getValue()->shouldBeLike('011011100101110111000000');
+    }
+
+    function it_should_get_the_bit_string_from_an_integer()
+    {
+        $this->beConstructedThrough('fromInteger', [64]);
+
+        $this->getValue()->shouldBeEqualTo('01000000');
     }
 
     function it_should_have_a_default_tag_type()

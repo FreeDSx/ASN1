@@ -55,11 +55,56 @@ class BitStringType extends AbstractType
         $bytes = '';
 
         $length = strlen($this->value);
-        $data = (($length % 8) === 0) ? $this->value : str_pad($this->value, $length + (8 - ($length % 8)), '0');
+        $data = self::pad($this->value);
         for ($i = 0; $i < $length / 8; $i++) {
             $bytes .= chr(bindec(substr($data, $i * 8, 8)));
         }
 
         return $bytes;
+    }
+
+    /**
+     * Construct the bit string from a binary string value.
+     *
+     * @param $bytes
+     * @return BitStringType
+     */
+    public static function fromBinary($bytes)
+    {
+        $bitstring = '';
+
+        $length = strlen($bytes);
+        for ($i = 0; $i < $length; $i++) {
+            $bitstring .= sprintf('%08d', decbin(ord($bytes[$i])));
+        }
+
+        return new self($bitstring);
+    }
+
+    /**
+     * Construct the bit string from an integer.
+     *
+     * @param int $int
+     * @return BitStringType
+     */
+    public static function fromInteger(int $int)
+    {
+        return new self(self::pad(decbin($int)));
+    }
+
+    /**
+     * Ensures the bit string is always padded as a multiple of 8.
+     *
+     * @param string $bitstring
+     * @return string
+     */
+    protected static function pad(string $bitstring)
+    {
+        $length = strlen($bitstring);
+        if (($length % 8) !== 0) {
+            $bitstring = str_pad($bitstring, $length + (8 - ($length % 8)), '0', STR_PAD_LEFT);
+        }
+
+        return $bitstring;
     }
 }
