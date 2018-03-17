@@ -1,6 +1,6 @@
 <?php
 /**
- * This file is part of the FreeDSx package.
+ * This file is part of the FreeDSx ASN1 package.
  *
  * (c) Chad Sikorra <Chad.Sikorra@gmail.com>
  *
@@ -11,7 +11,6 @@
 namespace spec\FreeDSx\Asn1\Type;
 
 use FreeDSx\Asn1\Type\AbstractType;
-use FreeDSx\Asn1\Type\ConstructedTypeInterface;
 use FreeDSx\Asn1\Type\IntegerType;
 use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\SetOfType;
