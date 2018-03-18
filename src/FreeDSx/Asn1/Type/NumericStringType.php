@@ -11,11 +11,11 @@
 namespace FreeDSx\Asn1\Type;
 
 /**
- * Represents an ASN1 octet string type.
+ * Represents a Numeric String type.
  *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
-class OctetStringType extends AbstractStringType
+class NumericStringType extends AbstractStringType
 {
-    protected $tagNumber = self::TAG_TYPE_OCTET_STRING;
+    protected $tagNumber = self::TAG_TYPE_NUMERIC_STRING;
 }

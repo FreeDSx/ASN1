@@ -24,7 +24,8 @@ class SetType extends AbstractType
      */
     public function __construct(AbstractType ...$types)
     {
-        $this->isConstructed = true;
+        parent::__construct(null);
+        $this->setIsConstructed(true);
         $this->setChildren(...$types);
     }
 }

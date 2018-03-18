@@ -11,11 +11,11 @@
 namespace FreeDSx\Asn1\Type;
 
 /**
- * Represents an ASN1 octet string type.
+ * Represents a Videotex String type.
  *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
-class OctetStringType extends AbstractStringType
+class VideotexStringType extends AbstractStringType
 {
-    protected $tagNumber = self::TAG_TYPE_OCTET_STRING;
+    protected $tagNumber = self::TAG_TYPE_VIDEOTEX_STRING;
 }

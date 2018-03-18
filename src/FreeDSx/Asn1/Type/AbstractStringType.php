@@ -11,24 +11,28 @@
 namespace FreeDSx\Asn1\Type;
 
 /**
- * Represents a Sequence type.
+ * Represents the various ASN1 string types.
  *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
-class SequenceType extends AbstractType
+abstract class AbstractStringType extends AbstractType
 {
     /**
-     * @var int
+     * @return string
      */
-    protected $tagNumber = self::TAG_TYPE_SEQUENCE;
+    public function getValue()
+    {
+        return $this->value;
+    }
 
     /**
-     * @param AbstractType[] ...$types
+     * @param string $value
+     * @return $this
      */
-    public function __construct(AbstractType ...$types)
+    public function setValue($value)
     {
-        parent::__construct(null);
-        $this->setIsConstructed(true);
-        $this->setChildren(...$types);
+        $this->value = $value;
+
+        return $this;
     }
 }

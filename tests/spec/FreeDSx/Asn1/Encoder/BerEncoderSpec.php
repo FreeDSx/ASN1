@@ -13,16 +13,28 @@ namespace spec\FreeDSx\Asn1\Encoder;
 use FreeDSx\Asn1\Encoder\BerEncoder;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\BitStringType;
+use FreeDSx\Asn1\Type\BmpStringType;
 use FreeDSx\Asn1\Type\BooleanType;
+use FreeDSx\Asn1\Type\CharacterStringType;
 use FreeDSx\Asn1\Type\EnumeratedType;
+use FreeDSx\Asn1\Type\GeneralStringType;
+use FreeDSx\Asn1\Type\GraphicStringType;
+use FreeDSx\Asn1\Type\IA5StringType;
 use FreeDSx\Asn1\Type\IncompleteType;
 use FreeDSx\Asn1\Type\IntegerType;
 use FreeDSx\Asn1\Type\NullType;
+use FreeDSx\Asn1\Type\NumericStringType;
 use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\OidType;
+use FreeDSx\Asn1\Type\PrintableStringType;
 use FreeDSx\Asn1\Type\SequenceType;
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\PartialPduException;
+use FreeDSx\Asn1\Type\TeletexStringType;
+use FreeDSx\Asn1\Type\UniversalStringType;
+use FreeDSx\Asn1\Type\Utf8StringType;
+use FreeDSx\Asn1\Type\VideotexStringType;
+use FreeDSx\Asn1\Type\VisibleStringType;
 use PhpSpec\ObjectBehavior;
 
 class BerEncoderSpec extends ObjectBehavior
@@ -207,6 +219,126 @@ class BerEncoderSpec extends ObjectBehavior
         $this->encode(new OidType('1.2.268435455'))->shouldBeEqualTo(hex2bin('06052affffff7f'));
     }
 
+    function it_should_encode_a_bmp_string()
+    {
+        $this->encode(new BmpStringType('foo'))->shouldBeEqualTo(hex2bin('1e03').'foo');
+    }
+
+    function it_should_decode_a_bmp_string()
+    {
+        $this->decode(hex2bin('1e03').'foo')->shouldBeLike(new BmpStringType('foo'));
+    }
+
+    function it_should_encode_a_character_string()
+    {
+        $this->encode(new CharacterStringType('foo'))->shouldBeEqualTo(hex2bin('1d03').'foo');
+    }
+
+    function it_should_decode_a_character_string()
+    {
+        $this->decode(hex2bin('1d03').'foo')->shouldBeLike(new CharacterStringType('foo'));
+    }
+
+    function it_should_encode_a_general_string()
+    {
+        $this->encode(new GeneralStringType('foo'))->shouldBeLike(hex2bin('1b03').'foo');
+    }
+
+    function it_should_decode_a_general_string()
+    {
+        $this->decode(hex2bin('1b03').'foo')->shouldBeLike(new GeneralStringType('foo'));
+    }
+
+    function it_should_encode_a_graphic_string()
+    {
+        $this->encode(new GraphicStringType('foo'))->shouldBeLike(hex2bin('1903').'foo');
+    }
+
+    function it_should_decode_a_graphic_string()
+    {
+        $this->decode(hex2bin('1903').'foo')->shouldBeLike(new GraphicStringType('foo'));
+    }
+
+    function it_should_encode_an_ia5_string()
+    {
+        $this->encode(new IA5StringType('foo'))->shouldBeLike(hex2bin('1603').'foo');
+    }
+
+    function it_should_decode_an_ia5_string()
+    {
+        $this->decode(hex2bin('1603').'foo')->shouldBeLike(new IA5StringType('foo'));
+    }
+
+    function it_should_encode_a_numeric_string()
+    {
+        $this->encode(new NumericStringType('123'))->shouldBeLike(hex2bin('1203').'123');
+    }
+
+    function it_should_decode_a_numeric_string()
+    {
+        $this->decode(hex2bin('1203').'123')->shouldBeLike(new NumericStringType('123'));
+    }
+
+    function it_should_encode_a_printable_string()
+    {
+        $this->encode(new PrintableStringType('foo'))->shouldBeLike(hex2bin('1303').'foo');
+    }
+
+    function it_should_decode_a_printable_string()
+    {
+        $this->decode(hex2bin('1303').'foo')->shouldBeLike(new PrintableStringType('foo'));
+    }
+
+    function it_should_encode_a_teletex_string()
+    {
+        $this->encode(new TeletexStringType('foo'))->shouldBeLike(hex2bin('1403').'foo');
+    }
+
+    function it_should_decode_a_teletex_string()
+    {
+        $this->decode(hex2bin('1403').'foo')->shouldBeLike(new TeletexStringType('foo'));
+    }
+
+    function it_should_encode_a_universal_string()
+    {
+        $this->encode(new UniversalStringType('foo'))->shouldBeLike(hex2bin('1c03').'foo');
+    }
+
+    function it_should_decode_a_universal_string()
+    {
+        $this->decode(hex2bin('1c03').'foo')->shouldBeLike(new UniversalStringType('foo'));
+    }
+
+    function it_should_encode_a_utf8_string()
+    {
+        $this->encode(new Utf8StringType('foo'))->shouldBeLike(hex2bin('0c03').'foo');
+    }
+
+    function it_should_decode_a_utf8_string()
+    {
+        $this->decode(hex2bin('0c03').'foo')->shouldBeLike(new Utf8StringType('foo'));
+    }
+
+    function it_should_encode_a_videotex_string()
+    {
+        $this->encode(new VideotexStringType('foo'))->shouldBeLike(hex2bin('1503').'foo');
+    }
+
+    function it_should_decode_a_videotex_string()
+    {
+        $this->decode(hex2bin('1503').'foo')->shouldBeLike(new VideotexStringType('foo'));
+    }
+
+    function it_should_encode_a_visible_string()
+    {
+        $this->encode(new VisibleStringType('foo'))->shouldBeLike(hex2bin('1a03').'foo');
+    }
+
+    function it_should_decode_a_visible_string()
+    {
+        $this->decode(hex2bin('1a03').'foo')->shouldBeLike(new VisibleStringType('foo'));
+    }
+
     function it_should_throw_an_encoder_exception_on_decoding_an_invalid_oid()
     {
         $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('0600')]);
@@ -259,7 +391,7 @@ class BerEncoderSpec extends ObjectBehavior
 
     function it_should_detect_an_application_tag_correctly()
     {
-        $this->decode(hex2bin('400001'))->getTagClass()->shouldBeEqualTo(AbstractType::TAG_CLASS_APPLICATION);
+        $this->decode(hex2bin('6000'))->getTagClass()->shouldBeEqualTo(AbstractType::TAG_CLASS_APPLICATION);
     }
 
     function it_should_detect_a_private_tag_correctly()
@@ -276,5 +408,119 @@ class BerEncoderSpec extends ObjectBehavior
     {
         $this->complete((new IncompleteType(hex2bin('FF')))->setTagNumber(5), AbstractType::TAG_TYPE_BOOLEAN)
             ->shouldBeLike((new BooleanType(true))->setTagNumber(5));
+    }
+
+    function it_should_decode_a_high_tag_number_properly()
+    {
+        $this->decode(hex2bin('5f1f0101'))->shouldBeLike(
+            (new IncompleteType(hex2bin('01')))
+                ->setTagNumber(31)
+                ->setTagClass(AbstractType::TAG_CLASS_APPLICATION)
+        );
+        $this->decode(hex2bin('5f81000101'))->shouldBeLike(
+            (new IncompleteType(hex2bin('01')))
+                ->setTagNumber(128)
+                ->setTagClass(AbstractType::TAG_CLASS_APPLICATION)
+        );
+    }
+
+    function it_should_throw_a_partial_pdu_exception_on_a_root_type_with_no_high_tag_ending()
+    {
+        $this->shouldThrow(PartialPduException::class)->during('decode', [hex2bin('5f8080')]);
+    }
+
+    function it_should_throw_an_encoder_exception_on_a_non_root_type_with_no_high_tag_ending()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('30035f8080')]);
+    }
+
+    function it_should_encode_a_high_tag_number_properly()
+    {
+        $this->encode((new BooleanType(true))->setTagNumber(128))->shouldBeEqualTo(hex2bin('1f810001ff'));
+    }
+
+    function it_should_throw_an_exception_on_zero_length_boolean()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('0100')]);
+    }
+
+    function it_should_throw_an_exception_on_zero_length_integer()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('0200')]);
+    }
+
+    function it_should_throw_an_exception_on_zero_length_enumerated()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('0a00')]);
+    }
+
+    function it_should_throw_an_exception_on_zero_length_oid()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('0600')]);
+    }
+
+    function it_should_throw_an_exception_on_zero_length_generalized_time()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('1800')]);
+    }
+
+    function it_should_throw_an_exception_on_zero_length_utc_time()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('1700')]);
+    }
+
+    function it_should_throw_an_exception_if_a_bool_with_more_than_one_byte_of_length_is_encountered()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('0102ffff')]);
+    }
+
+    function it_should_throw_an_exception_if_a_null_with_one_or_more_bytes_of_length_is_encountered()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('050101')]);
+    }
+
+    function it_should_throw_an_exception_on_a_constructed_boolean()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('210101')]);
+    }
+
+    function it_should_throw_an_exception_on_a_constructed_integer()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('220101')]);
+    }
+
+    function it_should_throw_an_exception_on_a_constructed_enumerated()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('2a0101')]);
+    }
+
+    function it_should_throw_an_exception_on_a_constructed_oid()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('38022a7f')]);
+    }
+
+    function it_should_throw_an_exception_on_a_constructed_relative_oid()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('2d022a7f')]);
+    }
+
+    function it_should_throw_an_exception_on_a_constructed_real()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('290101')]);
+    }
+
+    function it_should_throw_an_exception_on_a_constructed_null()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('2500')]);
+    }
+
+    function it_should_throw_an_exception_on_a_primitive_sequence()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('10030101ff')]);
+    }
+
+    function it_should_throw_an_exception_on_a_primitive_set()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('11030101ff')]);
     }
 }

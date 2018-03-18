@@ -11,15 +11,31 @@
 namespace FreeDSx\Asn1;
 
 use FreeDSx\Asn1\Type\AbstractType;
+use FreeDSx\Asn1\Type\BitStringType;
+use FreeDSx\Asn1\Type\BmpStringType;
 use FreeDSx\Asn1\Type\BooleanType;
+use FreeDSx\Asn1\Type\CharacterStringType;
 use FreeDSx\Asn1\Type\EnumeratedType;
+use FreeDSx\Asn1\Type\GeneralizedTimeType;
+use FreeDSx\Asn1\Type\GeneralStringType;
+use FreeDSx\Asn1\Type\GraphicStringType;
+use FreeDSx\Asn1\Type\IA5StringType;
 use FreeDSx\Asn1\Type\IntegerType;
 use FreeDSx\Asn1\Type\NullType;
+use FreeDSx\Asn1\Type\NumericStringType;
 use FreeDSx\Asn1\Type\OctetStringType;
+use FreeDSx\Asn1\Type\OidType;
+use FreeDSx\Asn1\Type\PrintableStringType;
 use FreeDSx\Asn1\Type\SequenceOfType;
 use FreeDSx\Asn1\Type\SequenceType;
 use FreeDSx\Asn1\Type\SetOfType;
 use FreeDSx\Asn1\Type\SetType;
+use FreeDSx\Asn1\Type\TeletexStringType;
+use FreeDSx\Asn1\Type\UniversalStringType;
+use FreeDSx\Asn1\Type\UtcTimeType;
+use FreeDSx\Asn1\Type\Utf8StringType;
+use FreeDSx\Asn1\Type\VideotexStringType;
+use FreeDSx\Asn1\Type\VisibleStringType;
 
 /**
  * Used to construct various ASN1 structures.
@@ -88,6 +104,168 @@ class Asn1
     public static function octetString(string $string) : OctetStringType
     {
         return new OctetStringType($string);
+    }
+
+    /**
+     * @param string $bitString
+     * @return BitStringType
+     */
+    public static function bitString(string $bitString) : BitStringType
+    {
+        return new BitStringType($bitString);
+    }
+
+    /**
+     * @param int $integer
+     * @return BitStringType
+     */
+    public static function bitStringFromInteger(int $integer) : BitStringType
+    {
+        return BitStringType::fromInteger($integer);
+    }
+
+    /**
+     * @param string $binary
+     * @return BitStringType
+     */
+    public static function bitStringFromBinary($binary) : BitStringType
+    {
+        return BitStringType::fromBinary($binary);
+    }
+
+    /**
+     * @param string $oid
+     * @return OidType
+     */
+    public static function oid(string $oid) : OidType
+    {
+        return new OidType($oid);
+    }
+
+    /**
+     * @param string $string
+     * @return BmpStringType
+     */
+    public static function bmpString(string $string) : BmpStringType
+    {
+        return new BmpStringType($string);
+    }
+
+    /**
+     * @param string $string
+     * @return CharacterStringType
+     */
+    public static function charString(string $string) : CharacterStringType
+    {
+        return new CharacterStringType($string);
+    }
+
+    /**
+     * @param \DateTime $dateTime
+     * @return GeneralizedTimeType
+     */
+    public static function generalizedTime(\DateTime $dateTime) : GeneralizedTimeType
+    {
+        return new GeneralizedTimeType($dateTime);
+    }
+
+    /**
+     * @param \DateTime $dateTime
+     * @return UtcTimeType
+     */
+    public static function utcTime(\DateTime $dateTime) : UtcTimeType
+    {
+        return new UtcTimeType($dateTime);
+    }
+
+    /**
+     * @param string $string
+     * @return GeneralStringType
+     */
+    public static function generalString(string $string) : GeneralStringType
+    {
+        return new GeneralStringType($string);
+    }
+
+    /**
+     * @param string $string
+     * @return GraphicStringType
+     */
+    public static function graphicString(string $string) : GraphicStringType
+    {
+        return new GraphicStringType($string);
+    }
+
+    /**
+     * @param string $string
+     * @return IA5StringType
+     */
+    public static function ia5String(string $string) : IA5StringType
+    {
+        return new IA5StringType($string);
+    }
+
+    /**
+     * @param string $string
+     * @return NumericStringType
+     */
+    public static function numericString(string $string) : NumericStringType
+    {
+        return new NumericStringType($string);
+    }
+
+    /**
+     * @param string $string
+     * @return PrintableStringType
+     */
+    public static function printableString(string $string) : PrintableStringType
+    {
+        return new PrintableStringType($string);
+    }
+
+    /**
+     * @param string $string
+     * @return TeletexStringType
+     */
+    public static function teletexString(string $string) : TeletexStringType
+    {
+        return new TeletexStringType($string);
+    }
+
+    /**
+     * @param string $string
+     * @return UniversalStringType
+     */
+    public static function universalString(string $string) : UniversalStringType
+    {
+        return new UniversalStringType($string);
+    }
+
+    /**
+     * @param string $string
+     * @return Utf8StringType
+     */
+    public static function utf8String(string $string) : Utf8StringType
+    {
+        return new Utf8StringType($string);
+    }
+
+    /**
+     * @param string $string
+     * @return VideotexStringType
+     */
+    public static function videotexString(string $string) : VideotexStringType
+    {
+        return new VideotexStringType($string);
+    }
+
+    /**
+     * @param string $string
+     * @return VisibleStringType
+     */
+    public static function visibleString(string $string) : VisibleStringType
+    {
+        return new VisibleStringType($string);
     }
 
     /**
