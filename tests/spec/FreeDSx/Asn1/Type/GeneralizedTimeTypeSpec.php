@@ -10,6 +10,8 @@
 
 namespace spec\FreeDSx\Asn1\Type;
 
+use FreeDSx\Asn1\Exception\InvalidArgumentException;
+use FreeDSx\Asn1\Type\AbstractTimeType;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\GeneralizedTimeType;
 use PhpSpec\ObjectBehavior;
@@ -26,6 +28,21 @@ class GeneralizedTimeTypeSpec extends ObjectBehavior
         $this->shouldHaveType(GeneralizedTimeType::class);
     }
 
+    function it_should_extend_abstract_time()
+    {
+        $this->shouldBeAnInstanceOf(AbstractTimeType::class);
+    }
+
+    function it_should_default_to_fractions_of_a_second()
+    {
+        $this->getDateTimeFormat()->shouldBeEqualTo(AbstractTimeType::FORMAT_FRACTIONS);
+    }
+
+    function it_should_default_to_a_UTC_timezone_ending()
+    {
+        $this->getTimeZoneFormat()->shouldBeEqualTo(AbstractTimeType::TZ_UTC);
+    }
+
     function it_should_set_the_value()
     {
         $date = new \DateTime();
@@ -36,5 +53,32 @@ class GeneralizedTimeTypeSpec extends ObjectBehavior
     function it_should_have_a_default_tag_type()
     {
         $this->getTagNumber()->shouldBeEqualTo(AbstractType::TAG_TYPE_GENERALIZED_TIME);
+    }
+
+    function it_should_set_the_time_format()
+    {
+        $this->setDateTimeFormat(AbstractTimeType::FORMAT_SECONDS);
+        $this->setDateTimeFormat(AbstractTimeType::FORMAT_MINUTES);
+        $this->setDateTimeFormat(AbstractTimeType::FORMAT_FRACTIONS);
+        $this->setDateTimeFormat(AbstractTimeType::FORMAT_HOURS);
+        $this->getDateTimeFormat()->shouldBeEqualTo(AbstractTimeType::FORMAT_HOURS);
+    }
+
+    function it_should_set_the_timezone_format()
+    {
+        $this->setTimeZoneFormat(AbstractTimeType::TZ_UTC);
+        $this->setTimeZoneFormat(AbstractTimeType::TZ_DIFF);
+        $this->setTimeZoneFormat(AbstractTimeType::TZ_LOCAL);
+        $this->getTimeZoneFormat()->shouldBeEqualTo(AbstractTimeType::TZ_LOCAL);
+    }
+
+    function it_should_not_allow_setting_the_time_format_to_something_invalid()
+    {
+        $this->shouldThrow(InvalidArgumentException::class)->during('setDateTimeFormat', ['foo']);
+    }
+
+    function it_should_not_allow_setting_the_timezone_format_to_something_invalid()
+    {
+        $this->shouldThrow(InvalidArgumentException::class)->during('setTimeZoneFormat', ['foo']);
     }
 }

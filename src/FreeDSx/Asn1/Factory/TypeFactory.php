@@ -102,6 +102,8 @@ class TypeFactory
             return $type;
         } elseif ($tagType === AbstractType::TAG_TYPE_NULL) {
             return new NullType();
+        }elseif ($tagType === AbstractType::TAG_TYPE_GENERALIZED_TIME || $tagType === AbstractType::TAG_TYPE_UTC_TIME) {
+            return new self::$map[$tagType](...$value);
         } else {
             return new self::$map[$tagType]($value);
         }

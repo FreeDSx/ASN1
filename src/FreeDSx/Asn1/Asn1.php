@@ -10,6 +10,7 @@
 
 namespace FreeDSx\Asn1;
 
+use FreeDSx\Asn1\Type\AbstractTimeType;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\BitStringType;
 use FreeDSx\Asn1\Type\BmpStringType;
@@ -162,20 +163,24 @@ class Asn1
 
     /**
      * @param \DateTime $dateTime
+     * @param string $dateFormat
+     * @param string $tzFormat
      * @return GeneralizedTimeType
      */
-    public static function generalizedTime(\DateTime $dateTime) : GeneralizedTimeType
+    public static function generalizedTime(\DateTime $dateTime, string $dateFormat = AbstractTimeType::FORMAT_FRACTIONS, string $tzFormat = AbstractTimeType::TZ_UTC) : GeneralizedTimeType
     {
-        return new GeneralizedTimeType($dateTime);
+        return new GeneralizedTimeType($dateTime, $dateFormat, $tzFormat);
     }
 
     /**
      * @param \DateTime $dateTime
+     * @param string $dateFormat
+     * @param string $tzFormat
      * @return UtcTimeType
      */
-    public static function utcTime(\DateTime $dateTime) : UtcTimeType
+    public static function utcTime(\DateTime $dateTime, string $dateFormat = AbstractTimeType::FORMAT_SECONDS, string $tzFormat = AbstractTimeType::TZ_UTC) : UtcTimeType
     {
-        return new UtcTimeType($dateTime);
+        return new UtcTimeType($dateTime, $dateFormat, $tzFormat);
     }
 
     /**

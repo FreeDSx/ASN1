@@ -15,34 +15,51 @@ namespace FreeDSx\Asn1\Type;
  *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
-class UtcTimeType extends AbstractType
+class UtcTimeType extends AbstractTimeType
 {
+    /**
+     * Only a 2 day year (was Y2K not a thing back then?), seconds are optional, Z or time differential.
+     */
+    public const TIME_REGEX = '~^
+        (\d\d)                # 1 - Year
+        (\d\d)                # 2 - Month
+        (\d\d)                # 3 - Day
+        (\d\d)                # 4 - Hour
+        (\d\d)                # 5 - Minutes
+        (\d\d)?               # 6 - Seconds, which are optional
+        (Z|[\+\-]\d\d\d\d)    # 7 - Timezone modifier (not optional). It can either be a Z (UTC) or a time differential.
+    $~x';
+
+    public const REGEX_MAP = [
+        'hours' => 4,
+        'minutes' => 5,
+        'seconds' => 6,
+        'timezone' => 7,
+    ];
+
     protected $tagNumber = self::TAG_TYPE_UTC_TIME;
 
     /**
-     * @param \DateTime $dateTime
+     * Valid datetime formats.
      */
-    public function __construct(\DateTime $dateTime)
-    {
-        parent::__construct($dateTime);
-    }
+    protected $validDateFormats = [
+        self::FORMAT_SECONDS,
+        self::FORMAT_MINUTES,
+    ];
 
     /**
-     * @param \DateTime $dateTime
-     * @return $this
+     * Valid timezone formats
      */
-    public function setValue(\DateTime $dateTime)
-    {
-        $this->value = $dateTime;
-
-        return $this;
-    }
+    protected $validTzFormats = [
+        self::TZ_UTC,
+        self::TZ_DIFF,
+    ];
 
     /**
-     * @return \DateTime
+     * {@inheritdoc}
      */
-    public function getValue() : \DateTime
+    public function __construct(\DateTime $dateTime, string $dateFormat = self::FORMAT_SECONDS, string $tzFormat = self::TZ_UTC)
     {
-        return $this->value;
+        parent::__construct($dateTime, $dateFormat, $tzFormat);
     }
 }

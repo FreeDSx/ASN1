@@ -17,6 +17,7 @@ use FreeDSx\Asn1\Type\BmpStringType;
 use FreeDSx\Asn1\Type\BooleanType;
 use FreeDSx\Asn1\Type\CharacterStringType;
 use FreeDSx\Asn1\Type\EnumeratedType;
+use FreeDSx\Asn1\Type\GeneralizedTimeType;
 use FreeDSx\Asn1\Type\GeneralStringType;
 use FreeDSx\Asn1\Type\GraphicStringType;
 use FreeDSx\Asn1\Type\IA5StringType;
@@ -32,6 +33,7 @@ use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\PartialPduException;
 use FreeDSx\Asn1\Type\TeletexStringType;
 use FreeDSx\Asn1\Type\UniversalStringType;
+use FreeDSx\Asn1\Type\UtcTimeType;
 use FreeDSx\Asn1\Type\Utf8StringType;
 use FreeDSx\Asn1\Type\VideotexStringType;
 use FreeDSx\Asn1\Type\VisibleStringType;
@@ -217,6 +219,180 @@ class BerEncoderSpec extends ObjectBehavior
         $this->encode(new OidType('1.2.16383'))->shouldBeEqualTo(hex2bin('06032aff7f'));
         $this->encode(new OidType('1.2.2097152'))->shouldBeEqualTo(hex2bin('06052a81808000'));
         $this->encode(new OidType('1.2.268435455'))->shouldBeEqualTo(hex2bin('06052affffff7f'));
+    }
+
+    function it_should_encode_a_generalized_time_string_non_utc_with_a_differential()
+    {
+        $datetime = new \DateTime('20180318', new \DateTimeZone('America/Chicago'));
+        $this->encode(new GeneralizedTimeType($datetime, GeneralizedTimeType::FORMAT_SECONDS, GeneralizedTimeType::TZ_DIFF))->shouldBeEqualTo(hex2bin('1813').'20180318000000-0500');
+    }
+
+    function it_should_encode_a_generalized_time_string_utc_with_an_ending_Z()
+    {
+        $datetime = new \DateTime('20180318', new \DateTimeZone('UTC'));
+        $this->encode(new GeneralizedTimeType($datetime, GeneralizedTimeType::FORMAT_SECONDS, GeneralizedTimeType::TZ_UTC))->shouldBeEqualTo(hex2bin('180f').'20180318000000Z');
+    }
+
+    function it_should_encode_a_generalized_time_string_as_local_time_if_specified()
+    {
+        $time = new GeneralizedTimeType(
+            new \DateTime('20180318', new \DateTimeZone('America/Chicago')),
+            GeneralizedTimeType::FORMAT_SECONDS,
+            GeneralizedTimeType::TZ_LOCAL
+        );
+        $this->encode($time)->shouldBeEqualTo(hex2bin('180e').'20180318000000');
+    }
+
+    function it_should_encode_a_generalized_time_with_fractional_seconds_if_they_exist()
+    {
+        $this->encode(new GeneralizedTimeType(new \DateTime('2018-03-18T10:02:01.012300Z')))->shouldBeEqualTo(hex2bin('1814').'20180318100201.0123Z');
+    }
+
+    function it_should_not_encode_a_generalized_time_with_fractional_seconds_if_specified()
+    {
+        $datetime = new GeneralizedTimeType(new \DateTime('2018-03-18T10:02:01.0123Z'), GeneralizedTimeType::FORMAT_SECONDS);
+        $this->encode($datetime)->shouldBeEqualTo(hex2bin('180f').'20180318100201Z');
+    }
+
+    function it_should_encode_a_generalized_time_string_to_hours()
+    {
+        $this->encode(new GeneralizedTimeType(
+            new \DateTime('2018-03-18 01:00', new \DateTimeZone(date_default_timezone_get())),
+            GeneralizedTimeType::FORMAT_HOURS,
+            GeneralizedTimeType::TZ_LOCAL
+        ))->shouldBeEqualTo(hex2bin('180a').'2018031801');
+    }
+
+    function it_should_encode_a_generalized_time_string_to_minutes()
+    {
+        $this->encode(new GeneralizedTimeType(
+            new \DateTime('2018-03-18 01:22', new \DateTimeZone('UTC')),
+            GeneralizedTimeType::FORMAT_MINUTES,
+            GeneralizedTimeType::TZ_UTC
+        ))->shouldBeEqualTo(hex2bin('180d').'201803180122Z');
+    }
+
+    function it_should_throw_an_exception_if_the_hour_is_equal_to_24_when_decoding()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('180b').'2018031824Z']);
+    }
+
+    function it_should_decode_a_generalized_time_string_with_hours_in_UTC()
+    {
+        $this->decode(hex2bin('180b').'2018031801Z')->shouldBeLike(new GeneralizedTimeType(
+            new \DateTime('2018-03-18 01:00', new \DateTimeZone('UTC')),
+            GeneralizedTimeType::FORMAT_HOURS,
+            GeneralizedTimeType::TZ_UTC
+        ));
+    }
+
+    function it_should_decode_a_generalized_time_string_in_local_time_form()
+    {
+        $this->decode(hex2bin('180a').'2018031801')->shouldBeLike(new GeneralizedTimeType(
+            new \DateTime('2018-03-18 01:00', new \DateTimeZone(date_default_timezone_get())),
+            GeneralizedTimeType::FORMAT_HOURS,
+            GeneralizedTimeType::TZ_LOCAL
+        ));
+    }
+
+    function it_should_decode_a_generalized_time_string_with_minutes()
+    {
+        $this->decode(hex2bin('180d').'201803180122Z')->shouldBeLike(new GeneralizedTimeType(
+            new \DateTime('2018-03-18 01:22', new \DateTimeZone('UTC')),
+            GeneralizedTimeType::FORMAT_MINUTES,
+            GeneralizedTimeType::TZ_UTC
+        ));
+    }
+
+    function it_should_decode_a_generalized_time_string_with_seconds()
+    {
+        $this->decode(hex2bin('180f').'20180318012241Z')->shouldBeLike(new GeneralizedTimeType(
+            new \DateTime('2018-03-18 01:22:41', new \DateTimeZone('UTC')),
+            GeneralizedTimeType::FORMAT_SECONDS,
+            GeneralizedTimeType::TZ_UTC
+        ));
+    }
+
+    function it_should_decode_a_generalized_time_string_with_fractions_of_a_second()
+    {
+        $this->decode(hex2bin('1811').'19851106210627.3Z')->shouldBeLike(new GeneralizedTimeType(
+            new \DateTime('1985-11-06 21:06:27.3', new \DateTimeZone('UTC')),
+            GeneralizedTimeType::FORMAT_FRACTIONS,
+            GeneralizedTimeType::TZ_UTC
+        ));
+    }
+
+    function it_should_decode_a_generalized_time_string_with_a_time_differential()
+    {
+        $this->decode(hex2bin('1815').'19851106210627.3-0500')->shouldBeLike(new GeneralizedTimeType(
+            new \DateTime('1985-11-06 21:06:27.3', new \DateTimeZone('-0500')),
+            GeneralizedTimeType::FORMAT_FRACTIONS,
+            GeneralizedTimeType::TZ_DIFF
+        ));
+    }
+
+    function it_should_decode_a_UTC_time_with_seconds()
+    {
+        $this->decode(hex2bin('170d').'180318012241Z')->shouldBeLike(new UtcTimeType(
+            new \DateTime('18-03-18 01:22:41', new \DateTimeZone('UTC')),
+            GeneralizedTimeType::FORMAT_SECONDS,
+            GeneralizedTimeType::TZ_UTC
+        ));
+    }
+
+    function it_should_decode_a_UTC_time_without_seconds()
+    {
+        $this->decode(hex2bin('170b').'1803180122Z')->shouldBeLike(new UtcTimeType(
+            new \DateTime('18-03-18 01:22', new \DateTimeZone('UTC')),
+            GeneralizedTimeType::FORMAT_MINUTES,
+            GeneralizedTimeType::TZ_UTC
+        ));
+    }
+
+    function it_should_decode_a_UTC_time_with_a_differential_timezone()
+    {
+        $this->decode(hex2bin('1711').'181106210627-0500')->shouldBeLike(new UtcTimeType(
+            new \DateTime('18-11-06 21:06:27', new \DateTimeZone('-0500')),
+            GeneralizedTimeType::FORMAT_SECONDS,
+            GeneralizedTimeType::TZ_DIFF
+        ));
+    }
+
+    function it_should_not_accept_decoding_UTC_time_with_no_timezone_modifier()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [(hex2bin('170c').'181106210627')]);
+    }
+
+    function it_should_not_accept_decoding_UTC_time_with_24_hour_midnight()
+    {
+        $this->shouldThrow(new EncoderException('Midnight must only be specified by 00, but got 24.'))->during('decode', [(hex2bin('170d').'181106240627Z')]);
+    }
+
+    function it_should_encode_a_UTC_time_with_seconds()
+    {
+        $this->encode(new UtcTimeType(
+            new \DateTime('18-03-18 01:22:41', new \DateTimeZone('UTC')),
+            GeneralizedTimeType::FORMAT_SECONDS,
+            GeneralizedTimeType::TZ_UTC
+        ))->shouldBeEqualTo(hex2bin('170d').'180318012241Z');
+    }
+
+    function it_should_encode_a_UTC_time_without_seconds()
+    {
+        $this->encode(new UtcTimeType(
+            new \DateTime('18-03-18 01:22', new \DateTimeZone('UTC')),
+            GeneralizedTimeType::FORMAT_MINUTES,
+            GeneralizedTimeType::TZ_UTC
+        ))->shouldBeEqualTo(hex2bin('170b').'1803180122Z');
+    }
+
+    function it_should_encode_a_UTC_time_with_a_differential_timezone()
+    {
+        $this->encode(new UtcTimeType(
+            new \DateTime('18-11-06 21:06:27', new \DateTimeZone('-0500')),
+            GeneralizedTimeType::FORMAT_SECONDS,
+            GeneralizedTimeType::TZ_DIFF
+        ))->shouldBeEqualTo(hex2bin('1711').'181106210627-0500');
     }
 
     function it_should_encode_a_bmp_string()

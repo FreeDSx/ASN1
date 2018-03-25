@@ -15,14 +15,17 @@ use FreeDSx\Asn1\Exception\InvalidArgumentException;
 use FreeDSx\Asn1\Exception\PartialPduException;
 use FreeDSx\Asn1\Factory\TypeFactory;
 use FreeDSx\Asn1\Type\AbstractStringType;
+use FreeDSx\Asn1\Type\AbstractTimeType;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\BitStringType;
 use FreeDSx\Asn1\Type\BooleanType;
 use FreeDSx\Asn1\Type\EnumeratedType;
+use FreeDSx\Asn1\Type\GeneralizedTimeType;
 use FreeDSx\Asn1\Type\IncompleteType;
 use FreeDSx\Asn1\Type\IntegerType;
 use FreeDSx\Asn1\Type\NullType;
 use FreeDSx\Asn1\Type\OidType;
+use FreeDSx\Asn1\Type\UtcTimeType;
 
 /**
  * Basic Encoding Rules (BER) encoder.
@@ -180,6 +183,12 @@ class BerEncoder implements EncoderInterface
             case AbstractType::TAG_TYPE_OID:
                 $value = $this->decodeOid($bytes);
                 break;
+            case AbstractType::TAG_TYPE_GENERALIZED_TIME:
+                $value = $this->decodeGeneralizedTime($bytes);
+                break;
+            case AbstractType::TAG_TYPE_UTC_TIME:
+                $value = $this->decodeUtcTime($bytes);
+                break;
             case AbstractType::TAG_TYPE_OCTET_STRING:
             case AbstractType::TAG_TYPE_GENERAL_STRING:
             case AbstractType::TAG_TYPE_VISIBLE_STRING:
@@ -236,6 +245,12 @@ class BerEncoder implements EncoderInterface
                 break;
             case $type instanceof OidType:
                 $bytes = $this->encodeOid($type);
+                break;
+            case $type instanceof GeneralizedTimeType:
+                $bytes = $this->encodeGeneralizedTime($type);
+                break;
+            case $type instanceof UtcTimeType:
+                $bytes = $this->encodeUtcTime($type);
                 break;
             case $type instanceof NullType:
                 break;
@@ -625,6 +640,85 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
+     * @param GeneralizedTimeType $type
+     * @return string
+     * @throws EncoderException
+     */
+    protected function encodeGeneralizedTime(GeneralizedTimeType $type)
+    {
+        return $this->encodeTime($type, 'YmdH');
+    }
+
+    /**
+     * @param UtcTimeType $type
+     * @return string
+     * @throws EncoderException
+     */
+    protected function encodeUtcTime(UtcTimeType $type)
+    {
+        return $this->encodeTime($type, 'ymdH');
+    }
+
+    /**
+     * @param AbstractTimeType $type
+     * @param string $format
+     * @return string
+     * @throws EncoderException
+     */
+    protected function encodeTime(AbstractTimeType $type, string $format)
+    {
+        if ($type->getDateTimeFormat() === GeneralizedTimeType::FORMAT_SECONDS || $type->getDateTimeFormat() === GeneralizedTimeType::FORMAT_FRACTIONS) {
+            $format .= 'is';
+        } elseif ($type->getDateTimeFormat() === GeneralizedTimeType::FORMAT_MINUTES) {
+            $format .= 'i';
+        }
+
+        # Is it possible to construct a datetime object in this way? Seems better to be safe with this check.
+        if ($type->getValue()->format('H') === '24') {
+            throw new EncoderException('Midnight must only be specified by 00, not 24.');
+        }
+
+        return $this->formatDateTime(
+            clone $type->getValue(),
+            $type->getDateTimeFormat(),
+            $type->getTimeZoneFormat(),
+            $format
+        );
+    }
+
+    /**
+     * @param \DateTime $dateTime
+     * @param string $dateTimeFormat
+     * @param string $tzFormat
+     * @param string $format
+     * @return string
+     */
+    protected function formatDateTime(\DateTime $dateTime, string $dateTimeFormat, string $tzFormat, string $format)
+    {
+        if ($tzFormat === GeneralizedTimeType::TZ_LOCAL) {
+            $dateTime->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+        } elseif ($tzFormat === GeneralizedTimeType::TZ_UTC) {
+            $dateTime->setTimezone(new \DateTimeZone('UTC'));
+        }
+        $value = $dateTime->format($format);
+
+        # Fractions need special formatting, so we cannot directly include them in the format above.
+        $ms = '';
+        if ($dateTimeFormat === GeneralizedTimeType::FORMAT_FRACTIONS) {
+            $ms = (string) rtrim($dateTime->format('u'), '0');
+        }
+
+        $tz = '';
+        if ($tzFormat === GeneralizedTimeType::TZ_UTC) {
+            $tz = 'Z';
+        } elseif ($tzFormat === GeneralizedTimeType::TZ_DIFF) {
+            $tz = $dateTime->format('O');
+        }
+
+        return $value.($ms !== '' ? '.'.$ms : '').$tz;
+    }
+
+    /**
      * Kinda ugly, but the LDAP max int is 32bit.
      *
      * @param AbstractType $type
@@ -666,11 +760,79 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
+     * @param $bytes
+     * @return array
+     * @throws EncoderException
+     */
+    protected function decodeGeneralizedTime($bytes)
+    {
+        return $this->decodeTime($bytes, 'YmdH', GeneralizedTimeType::TIME_REGEX, GeneralizedTimeType::REGEX_MAP);
+    }
+
+    /**
+     * @param $bytes
+     * @return array
+     * @throws EncoderException
+     */
+    protected function decodeUtcTime($bytes)
+    {
+        return $this->decodeTime($bytes, 'ymdH', UtcTimeType::TIME_REGEX, UtcTimeType::REGEX_MAP);
+    }
+
+    /**
+     * @param string $bytes
+     * @param string $format
+     * @param string $regex
+     * @param array $matchMap
+     * @return array
+     * @throws EncoderException
+     */
+    protected function decodeTime($bytes, string $format, string $regex, array $matchMap) : array
+    {
+        if (!preg_match($regex, $bytes, $matches)) {
+            throw new EncoderException('The datetime format is invalid and cannot be decoded.');
+        }
+        if ($matches[$matchMap['hours']] === '24') {
+            throw new EncoderException('Midnight must only be specified by 00, but got 24.');
+        }
+        $tzFormat = AbstractTimeType::TZ_LOCAL;
+        $dtFormat = AbstractTimeType::FORMAT_HOURS;
+
+        # Minutes
+        if (isset($matches[$matchMap['minutes']]) && $matches[$matchMap['minutes']] !== '') {
+            $dtFormat = AbstractTimeType::FORMAT_MINUTES;
+            $format .= 'i';
+        }
+        # Seconds
+        if (isset($matches[$matchMap['seconds']]) && $matches[$matchMap['seconds']] !== '') {
+            $dtFormat = AbstractTimeType::FORMAT_SECONDS;
+            $format .= 's';
+        }
+        # Fractions of a second
+        if (isset($matchMap['fractions']) && isset($matches[$matchMap['fractions']]) && $matches[$matchMap['fractions']] !== '') {
+            $dtFormat = AbstractTimeType::FORMAT_FRACTIONS;
+            $format .= '.u';
+        }
+        # Timezone
+        if (isset($matches[$matchMap['timezone']]) && $matches[$matchMap['timezone']] !== '') {
+            $tzFormat = $matches[$matchMap['timezone']] === 'Z' ? AbstractTimeType::TZ_UTC : AbstractTimeType::TZ_DIFF;
+            $format .= 'T';
+        }
+
+        $dateTime = \DateTime::createFromFormat($format, $bytes);
+        if ($dateTime === false) {
+            throw new EncoderException('Unable to decode time to a DateTime object.');
+        }
+
+        return [$dateTime, $dtFormat, $tzFormat];
+    }
+
+    /**
      * @param string $bytes
      * @return string
      * @throws EncoderException
      */
-    public function decodeOid($bytes) : string
+    protected function decodeOid($bytes) : string
     {
         $oid = [];
 
