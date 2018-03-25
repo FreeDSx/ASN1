@@ -236,7 +236,7 @@ class BerEncoderSpec extends ObjectBehavior
     function it_should_encode_a_generalized_time_string_as_local_time_if_specified()
     {
         $time = new GeneralizedTimeType(
-            new \DateTime('20180318', new \DateTimeZone('America/Chicago')),
+            new \DateTime('20180318', new \DateTimeZone(date_default_timezone_get())),
             GeneralizedTimeType::FORMAT_SECONDS,
             GeneralizedTimeType::TZ_LOCAL
         );
