@@ -25,6 +25,7 @@ use FreeDSx\Asn1\Type\IncompleteType;
 use FreeDSx\Asn1\Type\IntegerType;
 use FreeDSx\Asn1\Type\NullType;
 use FreeDSx\Asn1\Type\OidType;
+use FreeDSx\Asn1\Type\RelativeOidType;
 use FreeDSx\Asn1\Type\UtcTimeType;
 
 /**
@@ -44,6 +45,7 @@ class BerEncoder implements EncoderInterface
         AbstractType::TAG_TYPE_INTEGER,
         AbstractType::TAG_TYPE_ENUMERATED,
         AbstractType::TAG_TYPE_OID,
+        AbstractType::TAG_TYPE_RELATIVE_OID,
     ];
 
     /**
@@ -183,6 +185,9 @@ class BerEncoder implements EncoderInterface
             case AbstractType::TAG_TYPE_OID:
                 $value = $this->decodeOid($bytes);
                 break;
+            case AbstractType::TAG_TYPE_RELATIVE_OID:
+                $value = $this->decodeRelativeOid($bytes);
+                break;
             case AbstractType::TAG_TYPE_GENERALIZED_TIME:
                 $value = $this->decodeGeneralizedTime($bytes);
                 break;
@@ -245,6 +250,9 @@ class BerEncoder implements EncoderInterface
                 break;
             case $type instanceof OidType:
                 $bytes = $this->encodeOid($type);
+                break;
+            case $type instanceof RelativeOidType:
+                $bytes = $this->encodeRelativeOid($type);
                 break;
             case $type instanceof GeneralizedTimeType:
                 $bytes = $this->encodeGeneralizedTime($type);
@@ -618,6 +626,22 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
+     * @param RelativeOidType $type
+     * @return string
+     */
+    protected function encodeRelativeOid(RelativeOidType $type)
+    {
+        $oids = explode('.', $type->getValue());
+
+        $bytes = '';
+        foreach ($oids as $oid) {
+            $bytes .= $this->intToVlqBytes((int) $oid);
+        }
+
+        return $bytes;
+    }
+
+    /**
      * @param OidType $type
      * @return string
      * @throws EncoderException
@@ -841,7 +865,24 @@ class BerEncoder implements EncoderInterface
         $oid[] = (int) ($byte / 40);
         $oid[] =  $byte - (40 * $oid[0]);
 
+        $oid = implode('.', $oid);
         $bytes = substr($bytes, 1);
+        if (strlen($bytes)) {
+            $oid .= '.'.$this->decodeRelativeOid($bytes);
+        }
+
+        return $oid;
+    }
+
+    /**
+     * @param $bytes
+     * @return string
+     * @throws EncoderException
+     */
+    protected function decodeRelativeOid($bytes) : string
+    {
+        $oid = [];
+
         while (strlen($bytes)) {
             $vlqBytes = $this->getVlqBytes($bytes);
             $oid[] = $this->getVlqInt($vlqBytes);

@@ -28,6 +28,7 @@ use FreeDSx\Asn1\Type\NumericStringType;
 use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\OidType;
 use FreeDSx\Asn1\Type\PrintableStringType;
+use FreeDSx\Asn1\Type\RelativeOidType;
 use FreeDSx\Asn1\Type\SequenceType;
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\PartialPduException;
@@ -525,6 +526,18 @@ class BerEncoderSpec extends ObjectBehavior
         $this->shouldThrow(EncoderException::class)->during('encode', [new OidType('1')]);
     }
 
+    function it_should_encode_a_relative_oid()
+    {
+        $this->encode(new RelativeOidType('6.1.4.1.311.21.20'))->shouldBeEqualTo(hex2bin('0d080601040182371514'));
+        $this->encode(new RelativeOidType('268435455'))->shouldBeEqualTo(hex2bin('0d04ffffff7f'));
+    }
+
+    function it_should_decode_a_relative_oid()
+    {
+        $this->decode(hex2bin('0d080601040182371514'))->shouldBeLike(new RelativeOidType('6.1.4.1.311.21.20'));
+        $this->decode(hex2bin('0d04ffffff7f'))->shouldBeLike(new RelativeOidType('268435455'));
+    }
+
     function it_should_decode_an_unknown_type()
     {
         $incompleteType = new IncompleteType(hex2bin('01'));
@@ -633,6 +646,11 @@ class BerEncoderSpec extends ObjectBehavior
     function it_should_throw_an_exception_on_zero_length_oid()
     {
         $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('0600')]);
+    }
+
+    function it_should_throw_an_exception_on_zero_length_relative_oid()
+    {
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('0d00')]);
     }
 
     function it_should_throw_an_exception_on_zero_length_generalized_time()
