@@ -19,7 +19,7 @@ To encode an ASN.1 structure you can use the helper methods of the Asn1 class an
 use FreeDSx\Asn1\Asn1;
 use FreeDSx\Asn1\Encoders;
 
-# Encoded $bytes will now contain BER the binary representation of a sequence containing:
+# Encoded $bytes will now contain the BER binary representation of a sequence containing:
 #  - An integer type of value 9999
 #  - An octet string type of value 'foo'
 #  - A boolean type of true
