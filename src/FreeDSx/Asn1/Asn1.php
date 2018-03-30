@@ -27,6 +27,7 @@ use FreeDSx\Asn1\Type\NumericStringType;
 use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\OidType;
 use FreeDSx\Asn1\Type\PrintableStringType;
+use FreeDSx\Asn1\Type\RelativeOidType;
 use FreeDSx\Asn1\Type\SequenceOfType;
 use FreeDSx\Asn1\Type\SequenceType;
 use FreeDSx\Asn1\Type\SetOfType;
@@ -141,6 +142,15 @@ class Asn1
     public static function oid(string $oid) : OidType
     {
         return new OidType($oid);
+    }
+
+    /**
+     * @param string $oid
+     * @return RelativeOidType
+     */
+    public static function relativeOid(string $oid) : RelativeOidType
+    {
+        return new RelativeOidType($oid);
     }
 
     /**

@@ -27,6 +27,7 @@ use FreeDSx\Asn1\Type\NumericStringType;
 use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\OidType;
 use FreeDSx\Asn1\Type\PrintableStringType;
+use FreeDSx\Asn1\Type\RelativeOidType;
 use FreeDSx\Asn1\Type\SequenceOfType;
 use FreeDSx\Asn1\Type\SequenceType;
 use FreeDSx\Asn1\Type\SetOfType;
@@ -121,6 +122,11 @@ class Asn1Spec extends ObjectBehavior
     function it_should_construct_an_oid()
     {
         $this::oid('1.2.3')->shouldBeLike(new OidType('1.2.3'));
+    }
+
+    function it_should_construct_a_relative_oid()
+    {
+        $this::relativeOid('3.100')->shouldBeLike(new RelativeOidType('3.100'));
     }
 
     function it_should_construct_a_bmp_string()
