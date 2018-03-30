@@ -27,6 +27,7 @@ use FreeDSx\Asn1\Type\NumericStringType;
 use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\OidType;
 use FreeDSx\Asn1\Type\PrintableStringType;
+use FreeDSx\Asn1\Type\RealType;
 use FreeDSx\Asn1\Type\RelativeOidType;
 use FreeDSx\Asn1\Type\SequenceOfType;
 use FreeDSx\Asn1\Type\SequenceType;
@@ -199,6 +200,11 @@ class Asn1Spec extends ObjectBehavior
     function it_should_construct_a_visible_string()
     {
         $this->visibleString('foo')->shouldBeLike(new VisibleStringType('foo'));
+    }
+
+    function it_should_construct_a_real_type()
+    {
+        $this::real(0)->shouldBeLike(new RealType(0));
     }
 
     function it_should_tag_a_type_as_context_specific()

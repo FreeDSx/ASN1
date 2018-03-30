@@ -27,6 +27,7 @@ use FreeDSx\Asn1\Type\NumericStringType;
 use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\OidType;
 use FreeDSx\Asn1\Type\PrintableStringType;
+use FreeDSx\Asn1\Type\RealType;
 use FreeDSx\Asn1\Type\RelativeOidType;
 use FreeDSx\Asn1\Type\SequenceOfType;
 use FreeDSx\Asn1\Type\SequenceType;
@@ -89,6 +90,15 @@ class Asn1
     public static function enumerated(int $enum) : EnumeratedType
     {
         return new EnumeratedType($enum);
+    }
+
+    /**
+     * @param float $real
+     * @return RealType
+     */
+    public static function real(float $real) : RealType
+    {
+        return new RealType($real);
     }
 
     /**

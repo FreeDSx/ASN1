@@ -28,6 +28,7 @@ use FreeDSx\Asn1\Type\NumericStringType;
 use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\OidType;
 use FreeDSx\Asn1\Type\PrintableStringType;
+use FreeDSx\Asn1\Type\RealType;
 use FreeDSx\Asn1\Type\RelativeOidType;
 use FreeDSx\Asn1\Type\SequenceType;
 use FreeDSx\Asn1\Type\SetType;
@@ -57,7 +58,7 @@ class TypeFactory
         AbstractType::TAG_TYPE_OID => OidType::class,
         AbstractType::TAG_TYPE_RELATIVE_OID => RelativeOidType::class,
         // @todo AbstractType::TAG_TYPE_EXTERNAL
-        // @todo AbstractType::TAG_TYPE_REAL
+        AbstractType::TAG_TYPE_REAL => RealType::class,
         AbstractType::TAG_TYPE_ENUMERATED => EnumeratedType::class,
         // @todo AbstractType::TAG_TYPE_EMBEDDED_PDV
         AbstractType::TAG_TYPE_UTF8_STRING => Utf8StringType::class,

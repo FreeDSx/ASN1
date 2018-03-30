@@ -28,6 +28,7 @@ use FreeDSx\Asn1\Type\NumericStringType;
 use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\OidType;
 use FreeDSx\Asn1\Type\PrintableStringType;
+use FreeDSx\Asn1\Type\RealType;
 use FreeDSx\Asn1\Type\RelativeOidType;
 use FreeDSx\Asn1\Type\SequenceType;
 use FreeDSx\Asn1\Exception\EncoderException;
@@ -142,6 +143,20 @@ class BerEncoderSpec extends ObjectBehavior
         $this->encode(new IntegerType(-128))->shouldBeEqualTo(hex2bin('020180'));
         $this->encode(new IntegerType(-129))->shouldBeEqualTo(hex2bin('0202FF7F'));
         $this->encode(new IntegerType(-1))->shouldBeEqualTo(hex2bin('0202FFFF'));
+    }
+
+    function it_should_encode_a_real_type_special_cases()
+    {
+        $this->encode(new RealType(INF))->shouldBeEqualTo(hex2bin('090140'));
+        $this->encode(new RealType(-INF))->shouldBeEqualTo(hex2bin('090141'));
+        $this->encode(new RealType(0))->shouldBeEqualTo(hex2bin('0900'));
+    }
+
+    function it_should_decode_a_real_type_special_cases()
+    {
+        $this->decode(hex2bin('090140'))->shouldBeLike(new RealType(INF));
+        $this->decode(hex2bin('090141'))->shouldBeLike(new RealType(-INF));
+        $this->decode(hex2bin('0900'))->shouldBeLike(new RealType(0));
     }
 
     function it_should_decode_an_octet_string_type()

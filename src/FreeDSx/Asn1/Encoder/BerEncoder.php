@@ -25,6 +25,7 @@ use FreeDSx\Asn1\Type\IncompleteType;
 use FreeDSx\Asn1\Type\IntegerType;
 use FreeDSx\Asn1\Type\NullType;
 use FreeDSx\Asn1\Type\OidType;
+use FreeDSx\Asn1\Type\RealType;
 use FreeDSx\Asn1\Type\RelativeOidType;
 use FreeDSx\Asn1\Type\UtcTimeType;
 
@@ -179,6 +180,9 @@ class BerEncoder implements EncoderInterface
             case AbstractType::TAG_TYPE_ENUMERATED:
                 $value = $this->decodeInteger($bytes);
                 break;
+            case AbstractType::TAG_TYPE_REAL:
+                $value = $this->decodeReal($bytes);
+                break;
             case AbstractType::TAG_TYPE_BIT_STRING:
                 $value = $this->decodeBitString($bytes);
                 break;
@@ -238,6 +242,9 @@ class BerEncoder implements EncoderInterface
             case $type instanceof IntegerType:
             case $type instanceof EnumeratedType:
                 $bytes = $this->encodeInteger($type);
+                break;
+            case $type instanceof RealType:
+                $bytes = $this->encodeReal($type);
                 break;
             case $type instanceof AbstractStringType:
                 $bytes = $type->getValue();
@@ -784,6 +791,32 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
+     * @param RealType $type
+     * @return string
+     * @throws EncoderException
+     */
+    protected function encodeReal(RealType $type)
+    {
+        $real = $type->getValue();
+
+        # If the value is zero, the contents are omitted
+        if ($real === ((float) 0)) {
+            return '';
+        }
+        # If this is infinity, then a single octet of 0x40 is used.
+        if ($real === INF) {
+            return "\x40";
+        }
+        # If this is negative infinity, then a single octet of 0x41 is used.
+        if ($real === -INF) {
+            return "\x41";
+        }
+
+        // @todo Real type encoding/decoding is rather complex. Need to implement this yet.
+        throw new EncoderException('Real type encoding of this value not yet implemented.');
+    }
+
+    /**
      * @param $bytes
      * @return array
      * @throws EncoderException
@@ -955,6 +988,29 @@ class BerEncoder implements EncoderInterface
         }
 
         return $int;
+    }
+
+    /**
+     * @param string $bytes
+     * @return float
+     * @throws EncoderException
+     */
+    protected function decodeReal($bytes) : float
+    {
+        if (strlen($bytes) === 0) {
+            return 0;
+        }
+
+        $ident = ord($bytes[0]);
+        if ($ident === 0x40) {
+            return INF;
+        }
+        if ($ident === 0x41) {
+            return -INF;
+        }
+
+        // @todo Real type encoding/decoding is rather complex. Need to implement this yet.
+        throw new EncoderException('The real type encoding encountered is not yet implemented.');
     }
 
     /**
