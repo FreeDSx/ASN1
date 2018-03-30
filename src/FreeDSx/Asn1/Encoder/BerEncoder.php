@@ -858,14 +858,12 @@ class BerEncoder implements EncoderInterface
      */
     protected function decodeOid($bytes) : string
     {
-        $oid = [];
-
         # The first 2 digits are contained within the first byte
         $byte = ord($bytes[0]);
-        $oid[] = (int) ($byte / 40);
-        $oid[] =  $byte - (40 * $oid[0]);
+        $first = (int) ($byte / 40);
+        $second =  $byte - (40 * $first);
 
-        $oid = implode('.', $oid);
+        $oid = $first.'.'.$second;
         $bytes = substr($bytes, 1);
         if (strlen($bytes)) {
             $oid .= '.'.$this->decodeRelativeOid($bytes);
@@ -881,15 +879,15 @@ class BerEncoder implements EncoderInterface
      */
     protected function decodeRelativeOid($bytes) : string
     {
-        $oid = [];
+        $oid = '';
 
         while (strlen($bytes)) {
             $vlqBytes = $this->getVlqBytes($bytes);
-            $oid[] = $this->getVlqInt($vlqBytes);
+            $oid .= ($oid === '' ? '' : '.').$this->getVlqInt($vlqBytes);
             $bytes = substr($bytes, strlen($vlqBytes));
         }
 
-        return implode('.', $oid);
+        return $oid;
     }
 
     /**
