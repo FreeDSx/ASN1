@@ -568,7 +568,7 @@ class BerEncoderSpec extends ObjectBehavior
 
     function it_should_throw_an_error_if_indefinite_length_encoding_is_used()
     {
-        $this->shouldThrow(new EncoderException('Indefinite length encoding is not supported.'))->duringDecode(hex2bin('0180010000'));
+        $this->shouldThrow(new EncoderException('Indefinite length encoding is not currently supported.'))->duringDecode(hex2bin('0180010000'));
     }
 
     function it_should_save_trailing_data()

@@ -371,33 +371,46 @@ class BerEncoder implements EncoderInterface
     {
         $info = ['value_length' => isset($bytes[0]) ? ord($bytes[0]) : 0, 'length_length' => 1];
 
-        # Restricted per the LDAP RFC 4511 section 5.1
         if ($info['value_length'] === 128) {
-            throw new EncoderException('Indefinite length encoding is not supported.');
+            throw new EncoderException('Indefinite length encoding is not currently supported.');
         }
 
         # Long definite length has a special encoding.
         if ($info['value_length'] > 127) {
-            # The length of the length bytes is in the first 7 bits. So remove the MSB to get the value.
-            $info['length_length'] = $info['value_length'] & ~0x80;
-
-            # The value of 127 is marked as reserved in the spec
-            if ($info['length_length'] === 127) {
-                throw new EncoderException('The decoded length cannot be equal to 127 bytes.');
-            }
-            if ($info['length_length'] + 1 > strlen($bytes)) {
-                throw new PartialPduException('Not enough data to decode the length.');
-            }
-
-            # Base 256 encoded
-            $info['value_length'] = 0;
-            for ($i = 1; $i < $info['length_length'] + 1; $i++) {
-                $info['value_length'] = $info['value_length'] * 256 + ord($bytes[$i]);
-            }
-
-            # Add the byte that represents the length of the length
-            $info['length_length']++;
+            $info = $this->decodeLongDefiniteLength($bytes, $info);
         }
+
+        return $info;
+    }
+
+    /**
+     * @param string $bytes
+     * @param array $info
+     * @return array
+     * @throws EncoderException
+     * @throws PartialPduException
+     */
+    protected function decodeLongDefiniteLength($bytes, array $info) : array
+    {
+        # The length of the length bytes is in the first 7 bits. So remove the MSB to get the value.
+        $info['length_length'] = $info['value_length'] & ~0x80;
+
+        # The value of 127 is marked as reserved in the spec
+        if ($info['length_length'] === 127) {
+            throw new EncoderException('The decoded length cannot be equal to 127 bytes.');
+        }
+        if ($info['length_length'] + 1 > strlen($bytes)) {
+            throw new PartialPduException('Not enough data to decode the length.');
+        }
+
+        # Base 256 encoded
+        $info['value_length'] = 0;
+        for ($i = 1; $i < $info['length_length'] + 1; $i++) {
+            $info['value_length'] = $info['value_length'] * 256 + ord($bytes[$i]);
+        }
+
+        # Add the byte that represents the length of the length
+        $info['length_length']++;
 
         return $info;
     }
@@ -875,6 +888,7 @@ class BerEncoder implements EncoderInterface
             $tzFormat = $matches[$matchMap['timezone']] === 'Z' ? AbstractTimeType::TZ_UTC : AbstractTimeType::TZ_DIFF;
             $format .= 'T';
         }
+        $this->validateDateFormat($matches, $matchMap);
 
         $dateTime = \DateTime::createFromFormat($format, $bytes);
         if ($dateTime === false) {
@@ -882,6 +896,16 @@ class BerEncoder implements EncoderInterface
         }
 
         return [$dateTime, $dtFormat, $tzFormat];
+    }
+
+    /**
+     * Some encodings have specific restrictions. Allow them to override and validate this.
+     *
+     * @param array $matches
+     * @param array $matchMap
+     */
+    protected function validateDateFormat(array $matches, array $matchMap)
+    {
     }
 
     /**
