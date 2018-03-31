@@ -36,4 +36,9 @@ class PrintableStringTypeSpec extends ObjectBehavior
     {
         $this->getTagNumber()->shouldBeEqualTo(AbstractType::TAG_TYPE_PRINTABLE_STRING);
     }
+
+    function it_should_be_character_restricted()
+    {
+        $this->isCharacterRestricted()->shouldBeEqualTo(true);
+    }
 }

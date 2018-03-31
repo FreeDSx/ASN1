@@ -18,4 +18,6 @@ namespace FreeDSx\Asn1\Type;
 class TeletexStringType extends AbstractStringType
 {
     protected $tagNumber = self::TAG_TYPE_TELETEX_STRING;
+
+    protected $isCharRestricted = true;
 }

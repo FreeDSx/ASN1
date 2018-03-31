@@ -18,4 +18,6 @@ namespace FreeDSx\Asn1\Type;
 class PrintableStringType extends AbstractStringType
 {
     protected $tagNumber = self::TAG_TYPE_PRINTABLE_STRING;
+
+    protected $isCharRestricted = true;
 }

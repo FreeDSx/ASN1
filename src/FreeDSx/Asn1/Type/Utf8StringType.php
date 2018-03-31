@@ -18,4 +18,6 @@ namespace FreeDSx\Asn1\Type;
 class Utf8StringType extends AbstractStringType
 {
     protected $tagNumber = self::TAG_TYPE_UTF8_STRING;
+
+    protected $isCharRestricted = true;
 }

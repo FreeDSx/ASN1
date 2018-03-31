@@ -18,4 +18,6 @@ namespace FreeDSx\Asn1\Type;
 class GraphicStringType extends AbstractStringType
 {
     protected $tagNumber = self::TAG_TYPE_GRAPHIC_STRING;
+
+    protected $isCharRestricted = true;
 }

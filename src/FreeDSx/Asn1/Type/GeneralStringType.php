@@ -18,4 +18,6 @@ namespace FreeDSx\Asn1\Type;
 class GeneralStringType extends AbstractStringType
 {
     protected $tagNumber = self::TAG_TYPE_GENERAL_STRING;
+
+    protected $isCharRestricted = true;
 }

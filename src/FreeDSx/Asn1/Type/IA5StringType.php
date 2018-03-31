@@ -18,4 +18,6 @@ namespace FreeDSx\Asn1\Type;
 class IA5StringType extends AbstractStringType
 {
     protected $tagNumber = self::TAG_TYPE_IA5_STRING;
+
+    protected $isCharRestricted = true;
 }

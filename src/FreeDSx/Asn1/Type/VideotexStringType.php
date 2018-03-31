@@ -18,4 +18,6 @@ namespace FreeDSx\Asn1\Type;
 class VideotexStringType extends AbstractStringType
 {
     protected $tagNumber = self::TAG_TYPE_VIDEOTEX_STRING;
+
+    protected $isCharRestricted = true;
 }

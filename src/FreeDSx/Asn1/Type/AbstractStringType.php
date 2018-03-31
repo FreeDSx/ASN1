@@ -18,6 +18,11 @@ namespace FreeDSx\Asn1\Type;
 abstract class AbstractStringType extends AbstractType
 {
     /**
+     * @var bool
+     */
+    protected $isCharRestricted = false;
+
+    /**
      * @return string
      */
     public function getValue()
@@ -42,5 +47,13 @@ abstract class AbstractStringType extends AbstractType
     public function __toString()
     {
         return (string) $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isCharacterRestricted()
+    {
+        return $this->isCharRestricted;
     }
 }

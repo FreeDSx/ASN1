@@ -36,4 +36,8 @@ class VisibleStringTypeSpec extends ObjectBehavior
         $this->getTagNumber()->shouldBeEqualTo(AbstractType::TAG_TYPE_VISIBLE_STRING);
     }
 
+    function it_should_be_character_restricted()
+    {
+        $this->isCharacterRestricted()->shouldBeEqualTo(true);
+    }
 }

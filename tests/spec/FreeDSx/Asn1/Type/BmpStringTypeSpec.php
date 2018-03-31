@@ -36,4 +36,9 @@ class BmpStringTypeSpec extends ObjectBehavior
     {
         $this->getTagNumber()->shouldBeEqualTo(AbstractType::TAG_TYPE_BMP_STRING);
     }
+
+    function it_should_be_character_restricted()
+    {
+        $this->isCharacterRestricted()->shouldBeEqualTo(true);
+    }
 }

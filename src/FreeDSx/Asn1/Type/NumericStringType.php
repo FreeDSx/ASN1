@@ -18,4 +18,6 @@ namespace FreeDSx\Asn1\Type;
 class NumericStringType extends AbstractStringType
 {
     protected $tagNumber = self::TAG_TYPE_NUMERIC_STRING;
+
+    protected $isCharRestricted = true;
 }

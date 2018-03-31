@@ -18,4 +18,6 @@ namespace FreeDSx\Asn1\Type;
 class VisibleStringType extends AbstractStringType
 {
     protected $tagNumber = self::TAG_TYPE_VISIBLE_STRING;
+
+    protected $isCharRestricted = true;
 }

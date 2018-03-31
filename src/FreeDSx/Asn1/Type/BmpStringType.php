@@ -18,4 +18,6 @@ namespace FreeDSx\Asn1\Type;
 class BmpStringType extends AbstractStringType
 {
     protected $tagNumber = self::TAG_TYPE_BMP_STRING;
+
+    protected $isCharRestricted = true;
 }
