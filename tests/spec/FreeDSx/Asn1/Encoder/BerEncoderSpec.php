@@ -111,6 +111,11 @@ class BerEncoderSpec extends ObjectBehavior
 
     function it_should_decode_a_positive_integer_type()
     {
+        $this->decode(hex2bin('02087FFFFFFFFFFFFFFF'))->shouldBeLike(new IntegerType(9223372036854775807));
+        $this->decode(hex2bin('02050100000000'))->shouldBeLike(new IntegerType(4294967296));
+        $this->decode(hex2bin('020500FFFFFFFF'))->shouldBeLike(new IntegerType(4294967295));
+        $this->decode(hex2bin('02050080000000'))->shouldBeLike(new IntegerType(2147483648));
+        $this->decode(hex2bin('02047FFFFFFF'))->shouldBeLike(new IntegerType(2147483647));
         $this->decode(hex2bin('020269BA'))->shouldBeLike(new IntegerType(27066));
         $this->decode(hex2bin('02020100'))->shouldBeLike(new IntegerType(256));
         $this->decode(hex2bin('020200FF'))->shouldBeLike(new IntegerType(255));
@@ -120,6 +125,11 @@ class BerEncoderSpec extends ObjectBehavior
 
     function it_should_encode_a_positive_integer_type()
     {
+        $this->encode(new IntegerType(9223372036854775807))->shouldBeEqualTo(hex2bin('02087FFFFFFFFFFFFFFF'));
+        $this->encode(new IntegerType(4294967296))->shouldBeEqualTo(hex2bin('02050100000000'));
+        $this->encode(new IntegerType(4294967295))->shouldBeEqualTo(hex2bin('020500FFFFFFFF'));
+        $this->encode(new IntegerType(2147483648))->shouldBeEqualTo(hex2bin('02050080000000'));
+        $this->encode(new IntegerType(2147483647))->shouldBeEqualTo(hex2bin('02047FFFFFFF'));
         $this->encode(new IntegerType(27066))->shouldBeEqualTo(hex2bin('020269BA'));
         $this->encode(new IntegerType(256))->shouldBeEqualTo(hex2bin('02020100'));
         $this->encode(new IntegerType(255))->shouldBeEqualTo(hex2bin('020200FF'));
@@ -129,20 +139,31 @@ class BerEncoderSpec extends ObjectBehavior
 
     function it_should_decode_a_negative_integer_type()
     {
+        $this->decode(hex2bin('02088000000000000001'))->shouldBeLike(new IntegerType(-9223372036854775807));
+        $this->decode(hex2bin('0205FF00000000'))->shouldBeLike(new IntegerType(-4294967296));
+        $this->decode(hex2bin('0205FF00000001'))->shouldBeLike(new IntegerType(-4294967295));
+        $this->decode(hex2bin('020480000000'))->shouldBeLike(new IntegerType(-2147483648));
+        $this->decode(hex2bin('020480000001'))->shouldBeLike(new IntegerType(-2147483647));
+        $this->decode(hex2bin('02028000'))->shouldBeLike(new IntegerType(-32768));
         $this->decode(hex2bin('02029646'))->shouldBeLike(new IntegerType(-27066));
-        $this->decode(hex2bin('0202FF81'))->shouldBeLike(new IntegerType(-127));
+        $this->decode(hex2bin('020181'))->shouldBeLike(new IntegerType(-127));
         $this->decode(hex2bin('020180'))->shouldBeLike(new IntegerType(-128));
         $this->decode(hex2bin('0202FF7F'))->shouldBeLike(new IntegerType(-129));
-        $this->decode(hex2bin('0202FFFF'))->shouldBeLike(new IntegerType(-1));
+        $this->decode(hex2bin('0201FF'))->shouldBeLike(new IntegerType(-1));
     }
 
     function it_should_encode_a_negative_integer_type()
     {
+        $this->encode(new IntegerType(-9223372036854775807))->shouldBeEqualTo(hex2bin('02088000000000000001'));
+        $this->encode(new IntegerType(-4294967296))->shouldBeEqualTo(hex2bin('0205FF00000000'));
+        $this->encode(new IntegerType(-4294967295))->shouldBeEqualTo(hex2bin('0205FF00000001'));
+        $this->encode(new IntegerType(-2147483648))->shouldBeEqualTo(hex2bin('020480000000'));
+        $this->encode(new IntegerType(-2147483647))->shouldBeEqualTo(hex2bin('020480000001'));
         $this->encode(new IntegerType(-27066))->shouldBeEqualTo(hex2bin('02029646'));
-        $this->encode(new IntegerType(-127))->shouldBeEqualTo(hex2bin('0202FF81'));
+        $this->encode(new IntegerType(-127))->shouldBeEqualTo(hex2bin('020181'));
         $this->encode(new IntegerType(-128))->shouldBeEqualTo(hex2bin('020180'));
         $this->encode(new IntegerType(-129))->shouldBeEqualTo(hex2bin('0202FF7F'));
-        $this->encode(new IntegerType(-1))->shouldBeEqualTo(hex2bin('0202FFFF'));
+        $this->encode(new IntegerType(-1))->shouldBeEqualTo(hex2bin('0201FF'));
     }
 
     function it_should_encode_a_real_type_special_cases()

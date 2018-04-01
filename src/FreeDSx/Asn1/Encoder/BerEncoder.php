@@ -586,26 +586,6 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param $num
-     * @return string
-     */
-    protected function packNumber($num)
-    {
-        # 8bit
-        if ($num <= 255) {
-            $size = 'C';
-        # 16bit
-        } elseif ($num <= 32767) {
-            $size = 'n';
-        # 32bit
-        } else {
-            $size = 'N';
-        }
-
-        return pack($size, $num);
-    }
-
-    /**
      * @param BooleanType $type
      * @return string
      */
@@ -763,8 +743,6 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * Kinda ugly, but the LDAP max int is 32bit.
-     *
      * @param AbstractType $type
      * @return string
      */
@@ -773,16 +751,13 @@ class BerEncoder implements EncoderInterface
         $int = abs($type->getValue());
         $isNegative = ($type->getValue() < 0);
 
-        # @todo Shouldn't have to do this...the logic is wrong somewhere below.
-        if ($isNegative && $int === 128) {
-            return chr(0x80);
-        }
-
         # Subtract one for Two's Complement...
         if ($isNegative) {
             $int = $int - 1;
         }
-        $bytes = $this->packNumber($int);
+        # dechex can produce uneven hex while binhex requires it to be even
+        $hex = dechex($int);
+        $bytes = hex2bin((strlen($hex) % 2) === 0 ? $hex : '0'.$hex);
 
         # Two's Complement, invert the bits...
         if ($isNegative) {
@@ -796,7 +771,7 @@ class BerEncoder implements EncoderInterface
         $msbSet = (bool) (ord($bytes[0]) & 0x80);
         if (!$isNegative && $msbSet) {
             $bytes = "\x00".$bytes;
-        } elseif (($isNegative && !$msbSet) || ($isNegative && ($int <= 127))) {
+        } elseif ($isNegative && !$msbSet) {
             $bytes = "\xFF".$bytes;
         }
 
@@ -989,22 +964,13 @@ class BerEncoder implements EncoderInterface
         $isNegative = (ord($bytes[0]) & 0x80);
         $len = strlen($bytes);
 
-        # Cheat a bit...max int in LDAP is 32-bit
-        if ($len <= 1) {
-            $size = 'C';
-        } elseif ($len <= 2) {
-            $size = 'n';
-        } else {
-            $size = 'N';
-        }
-
         # Need to reverse Two's Complement. Invert the bits...
         if ($isNegative) {
             for ($i = 0; $i < $len; $i++) {
                 $bytes[$i] = ~$bytes[$i];
             }
         }
-        $int = unpack($size."1int", $bytes)['int'];
+        $int = hexdec(bin2hex($bytes));
 
         # Complete Two's Complement by adding 1 and turning it negative...
         if ($isNegative) {
