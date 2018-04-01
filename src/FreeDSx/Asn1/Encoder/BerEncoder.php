@@ -591,7 +591,7 @@ class BerEncoder implements EncoderInterface
      */
     protected function encodeBoolean(BooleanType $type)
     {
-        return chr($type->getValue() ? 0xFF : 0x00);
+        return $type->getValue() ? "\xFF" : "\x00";
     }
 
     /**
