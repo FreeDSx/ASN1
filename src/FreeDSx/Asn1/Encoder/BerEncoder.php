@@ -595,7 +595,6 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @todo
      * @param BitStringType $type
      * @return string
      */
