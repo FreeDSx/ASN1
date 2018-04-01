@@ -755,7 +755,7 @@ class BerEncoder implements EncoderInterface
         if ($isNegative) {
             $int = $int - 1;
         }
-        # dechex can produce uneven hex while binhex requires it to be even
+        # dechex can produce uneven hex while hex2bin requires it to be even
         $hex = dechex($int);
         $bytes = hex2bin((strlen($hex) % 2) === 0 ? $hex : '0'.$hex);
 
