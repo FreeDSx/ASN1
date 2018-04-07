@@ -251,11 +251,11 @@ class BerEncoder implements EncoderInterface
             case $type instanceof AbstractStringType:
                 $bytes = $type->getValue();
                 break;
-            case $type instanceof SetType:
-                $bytes = $this->encodeSet($type);
-                break;
             case $type instanceof SetOfType:
                 $bytes = $this->encodeSetOf($type);
+                break;
+            case $type instanceof SetType:
+                $bytes = $this->encodeSet($type);
                 break;
             case $type->getIsConstructed():
                 $bytes = $this->encodeConstructedType(...$type->getChildren());
