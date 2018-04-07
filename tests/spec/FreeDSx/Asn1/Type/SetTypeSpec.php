@@ -10,6 +10,7 @@
 
 namespace spec\FreeDSx\Asn1\Type;
 
+use FreeDSx\Asn1\Asn1;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\IntegerType;
 use FreeDSx\Asn1\Type\OctetStringType;
@@ -94,5 +95,36 @@ class SetTypeSpec extends ObjectBehavior
     function it_should_get_a_count()
     {
         $this->count()->shouldBeEqualTo(2);
+    }
+
+    function it_should_be_able_to_determine_if_it_is_in_canonical_order()
+    {
+        $this->isCanonical()->shouldBeEqualTo(true);
+
+        $this->setChildren(
+            Asn1::private(2, Asn1::utf8String('foo')),
+            Asn1::private(1, Asn1::utf8String('bar')),
+            Asn1::utf8String('foo'),
+            Asn1::octetString('bar'),
+            Asn1::context(1, Asn1::utf8String('foo')),
+            Asn1::context(3, Asn1::utf8String('foo')),
+            Asn1::application(20, Asn1::null()),
+            Asn1::application(18, Asn1::null())
+        );
+
+        $this->isCanonical()->shouldBeEqualTo(false);
+
+        $this->setChildren(
+            Asn1::octetString('bar'),
+            Asn1::utf8String('foo'),
+            Asn1::application(18, Asn1::null()),
+            Asn1::application(20, Asn1::null()),
+            Asn1::context(1, Asn1::utf8String('foo')),
+            Asn1::context(3, Asn1::utf8String('foo')),
+            Asn1::private(1, Asn1::utf8String('bar')),
+            Asn1::private(2, Asn1::utf8String('foo'))
+        );
+
+        $this->isCanonical()->shouldBeEqualTo(true);
     }
 }

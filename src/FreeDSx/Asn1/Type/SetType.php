@@ -17,6 +17,8 @@ namespace FreeDSx\Asn1\Type;
  */
 class SetType extends AbstractType
 {
+    use SetTrait;
+
     protected $tagNumber = self::TAG_TYPE_SET;
 
     /**
@@ -27,5 +29,15 @@ class SetType extends AbstractType
         parent::__construct(null);
         $this->setIsConstructed(true);
         $this->setChildren(...$types);
+    }
+
+    /**
+     * X.680, 8.6
+     *
+     * Used to determine if the set is in canonical order, which is required by some encodings for a SET.
+     */
+    public function isCanonical() : bool
+    {
+        return $this->children === $this->canonicalize(...$this->children);
     }
 }
