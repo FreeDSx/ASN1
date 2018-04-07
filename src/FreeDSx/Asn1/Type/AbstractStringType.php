@@ -22,6 +22,11 @@ abstract class AbstractStringType extends AbstractType
      */
     protected $isCharRestricted = false;
 
+    public function __construct($value = '')
+    {
+        parent::__construct($value);
+    }
+
     /**
      * @return string
      */
