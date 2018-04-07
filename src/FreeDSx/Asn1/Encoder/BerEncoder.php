@@ -27,6 +27,8 @@ use FreeDSx\Asn1\Type\NullType;
 use FreeDSx\Asn1\Type\OidType;
 use FreeDSx\Asn1\Type\RealType;
 use FreeDSx\Asn1\Type\RelativeOidType;
+use FreeDSx\Asn1\Type\SetOfType;
+use FreeDSx\Asn1\Type\SetType;
 use FreeDSx\Asn1\Type\UtcTimeType;
 
 /**
@@ -249,8 +251,14 @@ class BerEncoder implements EncoderInterface
             case $type instanceof AbstractStringType:
                 $bytes = $type->getValue();
                 break;
+            case $type instanceof SetType:
+                $bytes = $this->encodeSet($type);
+                break;
+            case $type instanceof SetOfType:
+                $bytes = $this->encodeSetOf($type);
+                break;
             case $type->getIsConstructed():
-                $bytes = $this->encodeConstructedType($type);
+                $bytes = $this->encodeConstructedType(...$type->getChildren());
                 break;
             case $type instanceof BitStringType:
                 $bytes = $this->encodeBitString($type);
@@ -1003,15 +1011,37 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param AbstractType $type
+     * Encoding subsets may require specific ordering on set types. Allow this to be overridden.
+     *
+     * @param SetType $set
      * @return string
      */
-    protected function encodeConstructedType(AbstractType $type) : string
+    protected function encodeSet(SetType $set)
+    {
+        return $this->encodeConstructedType(...$set->getChildren());
+    }
+
+    /**
+     * Encoding subsets may require specific ordering on set of types. Allow this to be overridden.
+     *
+     * @param SetOfType $set
+     * @return string
+     */
+    protected function encodeSetOf(SetOfType $set)
+    {
+        return $this->encodeConstructedType(...$set->getChildren());
+    }
+
+    /**
+     * @param AbstractType[] $types
+     * @return string
+     */
+    protected function encodeConstructedType(AbstractType ...$types)
     {
         $bytes = '';
 
-        foreach ($type->getChildren() as $child) {
-            $bytes .= $this->encode($child);
+        foreach ($types as $type) {
+            $bytes .= $this->encode($type);
         }
 
         return $bytes;
