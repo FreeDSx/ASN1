@@ -144,12 +144,14 @@ class Asn1Spec extends ObjectBehavior
     {
         $date = new \DateTime();
         $this->generalizedTime($date)->shouldBeLike(new GeneralizedTimeType($date));
+        $this->generalizedTime()->shouldReturnAnInstanceOf(GeneralizedTimeType::class);
     }
 
     function it_should_construct_a_utc_time_string()
     {
         $date = new \DateTime();
         $this->utcTime($date)->shouldBeLike(new UtcTimeType($date));
+        $this->utcTime()->shouldReturnAnInstanceOf(UtcTimeType::class);
     }
 
     function it_should_construct_a_general_string()

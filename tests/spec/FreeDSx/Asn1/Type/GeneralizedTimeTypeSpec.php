@@ -28,6 +28,12 @@ class GeneralizedTimeTypeSpec extends ObjectBehavior
         $this->shouldHaveType(GeneralizedTimeType::class);
     }
 
+    function it_should_be_constructed_with_a_datetime_of_the_current_time_if_none_is_given()
+    {
+        $this->beConstructedWith();
+        $this->getValue()->shouldBeAnInstanceOf(\DateTime::class);
+    }
+
     function it_should_extend_abstract_time()
     {
         $this->shouldBeAnInstanceOf(AbstractTimeType::class);

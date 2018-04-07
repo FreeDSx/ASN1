@@ -58,7 +58,7 @@ class UtcTimeType extends AbstractTimeType
     /**
      * {@inheritdoc}
      */
-    public function __construct(\DateTime $dateTime, string $dateFormat = self::FORMAT_SECONDS, string $tzFormat = self::TZ_UTC)
+    public function __construct(?\DateTime $dateTime = null, string $dateFormat = self::FORMAT_SECONDS, string $tzFormat = self::TZ_UTC)
     {
         parent::__construct($dateTime, $dateFormat, $tzFormat);
     }

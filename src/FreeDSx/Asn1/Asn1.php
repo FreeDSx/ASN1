@@ -187,7 +187,7 @@ class Asn1
      * @param string $tzFormat
      * @return GeneralizedTimeType
      */
-    public static function generalizedTime(\DateTime $dateTime, string $dateFormat = AbstractTimeType::FORMAT_FRACTIONS, string $tzFormat = AbstractTimeType::TZ_UTC) : GeneralizedTimeType
+    public static function generalizedTime(?\DateTime $dateTime = null, string $dateFormat = AbstractTimeType::FORMAT_FRACTIONS, string $tzFormat = AbstractTimeType::TZ_UTC) : GeneralizedTimeType
     {
         return new GeneralizedTimeType($dateTime, $dateFormat, $tzFormat);
     }
@@ -198,7 +198,7 @@ class Asn1
      * @param string $tzFormat
      * @return UtcTimeType
      */
-    public static function utcTime(\DateTime $dateTime, string $dateFormat = AbstractTimeType::FORMAT_SECONDS, string $tzFormat = AbstractTimeType::TZ_UTC) : UtcTimeType
+    public static function utcTime(?\DateTime $dateTime = null, string $dateFormat = AbstractTimeType::FORMAT_SECONDS, string $tzFormat = AbstractTimeType::TZ_UTC) : UtcTimeType
     {
         return new UtcTimeType($dateTime, $dateFormat, $tzFormat);
     }
