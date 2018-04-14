@@ -19,15 +19,21 @@ To encode an ASN.1 structure you can use the helper methods of the Asn1 class an
 use FreeDSx\Asn1\Asn1;
 use FreeDSx\Asn1\Encoders;
 
+# Create the ASN.1 structure you need...
+$asn1 = Asn1::sequence(
+    Asn1::integer(9999),
+    Asn1::octetString('foo'),
+    Asn1::boolean(true)
+);
+
 # Encoded $bytes will now contain the BER binary representation of a sequence containing:
 #  - An integer type of value 9999
 #  - An octet string type of value 'foo'
 #  - A boolean type of true
-$bytes = Encoders::ber()->encode(Asn1::sequence(
-    Asn1::integer(9999),
-    Asn1::octetString('foo'),
-    Asn1::boolean(true)
-));
+$bytes = Encoders::ber()->encode($asn1);
+
+# Encode using the more strict DER encoder
+$bytes = Encoders::der()->encode($asn1);
 ```
 
 ## Decoding
@@ -45,6 +51,9 @@ use FreeDSx\Asn1\Type\BooleanType;
 # Assuming bytes contains the binary BER encoded sequence described in the encoding section
 # Get a BER encoder instance, call decode on it, and $pdu will now be a sequence object.
 $pdu = Encoders::ber()->decode($bytes);
+
+# You could also decode using DER, if that's what you're expecting...
+$pdu = Encoders::der()->decode($bytes);
 
 # Validate the structure you are expecting...
 if (!($pdu instanceof SequenceType && count($pdu) === 3)) {
