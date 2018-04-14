@@ -42,7 +42,7 @@ class BitStringType extends AbstractType
      */
     public function toInteger() : int
     {
-        return bindec($this->value);
+        return hexdec(bin2hex(rtrim($this->toBinary(), "\x00")));
     }
 
     /**
@@ -54,10 +54,8 @@ class BitStringType extends AbstractType
     {
         $bytes = '';
 
-        $length = strlen($this->value);
-        $data = self::pad($this->value);
-        for ($i = 0; $i < $length / 8; $i++) {
-            $bytes .= chr(bindec(substr($data, $i * 8, 8)));
+        foreach (str_split($this->value, 8) as $piece) {
+            $bytes .= chr(bindec($piece));
         }
 
         return $bytes;
@@ -67,15 +65,19 @@ class BitStringType extends AbstractType
      * Construct the bit string from a binary string value.
      *
      * @param $bytes
+     * @param int|null $minLength
      * @return BitStringType
      */
-    public static function fromBinary($bytes)
+    public static function fromBinary($bytes, ?int $minLength = null)
     {
         $bitstring = '';
 
         $length = strlen($bytes);
         for ($i = 0; $i < $length; $i++) {
             $bitstring .= sprintf('%08d', decbin(ord($bytes[$i])));
+        }
+        if ($minLength && strlen($bitstring) < $minLength) {
+            $bitstring = str_pad($bitstring, $minLength, '0');
         }
 
         return new self($bitstring);
@@ -85,26 +87,25 @@ class BitStringType extends AbstractType
      * Construct the bit string from an integer.
      *
      * @param int $int
+     * @param int|null $minLength
      * @return BitStringType
      */
-    public static function fromInteger(int $int)
+    public static function fromInteger(int $int, ?int $minLength = null)
     {
-        return new self(self::pad(decbin($int)));
-    }
+        $pieces = str_split(decbin($int), 8);
+        $num = count($pieces);
 
-    /**
-     * Ensures the bit string is always padded as a multiple of 8.
-     *
-     * @param string $bitstring
-     * @return string
-     */
-    protected static function pad(string $bitstring)
-    {
-        $length = strlen($bitstring);
-        if (($length % 8) !== 0) {
-            $bitstring = str_pad($bitstring, $length + (8 - ($length % 8)), '0', STR_PAD_LEFT);
+        if ($num === 1 && strlen($pieces[0]) !== 8) {
+            $pieces[0] = str_pad($pieces[0], 8, '0', STR_PAD_LEFT);
+        } elseif ($num > 0 && strlen($pieces[$num - 1]) !== 8) {
+            $pieces[$num - 1] = str_pad($pieces[$num - 1], 8, '0', STR_PAD_RIGHT);
         }
 
-        return $bitstring;
+        $bitstring = implode('', $pieces);
+        if ($minLength && strlen($bitstring) < $minLength) {
+            $bitstring = str_pad($bitstring, $minLength, '0');
+        }
+
+        return new self($bitstring);
     }
 }

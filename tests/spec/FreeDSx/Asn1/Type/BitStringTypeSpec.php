@@ -33,6 +33,13 @@ class BitStringTypeSpec extends ObjectBehavior
         $this->toInteger()->shouldBeEqualTo(192);
     }
 
+    function it_should_get_the_integer_value_of_a_bit_string_with_trailing_zeroes()
+    {
+        $this->beConstructedWith('11000000000000000000000000000000');
+
+        $this->toInteger()->shouldBeEqualTo(192);
+    }
+
     function it_should_get_the_packed_binary_representation()
     {
         $this->toBinary()->shouldBeEqualTo(hex2bin('6e5dc0'));
@@ -47,13 +54,18 @@ class BitStringTypeSpec extends ObjectBehavior
 
     function it_should_get_the_bit_string_from_an_integer()
     {
-        $this->beConstructedThrough('fromInteger', [64]);
-
-        $this->getValue()->shouldBeEqualTo('01000000');
+        $this::fromInteger(64)->shouldBeLike(new BitStringType('01000000'));
+        $this::fromInteger(64212)->shouldBeLike(new BitStringType('1111101011010100'));
     }
 
     function it_should_have_a_default_tag_type()
     {
         $this->getTagNumber()->shouldBeEqualTo(AbstractType::TAG_TYPE_BIT_STRING);
+    }
+
+    function it_should_adhere_to_a_min_length_on_integer_and_binary_if_specified()
+    {
+        $this::fromInteger(1, 32)->shouldBeLike(new BitStringType('00000001000000000000000000000000'));
+        $this::fromBinary("\x02", 16)->shouldBeLike(new BitStringType('0000001000000000'));
     }
 }

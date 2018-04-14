@@ -223,7 +223,18 @@ class BerEncoderSpec extends ObjectBehavior
         $this->encode(new BitStringType('011011100101110111'))->shouldBeEqualTo(hex2bin('0304066e5dc0'));
         $this->encode(new BitStringType('11111111'))->shouldBeEqualTo(hex2bin('030200ff'));
         $this->encode(new BitStringType('0'))->shouldBeEqualTo(hex2bin('03020700'));
+        $this->encode(new BitStringType('0000'))->shouldBeEqualTo(hex2bin('03020400'));
         $this->encode(new BitStringType(''))->shouldBeEqualTo(hex2bin('030100'));
+    }
+
+    function it_should_encode_a_bit_string_to_a_min_length_if_specified()
+    {
+        $this->encode(BitStringType::fromInteger(1, 32))->shouldBeEqualTo(hex2bin('03050001000000'));
+    }
+
+    function it_should_not_allow_an_invalid_amount_of_unused_bits_in_a_bit_string_when_decoding()
+    {
+        $this->shouldThrow(new EncoderException('The unused bits in a bit string must be between 0 and 7, got: 8'))->during('decode', [hex2bin('03020801')]);
     }
 
     function it_should_decode_a_bit_string()
@@ -231,6 +242,7 @@ class BerEncoderSpec extends ObjectBehavior
         $this->decode(hex2bin('0304066e5dc0'))->shouldBeLike(new BitStringType('011011100101110111'));
         $this->decode(hex2bin('030200ff'))->shouldBeLike(new BitStringType('11111111'));
         $this->decode(hex2bin('03020700'))->shouldBeLike(new BitStringType('0'));
+        $this->decode(hex2bin('03020400'))->shouldBeLike(new BitStringType('0000'));
         $this->decode(hex2bin('030100'))->shouldBeLike(new BitStringType(''));
     }
 

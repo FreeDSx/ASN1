@@ -608,20 +608,12 @@ class BerEncoder implements EncoderInterface
      */
     protected function encodeBitString(BitStringType $type)
     {
-        $length = strlen($type->getValue());
-        if ($length % 8 === 0) {
-            $data = $type->getValue();
-            $unused = 0;
-            for($i = $length -1; $i > 0; $i--) {
-                if ($data[$i] === '0') {
-                    $unused++;
-                } else {
-                    break;
-                }
-            }
-        } else {
+        $data = $type->getValue();
+        $length = strlen($data);
+        $unused = 0;
+        if ($length % 8) {
             $unused = 8 - ($length % 8);
-            $data = str_pad($type->getValue(), $length + $unused, '0');
+            $data = str_pad($data, $length + $unused, $this->options['bitstring_padding']);
         }
 
         $bytes = chr($unused);
@@ -939,8 +931,9 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param $bytes
+     * @param string $bytes
      * @return string
+     * @throws EncoderException
      */
     protected function decodeBitString($bytes) : string
     {
@@ -949,7 +942,33 @@ class BerEncoder implements EncoderInterface
         $bytes = substr($bytes, 1);
         $length = strlen($bytes);
 
+        if ($unused > 7) {
+            throw new EncoderException(sprintf(
+                'The unused bits in a bit string must be between 0 and 7, got: %s',
+                $unused
+            ));
+        }
+        if ($unused > 0 && $length < 1) {
+            throw new EncoderException(sprintf(
+                'If the bit string is empty the unused bits must be set to 0. However, it is set to %s with %s octets.',
+                $unused,
+                $length
+            ));
+        }
+
+        return $this->binaryToBitString($bytes, $length, $unused);
+    }
+
+    /**
+     * @param string $bytes
+     * @param int $length
+     * @param int $unused
+     * @return string
+     */
+    protected function binaryToBitString($bytes, int $length, int $unused) : string
+    {
         $bitstring = '';
+
         for ($i = 0; $i < $length; $i++) {
             $octet = sprintf( "%08d", decbin(ord($bytes[$i])));
             if ($i === ($length - 1) && $unused) {
@@ -1026,6 +1045,7 @@ class BerEncoder implements EncoderInterface
      *
      * @param SetOfType $set
      * @return string
+     * @throws EncoderException
      */
     protected function encodeSetOf(SetOfType $set)
     {
@@ -1035,6 +1055,7 @@ class BerEncoder implements EncoderInterface
     /**
      * @param AbstractType[] $types
      * @return string
+     * @throws EncoderException
      */
     protected function encodeConstructedType(AbstractType ...$types)
     {
