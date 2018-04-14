@@ -5,7 +5,9 @@
   "keywords": [
     "ASN.1",
     "ASN1",
-    "BER"
+    "BER",
+    "DER",
+    "X.690"
   ],
   "license": "MIT",
   "authors": [
