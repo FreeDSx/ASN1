@@ -11,6 +11,7 @@
 namespace FreeDSx\Asn1;
 
 use FreeDSx\Asn1\Encoder\BerEncoder;
+use FreeDSx\Asn1\Encoder\DerEncoder;
 
 /**
  * Simple factory methods for easily getting an encoder instance for encoding / decoding.
@@ -26,5 +27,14 @@ class Encoders
     public static function ber(array $options = []) : BerEncoder
     {
         return new BerEncoder($options);
+    }
+
+    /**
+     * @param array $options
+     * @return DerEncoder
+     */
+    public static function der(array $options = []) : DerEncoder
+    {
+        return new DerEncoder($options);
     }
 }

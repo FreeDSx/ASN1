@@ -11,6 +11,7 @@
 namespace spec\FreeDSx\Asn1;
 
 use FreeDSx\Asn1\Encoder\BerEncoder;
+use FreeDSx\Asn1\Encoder\DerEncoder;
 use FreeDSx\Asn1\Encoders;
 use PhpSpec\ObjectBehavior;
 
@@ -24,5 +25,10 @@ class EncodersSpec extends ObjectBehavior
     function it_should_get_a_ber_encoder()
     {
         $this::ber()->shouldBeAnInstanceOf(BerEncoder::class);
+    }
+
+    function it_should_get_a_der_encoder()
+    {
+        $this::der()->shouldBeAnInstanceOf(DerEncoder::class);
     }
 }
