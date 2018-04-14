@@ -10,6 +10,7 @@
 
 namespace FreeDSx\Asn1\Encoder;
 
+use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\IncompleteType;
 
@@ -25,6 +26,7 @@ interface EncoderInterface
      *
      * @param AbstractType $type
      * @return string
+     * @throws EncoderException
      */
     public function encode(AbstractType $type) : string;
 
@@ -35,6 +37,7 @@ interface EncoderInterface
      * @param int $tagType
      * @param array $tagMap
      * @return mixed
+     * @throws EncoderException
      */
     public function complete(IncompleteType $type, int $tagType, array $tagMap = []) : AbstractType;
 
@@ -44,6 +47,7 @@ interface EncoderInterface
      * @param string $binary
      * @param array $tagMap
      * @return AbstractType
+     * @throws EncoderException
      */
     public function decode($binary, array $tagMap = []) : AbstractType;
 }
