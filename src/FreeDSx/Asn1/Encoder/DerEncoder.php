@@ -34,23 +34,24 @@ class DerEncoder extends BerEncoder
      */
     public function __construct(array $options = [])
     {
-        parent::__construct(array_merge($options, [
+        parent::__construct($options);
+        $this->setOptions([
             'bitstring_padding' => '0',
-        ]));
-        $this->options['primitive_only'] = array_merge($this->options['primitive_only'], [
-            AbstractType::TAG_TYPE_NUMERIC_STRING,
-            AbstractType::TAG_TYPE_PRINTABLE_STRING,
-            AbstractType::TAG_TYPE_TELETEX_STRING,
-            AbstractType::TAG_TYPE_VIDEOTEX_STRING,
-            AbstractType::TAG_TYPE_IA5_STRING,
-            AbstractType::TAG_TYPE_GRAPHIC_STRING,
-            AbstractType::TAG_TYPE_VISIBLE_STRING,
-            AbstractType::TAG_TYPE_GENERAL_STRING,
-            AbstractType::TAG_TYPE_BMP_STRING,
-            AbstractType::TAG_TYPE_UNIVERSAL_STRING,
-            AbstractType::TAG_TYPE_UTF8_STRING,
-            AbstractType::TAG_TYPE_BIT_STRING,
-            AbstractType::TAG_TYPE_OCTET_STRING,
+            'primitive_only' => [
+                AbstractType::TAG_TYPE_NUMERIC_STRING,
+                AbstractType::TAG_TYPE_PRINTABLE_STRING,
+                AbstractType::TAG_TYPE_TELETEX_STRING,
+                AbstractType::TAG_TYPE_VIDEOTEX_STRING,
+                AbstractType::TAG_TYPE_IA5_STRING,
+                AbstractType::TAG_TYPE_GRAPHIC_STRING,
+                AbstractType::TAG_TYPE_VISIBLE_STRING,
+                AbstractType::TAG_TYPE_GENERAL_STRING,
+                AbstractType::TAG_TYPE_BMP_STRING,
+                AbstractType::TAG_TYPE_UNIVERSAL_STRING,
+                AbstractType::TAG_TYPE_UTF8_STRING,
+                AbstractType::TAG_TYPE_BIT_STRING,
+                AbstractType::TAG_TYPE_OCTET_STRING,
+            ]
         ]);
     }
 

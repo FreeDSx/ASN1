@@ -159,7 +159,14 @@ class BerEncoder implements EncoderInterface
      */
     public function setOptions(array $options)
     {
-        $this->options = array_merge_recursive($this->options, $options);
+        if (isset($options['bitstring_padding']) && is_string($options['bitstring_padding'])) {
+            $this->options['bitstring_padding'] = $options['bitstring_padding'];
+        }
+        foreach (['primitive_only', 'constructed_only'] as $opt) {
+            if (isset($options[$opt]) && is_array(($options[$opt]))) {
+                $this->options[$opt] = array_merge($this->options[$opt], $options[$opt]);
+            }
+        }
 
         return $this;
     }
