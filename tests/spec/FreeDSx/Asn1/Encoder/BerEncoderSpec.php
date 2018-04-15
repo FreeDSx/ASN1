@@ -53,6 +53,48 @@ class BerEncoderSpec extends ObjectBehavior
         $this->shouldImplement('FreeDSx\Asn1\Encoder\EncoderInterface');
     }
 
+    function it_should_set_options()
+    {
+        $this->setOptions(['primitive_only' => [AbstractType::TAG_TYPE_OCTET_STRING]]);
+        $this->getOptions()->shouldBeEqualTo([
+            'bitstring_padding' => '0',
+            'primitive_only' => [
+                AbstractType::TAG_TYPE_BOOLEAN,
+                AbstractType::TAG_TYPE_INTEGER,
+                AbstractType::TAG_TYPE_ENUMERATED,
+                AbstractType::TAG_TYPE_REAL,
+                AbstractType::TAG_TYPE_NULL,
+                AbstractType::TAG_TYPE_OID,
+                AbstractType::TAG_TYPE_RELATIVE_OID,
+                AbstractType::TAG_TYPE_OCTET_STRING,
+            ],
+            'constructed_only' => [
+                AbstractType::TAG_TYPE_SEQUENCE,
+                AbstractType::TAG_TYPE_SET,
+            ],
+        ]);
+    }
+
+    function it_should_get_options()
+    {
+        $this->getOptions()->shouldBeEqualTo([
+            'bitstring_padding' => '0',
+            'primitive_only' => [
+                AbstractType::TAG_TYPE_BOOLEAN,
+                AbstractType::TAG_TYPE_INTEGER,
+                AbstractType::TAG_TYPE_ENUMERATED,
+                AbstractType::TAG_TYPE_REAL,
+                AbstractType::TAG_TYPE_NULL,
+                AbstractType::TAG_TYPE_OID,
+                AbstractType::TAG_TYPE_RELATIVE_OID,
+            ],
+            'constructed_only' => [
+                AbstractType::TAG_TYPE_SEQUENCE,
+                AbstractType::TAG_TYPE_SET,
+            ],
+        ]);
+    }
+
     function it_should_decode_long_definite_length()
     {
         $chars = str_pad('0', 131071, '0');

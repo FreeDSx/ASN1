@@ -85,7 +85,7 @@ class BerEncoder implements EncoderInterface
      */
     public function __construct(array $options = [])
     {
-        $this->options = array_merge($this->options, $options);
+        $this->setOptions($options);
     }
 
     /**
@@ -137,6 +137,29 @@ class BerEncoder implements EncoderInterface
         if (isset($this->tagMap[$class])) {
             $this->tagMap[$class] = $map;
         }
+
+        return $this;
+    }
+
+    /**
+     * Get the options for the encoder.
+     *
+     * @return array
+     */
+    public function getOptions() : array
+    {
+        return $this->options;
+    }
+
+    /**
+     * Set the options for the encoder.
+     *
+     * @param array $options
+     * @return $this
+     */
+    public function setOptions(array $options)
+    {
+        $this->options = array_merge_recursive($this->options, $options);
 
         return $this;
     }
@@ -1034,6 +1057,7 @@ class BerEncoder implements EncoderInterface
      *
      * @param SetType $set
      * @return string
+     * @throws EncoderException
      */
     protected function encodeSet(SetType $set)
     {
