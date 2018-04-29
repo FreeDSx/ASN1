@@ -11,6 +11,7 @@
 namespace FreeDSx\Asn1\Encoder;
 
 use FreeDSx\Asn1\Exception\EncoderException;
+use FreeDSx\Asn1\Exception\PartialPduException;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\IncompleteType;
 
@@ -48,6 +49,7 @@ interface EncoderInterface
      * @param array $tagMap
      * @return AbstractType
      * @throws EncoderException
+     * @throws PartialPduException
      */
     public function decode($binary, array $tagMap = []) : AbstractType;
 }
