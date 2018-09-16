@@ -10,7 +10,7 @@ environment:
 
 install:
   - ps: Invoke-WebRequest "https://raw.githubusercontent.com/ChadSikorra/ps-install-php/master/Install-PHP.ps1" -OutFile "Install-PHP.ps1"
-  - ps: .\Install-PHP.ps1 -Version $Env:PHP_VERSION -Highest -Arch x64 -Extensions openssl
+  - ps: .\Install-PHP.ps1 -Version $Env:PHP_VERSION -Highest -Arch x64 -Extensions openssl,gmp
   - refreshenv
   - cd C:\projects\freedsx-asn1
   - php -r "readfile('https://getcomposer.org/installer');" | php
