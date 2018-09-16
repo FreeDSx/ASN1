@@ -154,6 +154,9 @@ class BerEncoderSpec extends ObjectBehavior
 
     function it_should_decode_a_big_int_positive_integer_type()
     {
+        if (!extension_loaded('gmp')) {
+            throw new SkippingException('The GMP extension must be loaded for bigint specs.');
+        }
         $this->decode(hex2bin('020900ffffffffffffffff'))->shouldBeLike(new IntegerType('18446744073709551615'));
     }
 
@@ -173,6 +176,9 @@ class BerEncoderSpec extends ObjectBehavior
 
     function it_should_encode_a_big_int_positive_integer_type()
     {
+        if (!extension_loaded('gmp')) {
+            throw new SkippingException('The GMP extension must be loaded for bigint specs.');
+        }
         $this->encode(new IntegerType('18446744073709551615'))->shouldBeEqualTo(hex2bin('020900ffffffffffffffff'));
     }
 
@@ -192,6 +198,9 @@ class BerEncoderSpec extends ObjectBehavior
 
     function it_should_decode_a_big_int_negative_integer_type()
     {
+        if (!extension_loaded('gmp')) {
+            throw new SkippingException('The GMP extension must be loaded for bigint specs.');
+        }
         $this->decode(hex2bin('0209ff0000000000000001'))->shouldBeLike(new IntegerType('-18446744073709551615'));
     }
 
@@ -212,6 +221,9 @@ class BerEncoderSpec extends ObjectBehavior
 
     function it_should_encode_a_big_int_negative_integer_type()
     {
+        if (!extension_loaded('gmp')) {
+            throw new SkippingException('The GMP extension must be loaded for bigint specs.');
+        }
         $this->encode(new IntegerType('-18446744073709551615'))->shouldBeEqualTo(hex2bin('0209ff0000000000000001'));
     }
 
