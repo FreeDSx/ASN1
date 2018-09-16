@@ -22,6 +22,9 @@
   "require-dev": {
     "phpspec/phpspec": "^4.0"
   },
+  "suggest": {
+    "ext-gmp": "For big integer support in Integer/Enumerated types."
+  },
   "config": {
     "bin-dir": "bin"
   },

@@ -17,19 +17,23 @@ namespace FreeDSx\Asn1\Type;
  */
 class IntegerType extends AbstractType
 {
+    use BigIntTrait;
+
     protected $tagNumber = self::TAG_TYPE_INTEGER;
 
-    public function __construct(int $integer)
+    public function __construct($integer)
     {
+        $this->validate($integer);
         parent::__construct($integer);
     }
 
     /**
-     * @param int $value
+     * @param int|string $value
      * @return $this
      */
-    public function setValue(int $value)
+    public function setValue($value)
     {
+        $this->validate($value);
         $this->value = $value;
 
         return $this;

@@ -17,23 +17,26 @@ namespace FreeDSx\Asn1\Type;
  */
 class EnumeratedType extends AbstractType
 {
+    use BigIntTrait;
+
     protected $tagNumber = self::TAG_TYPE_ENUMERATED;
 
     /**
-     * EnumeratedType constructor.
-     * @param int $enumValue
+     * @param string|int $enumValue
      */
-    public function __construct(int $enumValue)
+    public function __construct($enumValue)
     {
+        $this->validate($enumValue);
         parent::__construct($enumValue);
     }
 
     /**
-     * @param int $value
+     * @param string|int $value
      * @return $this
      */
-    public function setValue(int $value)
+    public function setValue($value)
     {
+        $this->validate($value);
         $this->value = $value;
 
         return $this;

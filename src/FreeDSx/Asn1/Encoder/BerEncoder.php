@@ -81,10 +81,16 @@ class BerEncoder implements EncoderInterface
     ];
 
     /**
+     * @var bool
+     */
+    protected $isGmpAvailable;
+
+    /**
      * @param array $options
      */
     public function __construct(array $options = [])
     {
+        $this->isGmpAvailable = extension_loaded('gmp');
         $this->setOptions($options);
     }
 
@@ -485,7 +491,7 @@ class BerEncoder implements EncoderInterface
         # A high tag number is determined using VLQ (like the OID identifier encoding) of the subsequent bytes.
         try {
             $tagNumBytes = $this->getVlqBytes(substr($bytes, 1));
-        # It's possible we only got part of the VLQ for the high tag, as there is no way to know it's ending length.
+            # It's possible we only got part of the VLQ for the high tag, as there is no way to know it's ending length.
         } catch (EncoderException $e) {
             if ($isRoot) {
                 throw new PartialPduException(
@@ -576,7 +582,7 @@ class BerEncoder implements EncoderInterface
         # the VLV encoding of the tag number.
         if ($type->getTagNumber() >= 31) {
             $bytes = chr($tag | 0x1f).$this->intToVlqBytes($type->getTagNumber());
-        # For a tag less than 31, everything fits comfortably into a single byte.
+            # For a tag less than 31, everything fits comfortably into a single byte.
         } else {
             $bytes = chr($tag | $type->getTagNumber());
         }
@@ -772,21 +778,30 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param AbstractType $type
+     * @param AbstractType|IntegerType|EnumeratedType $type
      * @return string
+     * @throws EncoderException
      */
     protected function encodeInteger(AbstractType $type) : string
     {
-        $int = abs($type->getValue());
-        $isNegative = ($type->getValue() < 0);
+        $isBigInt = $type->isBigInt();
+        $this->throwIfBigIntGmpNeeded($isBigInt);
+        $int = $isBigInt ? gmp_abs($type->getValue()) : abs((int) $type->getValue());
+        # Seems like a hack to check the big int this way...but probably the quickest
+        $isNegative = $isBigInt ? $type->getValue()[0] === '-' : ($type->getValue() < 0);
 
         # Subtract one for Two's Complement...
         if ($isNegative) {
-            $int = $int - 1;
+            $int = $isBigInt ? gmp_sub($int, '1') : $int - 1;
         }
-        # dechex can produce uneven hex while hex2bin requires it to be even
-        $hex = dechex($int);
-        $bytes = hex2bin((strlen($hex) % 2) === 0 ? $hex : '0'.$hex);
+
+        if ($isBigInt) {
+            $bytes = gmp_export($int);
+        } else {
+            # dechex can produce uneven hex while hex2bin requires it to be even
+            $hex = dechex($int);
+            $bytes = hex2bin((strlen($hex) % 2) === 0 ? $hex : '0' . $hex);
+        }
 
         # Two's Complement, invert the bits...
         if ($isNegative) {
@@ -1013,9 +1028,10 @@ class BerEncoder implements EncoderInterface
 
     /**
      * @param string $bytes
-     * @return int number
+     * @return string|int number
+     * @throws EncoderException
      */
-    protected function decodeInteger($bytes) : int
+    protected function decodeInteger($bytes)
     {
         $isNegative = (ord($bytes[0]) & 0x80);
         $len = strlen($bytes);
@@ -1028,12 +1044,32 @@ class BerEncoder implements EncoderInterface
         }
         $int = hexdec(bin2hex($bytes));
 
-        # Complete Two's Complement by adding 1 and turning it negative...
-        if ($isNegative) {
-            $int = ($int + 1) * -1;
+        $isBigInt = is_float($int);
+        $this->throwIfBigIntGmpNeeded($isBigInt);
+        if ($isBigInt) {
+            $int = gmp_import($bytes);
         }
 
-        return $int;
+        # Complete Two's Complement by adding 1 and turning it negative...
+        if ($isNegative) {
+            $int = $isBigInt ? gmp_neg(gmp_add($int, "1")) : ($int + 1) * -1;
+        }
+
+        return $isBigInt ? gmp_strval($int) : $int;
+    }
+
+    /**
+     * @param bool $isBigInt
+     * @throws EncoderException
+     */
+    protected function throwIfBigIntGmpNeeded(bool $isBigInt) : void
+    {
+        if ($isBigInt && !$this->isGmpAvailable) {
+            throw new EncoderException(sprintf(
+                'An integer higher than PHP_INT_MAX int (%s) was encountered and the GMP extension is not loaded.',
+                PHP_INT_MAX
+            ));
+        }
     }
 
     /**

@@ -39,6 +39,7 @@ use FreeDSx\Asn1\Type\UtcTimeType;
 use FreeDSx\Asn1\Type\Utf8StringType;
 use FreeDSx\Asn1\Type\VideotexStringType;
 use FreeDSx\Asn1\Type\VisibleStringType;
+use PhpSpec\Exception\Example\SkippingException;
 use PhpSpec\ObjectBehavior;
 
 class BerEncoderSpec extends ObjectBehavior
@@ -151,6 +152,11 @@ class BerEncoderSpec extends ObjectBehavior
         $this->encode(new IntegerType(0))->shouldBeEqualTo(hex2bin('020100'));
     }
 
+    function it_should_decode_a_big_int_positive_integer_type()
+    {
+        $this->decode(hex2bin('020900ffffffffffffffff'))->shouldBeLike(new IntegerType('18446744073709551615'));
+    }
+
     function it_should_decode_a_positive_integer_type()
     {
         $this->decode(hex2bin('02087FFFFFFFFFFFFFFF'))->shouldBeLike(new IntegerType(9223372036854775807));
@@ -163,6 +169,11 @@ class BerEncoderSpec extends ObjectBehavior
         $this->decode(hex2bin('020200FF'))->shouldBeLike(new IntegerType(255));
         $this->decode(hex2bin('02017F'))->shouldBeLike(new IntegerType(127));
         $this->decode(hex2bin('02020080'))->shouldBeLike(new IntegerType(128));
+    }
+
+    function it_should_encode_a_big_int_positive_integer_type()
+    {
+        $this->encode(new IntegerType('18446744073709551615'))->shouldBeEqualTo(hex2bin('020900ffffffffffffffff'));
     }
 
     function it_should_encode_a_positive_integer_type()
@@ -179,6 +190,11 @@ class BerEncoderSpec extends ObjectBehavior
         $this->encode(new IntegerType(128))->shouldBeEqualTo(hex2bin('02020080'));
     }
 
+    function it_should_decode_a_big_int_negative_integer_type()
+    {
+        $this->decode(hex2bin('0209ff0000000000000001'))->shouldBeLike(new IntegerType('-18446744073709551615'));
+    }
+
     function it_should_decode_a_negative_integer_type()
     {
         $this->decode(hex2bin('02088000000000000001'))->shouldBeLike(new IntegerType(-9223372036854775807));
@@ -192,6 +208,11 @@ class BerEncoderSpec extends ObjectBehavior
         $this->decode(hex2bin('020180'))->shouldBeLike(new IntegerType(-128));
         $this->decode(hex2bin('0202FF7F'))->shouldBeLike(new IntegerType(-129));
         $this->decode(hex2bin('0201FF'))->shouldBeLike(new IntegerType(-1));
+    }
+
+    function it_should_encode_a_big_int_negative_integer_type()
+    {
+        $this->encode(new IntegerType('-18446744073709551615'))->shouldBeEqualTo(hex2bin('0209ff0000000000000001'));
     }
 
     function it_should_encode_a_negative_integer_type()
@@ -806,5 +827,21 @@ class BerEncoderSpec extends ObjectBehavior
     function it_should_throw_an_exception_on_a_primitive_set()
     {
         $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('11030101ff')]);
+    }
+
+    function it_should_throw_an_exception_if_the_integer_to_encode_is_a_big_int_and_gmp_is_not_available()
+    {
+        if (extension_loaded('gmp')) {
+            throw new SkippingException('Only valid when GMP is not loaded.');
+        }
+        $this->shouldThrow(EncoderException::class)->during('encode', [new IntegerType('18446744073709551615')]);
+    }
+
+    function it_should_throw_an_exception_if_the_integer_to_decode_is_a_big_int_and_gmp_is_not_available()
+    {
+        if (extension_loaded('gmp')) {
+            throw new SkippingException('Only valid when GMP is not loaded.');
+        }
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('020900ffffffffffffffff')]);
     }
 }
