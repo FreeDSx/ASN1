@@ -321,6 +321,14 @@ class BerEncoderSpec extends ObjectBehavior
         $this->decode(hex2bin('030100'))->shouldBeLike(new BitStringType(''));
     }
 
+    function it_should_decode_an_oid_with_a_bigint()
+    {
+        if (!extension_loaded('gmp')) {
+            throw new SkippingException('The GMP extension must be loaded for bigint specs.');
+        }
+        $this->decode(hex2bin('060e2a864881ffffffffffffffff7f01'))->shouldBeLike(new OidType('1.2.840.18446744073709551615.1'));
+    }
+
     function it_should_decode_an_oid()
     {
         $this->decode(hex2bin('06092b0601040182371514'))->shouldBeLike(new OidType('1.3.6.1.4.1.311.21.20'));
@@ -331,6 +339,14 @@ class BerEncoderSpec extends ObjectBehavior
         $this->decode(hex2bin('06032aff7f'))->shouldBeLike(new OidType('1.2.16383'));
         $this->decode(hex2bin('06052a81808000'))->shouldBeLike(new OidType('1.2.2097152'));
         $this->decode(hex2bin('06052affffff7f'))->shouldBeLike(new OidType('1.2.268435455'));
+    }
+
+    function it_should_encode_an_oid_with_a_bigint()
+    {
+        if (!extension_loaded('gmp')) {
+            throw new SkippingException('The GMP extension must be loaded for bigint specs.');
+        }
+        $this->encode(new OidType('1.2.840.18446744073709551615.1'))->shouldBeEqualTo(hex2bin('060e2a864881ffffffffffffffff7f01'));
     }
 
     function it_should_encode_an_oid()
@@ -655,10 +671,26 @@ class BerEncoderSpec extends ObjectBehavior
         $this->encode(new RelativeOidType('268435455'))->shouldBeEqualTo(hex2bin('0d04ffffff7f'));
     }
 
+    function it_should_encode_a_relative_oid_with_a_bigint_value()
+    {
+        if (!extension_loaded('gmp')) {
+            throw new SkippingException('The GMP extension must be loaded for bigint specs.');
+        }
+        $this->encode(new RelativeOidType('18446744073709551615'))->shouldBeEqualTo(hex2bin('0d0a81ffffffffffffffff7f'));
+    }
+
     function it_should_decode_a_relative_oid()
     {
         $this->decode(hex2bin('0d080601040182371514'))->shouldBeLike(new RelativeOidType('6.1.4.1.311.21.20'));
         $this->decode(hex2bin('0d04ffffff7f'))->shouldBeLike(new RelativeOidType('268435455'));
+    }
+
+    function it_should_decode_a_relative_oid_with_a_bigint_value()
+    {
+        if (!extension_loaded('gmp')) {
+            throw new SkippingException('The GMP extension must be loaded for bigint specs.');
+        }
+        $this->decode(hex2bin('0d0a81ffffffffffffffff7f'))->shouldBeLike(new RelativeOidType('18446744073709551615'));
     }
 
     function it_should_decode_an_unknown_type()
@@ -855,5 +887,37 @@ class BerEncoderSpec extends ObjectBehavior
             throw new SkippingException('Only valid when GMP is not loaded.');
         }
         $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('020900ffffffffffffffff')]);
+    }
+
+    function it_should_throw_an_exception_if_the_relative_oid_to_encode_has_a_big_int_and_gmp_is_not_available()
+    {
+        if (extension_loaded('gmp')) {
+            throw new SkippingException('Only valid when GMP is not loaded.');
+        }
+        $this->shouldThrow(EncoderException::class)->during('encode', [new RelativeOidType('18446744073709551615')]);
+    }
+
+    function it_should_throw_an_exception_if_the_relative_oid_to_decode_has_a_big_int_and_gmp_is_not_available()
+    {
+        if (extension_loaded('gmp')) {
+            throw new SkippingException('Only valid when GMP is not loaded.');
+        }
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('0d0a81ffffffffffffffff7f')]);
+    }
+
+    function it_should_throw_an_exception_if_the_oid_to_encode_has_a_big_int_and_gmp_is_not_available()
+    {
+        if (extension_loaded('gmp')) {
+            throw new SkippingException('Only valid when GMP is not loaded.');
+        }
+        $this->shouldThrow(EncoderException::class)->during('encode', [new OidType('1.2.840.18446744073709551615.1')]);
+    }
+
+    function it_should_throw_an_exception_if_the_oid_to_decode_has_a_big_int_and_gmp_is_not_available()
+    {
+        if (extension_loaded('gmp')) {
+            throw new SkippingException('Only valid when GMP is not loaded.');
+        }
+        $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('060e2a864881ffffffffffffffff7f01')]);
     }
 }

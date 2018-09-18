@@ -535,33 +535,72 @@ class BerEncoder implements EncoderInterface
      *
      * @param string $bytes
      * @return int
+     * @throws EncoderException
      */
-    protected function getVlqInt($bytes) : int
+    protected function getVlqInt($bytes)
     {
         $value = 0;
+        $bigint = false;
 
         $length = strlen($bytes);
         for ($i = 0; $i < $length; $i++) {
-            $value = ($value << 7) | (ord($bytes[$i]) & 0x7f);
+            if (!$bigint) {
+                $lshift = $value << 7;
+                # An overflow bitshift will result in a negative number. This will check if GMP is available and flip it
+                # to a bigint safe method in one shot.
+                if ($lshift < 0) {
+                    $bigint = true;
+                    $this->throwIfBigIntGmpNeeded(true);
+                    $value = gmp_init($value);
+                }
+            }
+            if ($bigint) {
+                $lshift = gmp_mul($value, gmp_pow("2", 7));
+            }
+            $orVal = (ord($bytes[$i]) & 0x7f);
+            if ($bigint) {
+                $value = gmp_or($lshift, gmp_init($orVal));
+            } else {
+                $value = $lshift | $orVal;
+            }
         }
 
-        return $value;
+        return $bigint ? gmp_strval($value) : $value;
     }
 
     /**
      * Get the bytes that represent variable length quantity.
      *
-     * @param int $int
+     * @param string|int $int
      * @return string
+     * @throws EncoderException
      */
-    protected function intToVlqBytes(int $int)
+    protected function intToVlqBytes($int)
     {
-        $bytes = chr(0x7f & $int);
-        $int >>= 7;
+        $bigint = is_float($int + 0);
+        $this->throwIfBigIntGmpNeeded($bigint);
 
-        while ($int > 0) {
-            $bytes = chr((0x7f & $int) | 0x80).$bytes;
+        if ($bigint) {
+            $int = gmp_init($int);
+            $bytes = chr(gmp_intval(gmp_and(gmp_init(0x7f), $int)));
+            $int = gmp_div($int, gmp_pow(2, 7));
+            $intVal = gmp_intval($int);
+        } else {
+            $bytes = chr(0x7f & $int);
             $int >>= 7;
+            $intVal = $int;
+        }
+
+        while ($intVal > 0) {
+            if ($bigint) {
+                $bytes = chr(gmp_intval(gmp_or(gmp_and(gmp_init(0x7f), $int), gmp_init(0x80)))).$bytes;
+                $int = gmp_div($int, gmp_pow("2", 7));
+                $intVal = gmp_intval($int);
+            } else {
+                $bytes = chr((0x7f & $int) | 0x80).$bytes;
+                $int >>= 7;
+                $intVal = $int;
+            }
         }
 
         return $bytes;
@@ -572,6 +611,7 @@ class BerEncoder implements EncoderInterface
      *
      * @param AbstractType $type
      * @return string
+     * @throws EncoderException
      */
     protected function getEncodedTag(AbstractType $type)
     {
@@ -582,7 +622,7 @@ class BerEncoder implements EncoderInterface
         # the VLV encoding of the tag number.
         if ($type->getTagNumber() >= 31) {
             $bytes = chr($tag | 0x1f).$this->intToVlqBytes($type->getTagNumber());
-            # For a tag less than 31, everything fits comfortably into a single byte.
+        # For a tag less than 31, everything fits comfortably into a single byte.
         } else {
             $bytes = chr($tag | $type->getTagNumber());
         }
@@ -663,6 +703,7 @@ class BerEncoder implements EncoderInterface
     /**
      * @param RelativeOidType $type
      * @return string
+     * @throws EncoderException
      */
     protected function encodeRelativeOid(RelativeOidType $type)
     {
@@ -670,7 +711,7 @@ class BerEncoder implements EncoderInterface
 
         $bytes = '';
         foreach ($oids as $oid) {
-            $bytes .= $this->intToVlqBytes((int) $oid);
+            $bytes .= $this->intToVlqBytes($oid);
         }
 
         return $bytes;
@@ -692,7 +733,7 @@ class BerEncoder implements EncoderInterface
         $bytes = chr(($oids[0] * 40) + $oids[1]);
         $length = count($oids);
         for ($i = 2; $i < $length; $i++) {
-            $bytes .= $this->intToVlqBytes((int) $oids[$i]);
+            $bytes .= $this->intToVlqBytes($oids[$i]);
         }
 
         return $bytes;
