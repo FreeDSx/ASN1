@@ -392,12 +392,12 @@ class BerEncoder implements EncoderInterface
      * From a specific tag number and class try to determine what universal ASN1 type it should be mapped to. If there
      * is no mapping defined it will return null. In this case the binary data will be wrapped into an IncompleteType.
      *
-     * @param int $tagNumber
+     * @param int|string $tagNumber
      * @param int $tagClass
      * @param array $map
      * @return int|null
      */
-    protected function getTagType(int $tagNumber, int $tagClass, array $map) : ?int
+    protected function getTagType($tagNumber, int $tagClass, array $map) : ?int
     {
         if ($tagClass === AbstractType::TAG_CLASS_UNIVERSAL) {
             return $tagNumber;

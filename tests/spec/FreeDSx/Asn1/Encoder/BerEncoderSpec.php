@@ -768,6 +768,20 @@ class BerEncoderSpec extends ObjectBehavior
         );
     }
 
+    function it_should_handle_decoding_a_high_big_int_tag_number()
+    {
+        $this->decode(hex2bin('5f81ffffffffffffffff7f0101'))->shouldBeLike(
+            (new IncompleteType(hex2bin('01')))
+                ->setTagNumber('18446744073709551615')
+                ->setTagClass(AbstractType::TAG_CLASS_APPLICATION)
+        );
+    }
+
+    function it_should_handle_encoding_a_high_big_int_tag_number()
+    {
+        $this->encode((new OctetStringType("\x01"))->setTagNumber('18446744073709551615'))->shouldBeEqualTo(hex2bin('1f81ffffffffffffffff7f0101'));
+    }
+
     function it_should_throw_a_partial_pdu_exception_on_a_root_type_with_no_high_tag_ending()
     {
         $this->shouldThrow(PartialPduException::class)->during('decode', [hex2bin('5f8080')]);

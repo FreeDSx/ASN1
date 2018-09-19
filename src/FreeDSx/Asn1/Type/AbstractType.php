@@ -10,6 +10,8 @@
 
 namespace FreeDSx\Asn1\Type;
 
+use FreeDSx\Asn1\Exception\InvalidArgumentException;
+
 /**
  * Abstract ASN.1 type.
  *
@@ -92,7 +94,7 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
     protected $value;
 
     /**
-     * @var null|int
+     * @var null|int|string
      */
     protected $tagNumber;
 
@@ -163,19 +165,20 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
     }
 
     /**
-     * @return int|null
+     * @return int|null|string
      */
-    public function getTagNumber() : ?int
+    public function getTagNumber()
     {
         return $this->tagNumber;
     }
 
     /**
-     * @param int|null $int
+     * @param int|null|string $int
      * @return $this
      */
-    public function setTagNumber(?int $int)
+    public function setTagNumber($int)
     {
+        $this->validateTag($int);
         $this->tagNumber = $int;
 
         return $this;
@@ -272,5 +275,20 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
     public function getIterator()
     {
         return new \ArrayIterator($this->children);
+    }
+
+    /**
+     * @param $integer
+     */
+    protected function validateTag($integer) : void
+    {
+        if (is_int($integer) || is_null($integer)) {
+            return;
+        }
+        if (is_string($integer) && is_numeric($integer) && strpos($integer, '.') === false) {
+            return;
+        }
+
+        throw new InvalidArgumentException('The tag number must be numeric.');
     }
 }
