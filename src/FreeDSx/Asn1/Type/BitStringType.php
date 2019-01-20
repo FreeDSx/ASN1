@@ -22,7 +22,7 @@ class BitStringType extends AbstractType
     /**
      * @param string $value
      */
-    public function __construct(string $value)
+    public function __construct(string $value = '')
     {
         parent::__construct($value);
     }

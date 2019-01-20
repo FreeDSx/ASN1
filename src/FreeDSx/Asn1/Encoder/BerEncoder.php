@@ -1192,7 +1192,7 @@ class BerEncoder implements EncoderInterface
                 return new EncodedType\IntegerType(...$value);
                 break;
             case EncodedType\AbstractType::TAG_TYPE_BIT_STRING:
-                return new EncodedType\BitStringType(...$value);
+                return $isConstructed ? (new EncodedType\BitStringType())->setChildren(...$value) : new EncodedType\BitStringType(...$value);
                 break;
             case  EncodedType\AbstractType::TAG_TYPE_OCTET_STRING:
                 return $isConstructed ? (new EncodedType\OctetStringType())->setChildren(...$value) : new EncodedType\OctetStringType(...$value);
