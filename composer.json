@@ -20,7 +20,7 @@
     "php": ">=7.1"
   },
   "require-dev": {
-    "phpspec/phpspec": "^4.0"
+    "phpspec/phpspec": "^5.0"
   },
   "suggest": {
     "ext-gmp": "For big integer support in Integer/Enumerated/OID types and tag numbers."
