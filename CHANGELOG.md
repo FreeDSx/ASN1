@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+0.3.0 (2019-01-20)
+------------------
+* Improve general encoder performance with various optimizations.
+* Add arbitrary precision support for tag numbers.
+* Add arbitrary precision support for OID types.
+* Remove the TypeFactory. Do not load classes dynamically.
+* Simplify long definite length decoding.
+* Simplify VLQ decoding to be a single operation.
+
 0.2.0 (2018-09-16)
 ------------------
 * Support arbitrary-precision for Integer/Enumerated types with the GMP extension.
