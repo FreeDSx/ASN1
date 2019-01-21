@@ -221,7 +221,7 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
     }
 
     /**
-     * @param AbstractType[] ...$types
+     * @param AbstractType ...$types
      * @return $this
      */
     public function setChildren(AbstractType ...$types)
@@ -249,7 +249,7 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
     }
 
     /**
-     * @param AbstractType[] ...$types
+     * @param AbstractType ...$types
      * @return $this
      */
     public function addChild(AbstractType ...$types)
