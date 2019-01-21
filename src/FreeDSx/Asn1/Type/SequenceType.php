@@ -23,7 +23,7 @@ class SequenceType extends AbstractType
     protected $tagNumber = self::TAG_TYPE_SEQUENCE;
 
     /**
-     * @param AbstractType[] ...$types
+     * @param AbstractType ...$types
      */
     public function __construct(AbstractType ...$types)
     {

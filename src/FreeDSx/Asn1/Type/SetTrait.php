@@ -25,7 +25,7 @@ trait SetTrait
      *    - Private classes last.
      *    - Within each group of classes above, tag numbers should be ordered in ascending order.
      *
-     * @param AbstractType[] ...$set
+     * @param AbstractType ...$set
      * @return AbstractType[]
      */
     protected function canonicalize(AbstractType ...$set) : array
@@ -44,14 +44,14 @@ trait SetTrait
 
         # Sort the classes by tag number.
         foreach ($children as $class => $type) {
-            usort($children[$class], function ($a, $b) {
+            \usort($children[$class], function ($a, $b) {
                 /* @var AbstractType $a
                  * @var AbstractType $b */
                 return ($a->getTagNumber() < $b->getTagNumber()) ? -1 : 1;
             });
         }
 
-        return array_merge(
+        return \array_merge(
             $children[AbstractType::TAG_CLASS_UNIVERSAL],
             $children[AbstractType::TAG_CLASS_APPLICATION],
             $children[AbstractType::TAG_CLASS_CONTEXT_SPECIFIC],

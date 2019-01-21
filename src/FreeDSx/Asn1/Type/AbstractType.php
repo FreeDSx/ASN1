@@ -266,7 +266,7 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
      */
     public function count()
     {
-        return count($this->children);
+        return \count($this->children);
     }
 
     /**
@@ -282,10 +282,10 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
      */
     protected function validateTag($integer) : void
     {
-        if (is_int($integer) || is_null($integer)) {
+        if (\is_int($integer) || \is_null($integer)) {
             return;
         }
-        if (is_string($integer) && is_numeric($integer) && strpos($integer, '.') === false) {
+        if (\is_string($integer) && \is_numeric($integer) && \strpos($integer, '.') === false) {
             return;
         }
 

@@ -48,7 +48,7 @@ use FreeDSx\Asn1\Type\VisibleStringType;
 class Asn1
 {
     /**
-     * @param AbstractType[] ...$types
+     * @param AbstractType ...$types
      * @return SequenceType
      */
     public static function sequence(AbstractType ...$types) : SequenceType
@@ -57,7 +57,7 @@ class Asn1
     }
 
     /**
-     * @param AbstractType[] ...$types
+     * @param AbstractType ...$types
      * @return SequenceOfType
      */
     public static function sequenceOf(AbstractType ...$types) : SequenceOfType

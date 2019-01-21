@@ -22,7 +22,7 @@ class SetType extends AbstractType
     protected $tagNumber = self::TAG_TYPE_SET;
 
     /**
-     * @param AbstractType[] ...$types
+     * @param AbstractType ...$types
      */
     public function __construct(AbstractType ...$types)
     {
