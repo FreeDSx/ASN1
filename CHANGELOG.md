@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.3.1 (2019-01-21)
+------------------
+* Additional minor performance improvements.
+
 0.3.0 (2019-01-20)
 ------------------
 * Improve general encoder performance with various optimizations.
