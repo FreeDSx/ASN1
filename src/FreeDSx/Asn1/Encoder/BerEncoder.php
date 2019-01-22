@@ -42,13 +42,13 @@ class BerEncoder implements EncoderInterface
      * These types must have a non-zero length.
      */
     protected const NON_ZERO_LENGTH = [
-        AbstractType::TAG_TYPE_BOOLEAN,
-        AbstractType::TAG_TYPE_UTC_TIME,
-        AbstractType::TAG_TYPE_GENERALIZED_TIME,
-        AbstractType::TAG_TYPE_INTEGER,
-        AbstractType::TAG_TYPE_ENUMERATED,
-        AbstractType::TAG_TYPE_OID,
-        AbstractType::TAG_TYPE_RELATIVE_OID,
+        AbstractType::TAG_TYPE_BOOLEAN => true,
+        AbstractType::TAG_TYPE_UTC_TIME => true,
+        AbstractType::TAG_TYPE_GENERALIZED_TIME => true,
+        AbstractType::TAG_TYPE_INTEGER => true,
+        AbstractType::TAG_TYPE_ENUMERATED => true,
+        AbstractType::TAG_TYPE_OID => true,
+        AbstractType::TAG_TYPE_RELATIVE_OID => true,
     ];
 
     /**
@@ -65,19 +65,29 @@ class BerEncoder implements EncoderInterface
      */
     protected $options = [
         'bitstring_padding' => '0',
-        'primitive_only' => [
-            AbstractType::TAG_TYPE_BOOLEAN,
-            AbstractType::TAG_TYPE_INTEGER,
-            AbstractType::TAG_TYPE_ENUMERATED,
-            AbstractType::TAG_TYPE_REAL,
-            AbstractType::TAG_TYPE_NULL,
-            AbstractType::TAG_TYPE_OID,
-            AbstractType::TAG_TYPE_RELATIVE_OID,
-        ],
-        'constructed_only' => [
-            AbstractType::TAG_TYPE_SEQUENCE,
-            AbstractType::TAG_TYPE_SET,
-        ],
+        'primitive_only' => [],
+        'constructed_only' => [],
+    ];
+
+    /**
+     * @var array
+     */
+    protected $constructedOnly = [
+        AbstractType::TAG_TYPE_SEQUENCE => true,
+        AbstractType::TAG_TYPE_SET => true,
+    ];
+
+    /**
+     * @var array
+     */
+    protected $primitiveOnly = [
+        AbstractType::TAG_TYPE_BOOLEAN => true,
+        AbstractType::TAG_TYPE_INTEGER => true,
+        AbstractType::TAG_TYPE_ENUMERATED => true,
+        AbstractType::TAG_TYPE_REAL => true,
+        AbstractType::TAG_TYPE_NULL => true,
+        AbstractType::TAG_TYPE_OID => true,
+        AbstractType::TAG_TYPE_RELATIVE_OID => true,
     ];
 
     /**
@@ -168,9 +178,15 @@ class BerEncoder implements EncoderInterface
         if (isset($options['bitstring_padding']) && \is_string($options['bitstring_padding'])) {
             $this->options['bitstring_padding'] = $options['bitstring_padding'];
         }
-        foreach (['primitive_only', 'constructed_only'] as $opt) {
-            if (isset($options[$opt]) && \is_array(($options[$opt]))) {
-                $this->options[$opt] = \array_merge($this->options[$opt], $options[$opt]);
+        if (isset($options['primitive_only']) && \is_array($options['primitive_only'])) {
+            $this->options['primitive_only'] = \array_merge($this->options['primitive_only'], $options['primitive_only']);
+            foreach ($this->options['primitive_only'] as $tag) {
+                $this->primitiveOnly[$tag] = true;
+            }
+        }
+        if (isset($options['constructed_only']) && \is_array($options['constructed_only'])) {
+            foreach ($this->options['constructed_only'] as $tag) {
+                $this->constructedOnly[$tag] = true;
             }
         }
 
@@ -330,17 +346,17 @@ class BerEncoder implements EncoderInterface
      */
     protected function validateDecodedTypeAttributes(int $length, int $tagType, bool $isConstructed) : void
     {
-        if ($length === 0 && \in_array($tagType, self::NON_ZERO_LENGTH)) {
+        if ($length === 0 && (self::NON_ZERO_LENGTH[$tagType] ?? null)) {
             throw new EncoderException(sprintf('Zero length is not permitted for tag %s.', $tagType));
         }
 
-        if ($isConstructed && \in_array($tagType, $this->options['primitive_only'])) {
+        if ($isConstructed && ($this->primitiveOnly[$tagType] ?? null)) {
             throw new EncoderException(sprintf(
                 'The tag type %s is marked constructed, but it can only be primitive.',
                 $tagType
             ));
         }
-        if (!$isConstructed && \in_array($tagType, $this->options['constructed_only'])) {
+        if (!$isConstructed && ($this->constructedOnly[$tagType] ?? null)) {
             throw new EncoderException(sprintf(
                 'The tag type %s is marked primitive, but it can only be constructed.',
                 $tagType
@@ -413,7 +429,7 @@ class BerEncoder implements EncoderInterface
      */
     protected function getDecodedLength($bytes) : array
     {
-        $info = ['value_length' => isset($bytes[0]) ? \ord($bytes[0]) : 0, 'length_length' => 1];
+        $info = ['value_length' => \ord($bytes[0] ?? null), 'length_length' => 1];
 
         if ($info['value_length'] === 128) {
             throw new EncoderException('Indefinite length encoding is not currently supported.');
@@ -801,11 +817,13 @@ class BerEncoder implements EncoderInterface
      */
     protected function encodeInteger(AbstractType $type) : string
     {
+        $int = $type->getValue();
         $isBigInt = $type->isBigInt();
+        $isNegative = ($int < 0);
         $this->throwIfBigIntGmpNeeded($isBigInt);
-        $int = $isBigInt ? \gmp_abs($type->getValue()) : \abs((int) $type->getValue());
-        # Seems like a hack to check the big int this way...but probably the quickest
-        $isNegative = $isBigInt ? $type->getValue()[0] === '-' : ($type->getValue() < 0);
+        if ($isNegative) {
+            $int = $isBigInt ? \gmp_abs($type->getValue()) : ($int * -1);
+        }
 
         # Subtract one for Two's Complement...
         if ($isNegative) {
@@ -817,7 +835,7 @@ class BerEncoder implements EncoderInterface
         } else {
             # dechex can produce uneven hex while hex2bin requires it to be even
             $hex = \dechex($int);
-            $bytes = \hex2bin((\strlen($hex) % 2) === 0 ? $hex : '0' . $hex);
+            $bytes = \hex2bin((\strlen($hex) % 2) === 0 ? $hex : '0'.$hex);
         }
 
         # Two's Complement, invert the bits...
@@ -895,7 +913,7 @@ class BerEncoder implements EncoderInterface
      */
     protected function decodeTime($bytes, string $format, string $regex, array $matchMap) : array
     {
-        if (!preg_match($regex, $bytes, $matches)) {
+        if (!\preg_match($regex, $bytes, $matches)) {
             throw new EncoderException('The datetime format is invalid and cannot be decoded.');
         }
         if ($matches[$matchMap['hours']] === '24') {
@@ -989,7 +1007,7 @@ class BerEncoder implements EncoderInterface
      */
     protected function decodeBoolean($bytes) : bool
     {
-        return \ord($bytes[0]) !== 0;
+        return $bytes[0] !== "\x00";
     }
 
     /**
@@ -1182,7 +1200,7 @@ class BerEncoder implements EncoderInterface
      */
     protected function createType(int $tagType, $value, bool $isConstructed = false) : EncodedType\AbstractType
     {
-        $value = \is_array($value) ? $value : [$value];
+        $value = (array) $value;
 
         switch ($tagType) {
             case EncodedType\AbstractType::TAG_TYPE_BOOLEAN:

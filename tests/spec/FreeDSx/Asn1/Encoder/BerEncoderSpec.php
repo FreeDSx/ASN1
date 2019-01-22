@@ -60,19 +60,9 @@ class BerEncoderSpec extends ObjectBehavior
         $this->getOptions()->shouldBeEqualTo([
             'bitstring_padding' => '0',
             'primitive_only' => [
-                AbstractType::TAG_TYPE_BOOLEAN,
-                AbstractType::TAG_TYPE_INTEGER,
-                AbstractType::TAG_TYPE_ENUMERATED,
-                AbstractType::TAG_TYPE_REAL,
-                AbstractType::TAG_TYPE_NULL,
-                AbstractType::TAG_TYPE_OID,
-                AbstractType::TAG_TYPE_RELATIVE_OID,
                 AbstractType::TAG_TYPE_OCTET_STRING,
             ],
-            'constructed_only' => [
-                AbstractType::TAG_TYPE_SEQUENCE,
-                AbstractType::TAG_TYPE_SET,
-            ],
+            'constructed_only' => [],
         ]);
     }
 
@@ -80,19 +70,8 @@ class BerEncoderSpec extends ObjectBehavior
     {
         $this->getOptions()->shouldBeEqualTo([
             'bitstring_padding' => '0',
-            'primitive_only' => [
-                AbstractType::TAG_TYPE_BOOLEAN,
-                AbstractType::TAG_TYPE_INTEGER,
-                AbstractType::TAG_TYPE_ENUMERATED,
-                AbstractType::TAG_TYPE_REAL,
-                AbstractType::TAG_TYPE_NULL,
-                AbstractType::TAG_TYPE_OID,
-                AbstractType::TAG_TYPE_RELATIVE_OID,
-            ],
-            'constructed_only' => [
-                AbstractType::TAG_TYPE_SEQUENCE,
-                AbstractType::TAG_TYPE_SET,
-            ],
+            'primitive_only' => [],
+            'constructed_only' => [],
         ]);
     }
 
