@@ -858,11 +858,13 @@ class BerEncoder implements EncoderInterface
      */
     protected function encodeInteger(AbstractType $type) : string
     {
+        $int = $type->getValue();
         $isBigInt = $type->isBigInt();
+        $isNegative = ($int < 0);
         $this->throwIfBigIntGmpNeeded($isBigInt);
-        $int = $isBigInt ? \gmp_abs($type->getValue()) : \abs((int) $type->getValue());
-        # Seems like a hack to check the big int this way...but probably the quickest
-        $isNegative = $isBigInt ? $type->getValue()[0] === '-' : ($type->getValue() < 0);
+        if ($isNegative) {
+            $int = $isBigInt ? \gmp_abs($type->getValue()) : ($int * -1);
+        }
 
         # Subtract one for Two's Complement...
         if ($isNegative) {
@@ -874,7 +876,7 @@ class BerEncoder implements EncoderInterface
         } else {
             # dechex can produce uneven hex while hex2bin requires it to be even
             $hex = \dechex($int);
-            $bytes = \hex2bin((\strlen($hex) % 2) === 0 ? $hex : '0' . $hex);
+            $bytes = \hex2bin((\strlen($hex) % 2) === 0 ? $hex : '0'.$hex);
         }
 
         # Two's Complement, invert the bits...
@@ -1054,7 +1056,7 @@ class BerEncoder implements EncoderInterface
      */
     protected function decodeBoolean() : BooleanType
     {
-        return new BooleanType(\ord($this->binary[$this->pos++]) !== 0);
+        return new BooleanType(($this->binary[$this->pos++] !== "\x00"));
     }
 
     /**
