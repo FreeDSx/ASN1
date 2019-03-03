@@ -39,19 +39,6 @@ use FreeDSx\Asn1\Type\UtcTimeType;
 class BerEncoder implements EncoderInterface
 {
     /**
-     * These types must have a non-zero length.
-     */
-    protected const NON_ZERO_LENGTH = [
-        AbstractType::TAG_TYPE_BOOLEAN => true,
-        AbstractType::TAG_TYPE_UTC_TIME => true,
-        AbstractType::TAG_TYPE_GENERALIZED_TIME => true,
-        AbstractType::TAG_TYPE_INTEGER => true,
-        AbstractType::TAG_TYPE_ENUMERATED => true,
-        AbstractType::TAG_TYPE_OID => true,
-        AbstractType::TAG_TYPE_RELATIVE_OID => true,
-    ];
-
-    /**
      * @var array
      */
     protected $tagMap = [
@@ -65,35 +52,32 @@ class BerEncoder implements EncoderInterface
      */
     protected $options = [
         'bitstring_padding' => '0',
-        'primitive_only' => [],
-        'constructed_only' => [],
-    ];
-
-    /**
-     * @var array
-     */
-    protected $constructedOnly = [
-        AbstractType::TAG_TYPE_SEQUENCE => true,
-        AbstractType::TAG_TYPE_SET => true,
-    ];
-
-    /**
-     * @var array
-     */
-    protected $primitiveOnly = [
-        AbstractType::TAG_TYPE_BOOLEAN => true,
-        AbstractType::TAG_TYPE_INTEGER => true,
-        AbstractType::TAG_TYPE_ENUMERATED => true,
-        AbstractType::TAG_TYPE_REAL => true,
-        AbstractType::TAG_TYPE_NULL => true,
-        AbstractType::TAG_TYPE_OID => true,
-        AbstractType::TAG_TYPE_RELATIVE_OID => true,
     ];
 
     /**
      * @var bool
      */
     protected $isGmpAvailable;
+
+    /**
+     * @var int
+     */
+    protected $pos;
+
+    /**
+     * @var int|null
+     */
+    protected $lastPos;
+
+    /**
+     * @var int
+     */
+    protected $maxLen;
+
+    /**
+     * @var string
+     */
+    protected $binary;
 
     /**
      * @param array $options
@@ -109,15 +93,16 @@ class BerEncoder implements EncoderInterface
      */
     public function decode($binary, array $tagMap = []) : AbstractType
     {
-        if ($binary == '') {
+        $this->startEncoding($binary);
+        if ($this->maxLen === 0) {
             throw new InvalidArgumentException('The data to decode cannot be empty.');
-        } elseif (strlen($binary) === 1) {
+        } elseif ($this->maxLen === 1) {
             throw new PartialPduException('Received only 1 byte of data.');
         }
-        $info = $this->decodeBytes($binary, $tagMap, true);
-        $info['type']->setTrailingData($info['bytes']);
+        $type = $this->decodeBytes($tagMap, true);
+        $this->stopEncoding();
 
-        return $info['type'];
+        return $type;
     }
 
     /**
@@ -125,9 +110,13 @@ class BerEncoder implements EncoderInterface
      */
     public function complete(IncompleteType $type, int $tagType, array $tagMap = []) : AbstractType
     {
-        return $this->getDecodedType($tagType, $type->getIsConstructed(), $type->getValue(), $tagMap)
-            ->setTagNumber($type->getTagNumber())
+        $this->startEncoding($type->getValue());
+        $newType = $this->getDecodedType($tagType, $type->getIsConstructed(), $this->maxLen, $tagMap);
+        $this->stopEncoding();
+        $newType->setTagNumber($type->getTagNumber())
             ->setTagClass($type->getTagClass());
+
+        return $newType;
     }
 
     /**
@@ -178,19 +167,32 @@ class BerEncoder implements EncoderInterface
         if (isset($options['bitstring_padding']) && \is_string($options['bitstring_padding'])) {
             $this->options['bitstring_padding'] = $options['bitstring_padding'];
         }
-        if (isset($options['primitive_only']) && \is_array($options['primitive_only'])) {
-            $this->options['primitive_only'] = \array_merge($this->options['primitive_only'], $options['primitive_only']);
-            foreach ($this->options['primitive_only'] as $tag) {
-                $this->primitiveOnly[$tag] = true;
-            }
-        }
-        if (isset($options['constructed_only']) && \is_array($options['constructed_only'])) {
-            foreach ($this->options['constructed_only'] as $tag) {
-                $this->constructedOnly[$tag] = true;
-            }
-        }
 
         return $this;
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getLastPosition() : ?int
+    {
+        return $this->lastPos;
+    }
+
+    protected function startEncoding(string $binary) : void
+    {
+        $this->binary = $binary;
+        $this->lastPos = null;
+        $this->pos = 0;
+        $this->maxLen = \strlen($this->binary);
+    }
+
+    protected function stopEncoding() : void
+    {
+        $this->binary = null;
+        $this->maxLen = 0;
+        $this->lastPos = $this->pos;
+        $this->pos = 0;
     }
 
     /**
@@ -198,84 +200,158 @@ class BerEncoder implements EncoderInterface
      *
      * @param int|null $tagType
      * @param bool $isConstructed
-     * @param string $bytes
+     * @param int $length
      * @param array $tagMap
      * @return AbstractType
      * @throws EncoderException
      */
-    protected function getDecodedType(?int $tagType, bool $isConstructed, $bytes, array $tagMap) : AbstractType
+    protected function getDecodedType(?int $tagType, bool $isConstructed, $length, array $tagMap) : AbstractType
     {
-        if ($tagType === null) {
-            return new IncompleteType($bytes);
+        if (($this->maxLen - $this->pos) < $length) {
+            throw new EncoderException('The actual length is less than the expected length.');
         }
-        $length = \strlen($bytes);
-        $this->validateDecodedTypeAttributes($length, $tagType, $isConstructed);
+        if ($tagType === null) {
+            $type = new IncompleteType(\substr($this->binary, $this->pos, $length));
+            $this->pos += $length;
+
+            return $type;
+        }
 
         switch ($tagType) {
             case AbstractType::TAG_TYPE_BOOLEAN:
-                if ($length > 1) {
+                if ($length !== 1 || $isConstructed) {
                     throw new EncoderException(sprintf(
-                        'A boolean type must have only one octet, but it has %s.',
+                        'The encoded boolean type is malformed.',
                         $length
                     ));
                 }
-                $value = $this->decodeBoolean($bytes);
+                return $this->decodeBoolean();
                 break;
             case AbstractType::TAG_TYPE_NULL:
-                if ($length !== 0) {
-                    throw new EncoderException(sprintf(
-                        'A null type must not have any value octets, but it has %s.',
-                        $length
-                    ));
+                if ($length !== 0 || $isConstructed) {
+                    throw new EncoderException('The encoded null type is malformed.');
                 }
-                $value = null;
+                return new EncodedType\NullType();
                 break;
             case AbstractType::TAG_TYPE_INTEGER:
+                if ($isConstructed) {
+                    throw new EncoderException('The encoded integer type is malformed.');
+                }
+                return new EncodedType\IntegerType($this->decodeInteger($length));
+                break;
             case AbstractType::TAG_TYPE_ENUMERATED:
-                $value = $this->decodeInteger($bytes);
+                if ($isConstructed) {
+                    throw new EncoderException('The encoded enumerated type is malformed.');
+                }
+                return new EncodedType\EnumeratedType($this->decodeInteger($length));
                 break;
             case AbstractType::TAG_TYPE_REAL:
-                $value = $this->decodeReal($bytes);
+                if ($isConstructed) {
+                    throw new EncoderException('The encoded real type is malformed.');
+                }
+                return new RealType($this->decodeReal($length));
                 break;
             case AbstractType::TAG_TYPE_BIT_STRING:
-                $value = $this->decodeBitString($bytes);
+                return new BitStringType($this->decodeBitString($length));
                 break;
             case AbstractType::TAG_TYPE_OID:
-                $value = $this->decodeOid($bytes);
+                if ($isConstructed) {
+                    throw new EncoderException('The encoded OID type is malformed.');
+                }
+                return new OidType($this->decodeOid($length));
                 break;
             case AbstractType::TAG_TYPE_RELATIVE_OID:
-                $value = $this->decodeRelativeOid($bytes);
+                if ($isConstructed) {
+                    throw new EncoderException('The encoded relative OID type is malformed.');
+                }
+                return new RelativeOidType($this->decodeRelativeOid($length));
                 break;
             case AbstractType::TAG_TYPE_GENERALIZED_TIME:
-                $value = $this->decodeGeneralizedTime($bytes);
+                return $this->decodeGeneralizedTime($length);
                 break;
             case AbstractType::TAG_TYPE_UTC_TIME:
-                $value = $this->decodeUtcTime($bytes);
+                return $this->decodeUtcTime($length);
                 break;
             case AbstractType::TAG_TYPE_OCTET_STRING:
+                $type = new EncodedType\OctetStringType(\substr($this->binary, $this->pos, $length));
+                $this->pos += $length;
+                return $type;
+                break;
             case AbstractType::TAG_TYPE_GENERAL_STRING:
+                $type = new EncodedType\GeneralStringType(\substr($this->binary, $this->pos, $length));
+                $this->pos += $length;
+                return $type;
+                break;
             case AbstractType::TAG_TYPE_VISIBLE_STRING:
+                $type = new EncodedType\VisibleStringType(\substr($this->binary, $this->pos, $length));
+                $this->pos += $length;
+                return $type;
+                break;
             case AbstractType::TAG_TYPE_BMP_STRING:
+                $type = new EncodedType\BmpStringType(\substr($this->binary, $this->pos, $length));
+                $this->pos += $length;
+                return $type;
+                break;
             case AbstractType::TAG_TYPE_CHARACTER_STRING:
+                $type = new EncodedType\CharacterStringType(\substr($this->binary, $this->pos, $length));
+                $this->pos += $length;
+                return $type;
+                break;
             case AbstractType::TAG_TYPE_UNIVERSAL_STRING:
+                $type = new EncodedType\UniversalStringType(\substr($this->binary, $this->pos, $length));
+                $this->pos += $length;
+                return $type;
+                break;
             case AbstractType::TAG_TYPE_GRAPHIC_STRING:
+                $type = new EncodedType\GraphicStringType(\substr($this->binary, $this->pos, $length));
+                $this->pos += $length;
+                return $type;
+                break;
             case AbstractType::TAG_TYPE_VIDEOTEX_STRING:
+                $type = new EncodedType\VideotexStringType(\substr($this->binary, $this->pos, $length));
+                $this->pos += $length;
+                return $type;
+                break;
             case AbstractType::TAG_TYPE_TELETEX_STRING:
+                $type = new EncodedType\TeletexStringType(\substr($this->binary, $this->pos, $length));
+                $this->pos += $length;
+                return $type;
+                break;
             case AbstractType::TAG_TYPE_PRINTABLE_STRING:
+                $type = new EncodedType\PrintableStringType(\substr($this->binary, $this->pos, $length));
+                $this->pos += $length;
+                return $type;
+                break;
             case AbstractType::TAG_TYPE_NUMERIC_STRING:
+                $type = new EncodedType\NumericStringType(\substr($this->binary, $this->pos, $length));
+                $this->pos += $length;
+                return $type;
+                break;
             case AbstractType::TAG_TYPE_IA5_STRING:
+                $type = new EncodedType\IA5StringType(\substr($this->binary, $this->pos, $length));
+                $this->pos += $length;
+                return $type;
+                break;
             case AbstractType::TAG_TYPE_UTF8_STRING:
-                $value = $bytes;
+                $type = new EncodedType\Utf8StringType(\substr($this->binary, $this->pos, $length));
+                $this->pos += $length;
+                return $type;
                 break;
             case AbstractType::TAG_TYPE_SEQUENCE:
+                if (!$isConstructed) {
+                    throw new EncoderException('The encoded sequence type is malformed.');
+                }
+                return new EncodedType\SequenceType(...$this->decodeConstructedType($length, $tagMap));
+                break;
             case AbstractType::TAG_TYPE_SET:
-                $value = $this->decodeConstructedType($bytes, $tagMap);
+                if (!$isConstructed) {
+                    throw new EncoderException('The encoded set type is malformed.');
+                }
+                return new EncodedType\SetType(...$this->decodeConstructedType($length, $tagMap));
                 break;
             default:
                 throw new EncoderException(sprintf('Unable to decode value to a type for tag %s.', $tagType));
         }
-
-        return $this->createType($tagType, $value, $isConstructed);
     }
 
     /**
@@ -337,56 +413,25 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * Some initial checks against data length and form (primitive / constructed).
-     *
-     * @param int $length
-     * @param int $tagType
-     * @param bool $isConstructed
-     * @throws EncoderException
-     */
-    protected function validateDecodedTypeAttributes(int $length, int $tagType, bool $isConstructed) : void
-    {
-        if ($length === 0 && (self::NON_ZERO_LENGTH[$tagType] ?? null)) {
-            throw new EncoderException(sprintf('Zero length is not permitted for tag %s.', $tagType));
-        }
-
-        if ($isConstructed && ($this->primitiveOnly[$tagType] ?? null)) {
-            throw new EncoderException(sprintf(
-                'The tag type %s is marked constructed, but it can only be primitive.',
-                $tagType
-            ));
-        }
-        if (!$isConstructed && ($this->constructedOnly[$tagType] ?? null)) {
-            throw new EncoderException(sprintf(
-                'The tag type %s is marked primitive, but it can only be constructed.',
-                $tagType
-            ));
-        }
-    }
-
-    /**
-     * @param string $binary
      * @param array $tagMap
      * @param bool $isRoot
-     * @return array
+     * @return AbstractType
      * @throws EncoderException
      * @throws PartialPduException
      */
-    protected function decodeBytes($binary, array $tagMap, bool $isRoot = false) : array
+    protected function decodeBytes(array $tagMap, bool $isRoot = false) : AbstractType
     {
-        $data = ['type' => null, 'bytes' => null, 'trailing' => null];
         $tagMap = $tagMap + $this->tagMap;
 
-        $tag = $this->getDecodedTag($binary, $isRoot);
-        $length = $this->getDecodedLength(\substr($binary, $tag['length']));
+        $tag = $this->getDecodedTag($isRoot);
+        $length = $this->getDecodedLength();
         $tagType = $this->getTagType($tag['number'], $tag['class'], $tagMap);
 
-        $totalLength = $tag['length'] + $length['length_length'] + $length['value_length'];
-        if (\strlen($binary) < $totalLength) {
+        if (($this->maxLen - $this->pos) < $length['value_length']) {
             $message = sprintf(
                 'The expected byte length was %s, but received %s.',
-                $totalLength,
-                \strlen($binary)
+                $length['value_length'],
+                ($this->maxLen - $this->pos)
             );
             if ($isRoot) {
                 throw new PartialPduException($message);
@@ -395,13 +440,12 @@ class BerEncoder implements EncoderInterface
             }
         }
 
-        $data['type'] = $this->getDecodedType($tagType, $tag['constructed'], \substr($binary, $tag['length'] + $length['length_length'], $length['value_length']), $tagMap);
-        $data['type']->setTagClass($tag['class']);
-        $data['type']->setTagNumber($tag['number']);
-        $data['type']->setIsConstructed($tag['constructed']);
-        $data['bytes'] = \substr($binary, $totalLength);
+        $type = $this->getDecodedType($tagType, $tag['constructed'], $length['value_length'], $tagMap);
+        $type->setTagClass($tag['class']);
+        $type->setTagNumber($tag['number']);
+        $type->setIsConstructed($tag['constructed']);
 
-        return $data;
+        return $type;
     }
 
     /**
@@ -423,13 +467,12 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param string $bytes
      * @return array
      * @throws EncoderException
      */
-    protected function getDecodedLength($bytes) : array
+    protected function getDecodedLength() : array
     {
-        $info = ['value_length' => \ord($bytes[0] ?? null), 'length_length' => 1];
+        $info = ['value_length' => isset($this->binary[$this->pos]) ? \ord($this->binary[$this->pos++]) : 0, 'length_length' => 1];
 
         if ($info['value_length'] === 128) {
             throw new EncoderException('Indefinite length encoding is not currently supported.');
@@ -437,20 +480,19 @@ class BerEncoder implements EncoderInterface
 
         # Long definite length has a special encoding.
         if ($info['value_length'] > 127) {
-            $info = $this->decodeLongDefiniteLength($bytes, $info);
+            $info = $this->decodeLongDefiniteLength($info);
         }
 
         return $info;
     }
 
     /**
-     * @param string $bytes
      * @param array $info
      * @return array
      * @throws EncoderException
      * @throws PartialPduException
      */
-    protected function decodeLongDefiniteLength($bytes, array $info) : array
+    protected function decodeLongDefiniteLength(array $info) : array
     {
         # The length of the length bytes is in the first 7 bits. So remove the MSB to get the value.
         $info['length_length'] = $info['value_length'] & ~0x80;
@@ -459,16 +501,16 @@ class BerEncoder implements EncoderInterface
         if ($info['length_length'] === 127) {
             throw new EncoderException('The decoded length cannot be equal to 127 bytes.');
         }
-        if ($info['length_length'] + 1 > \strlen($bytes)) {
+        if (($info['length_length'] + 1) > ($this->maxLen - $this->pos)) {
             throw new PartialPduException('Not enough data to decode the length.');
         }
+        $endAt = $this->pos + $info['length_length'];
 
         # Base 256 encoded
         $info['value_length'] = 0;
-        for ($i = 1; $i < $info['length_length'] + 1; $i++) {
-            $info['value_length'] = $info['value_length'] * 256 + \ord($bytes[$i]);
+        for ($this->pos; $this->pos < $endAt; $this->pos++) {
+            $info['value_length'] = $info['value_length'] * 256 + \ord($this->binary[$this->pos]);
         }
-
         # Add the byte that represents the length of the length
         $info['length_length']++;
 
@@ -476,15 +518,14 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param string $bytes
      * @param bool $isRoot
      * @return array
      * @throws EncoderException
      * @throws PartialPduException
      */
-    protected function getDecodedTag($bytes, bool $isRoot) : array
+    protected function getDecodedTag(bool $isRoot) : array
     {
-        $tag = \ord($bytes[0]);
+        $tag = \ord($this->binary[$this->pos++]);
         $info = ['class' => null, 'number' => null, 'constructed' => null, 'length' => 1];
 
         if ($tag & AbstractType::TAG_CLASS_APPLICATION && $tag & AbstractType::TAG_CLASS_CONTEXT_SPECIFIC) {
@@ -506,8 +547,8 @@ class BerEncoder implements EncoderInterface
 
         # A high tag number is determined using VLQ (like the OID identifier encoding) of the subsequent bytes.
         try {
-            ['value' => $info['number'], 'length' => $info['length']] = $this->getVlqBytesToInt(\substr($bytes, 1));
-        # It's possible we only got part of the VLQ for the high tag, as there is no way to know it's ending length.
+            ['value' => $info['number'], 'length' => $info['length']] = $this->getVlqBytesToInt();
+            # It's possible we only got part of the VLQ for the high tag, as there is no way to know it's ending length.
         } catch (EncoderException $e) {
             if ($isRoot) {
                 throw new PartialPduException(
@@ -524,17 +565,16 @@ class BerEncoder implements EncoderInterface
     /**
      * Given what should be VLQ bytes represent an int, get the int and the length of bytes.
      *
-     * @param $bytes
      * @return array
      * @throws EncoderException
      */
-    protected function getVlqBytesToInt($bytes) : array
+    protected function getVlqBytesToInt() : array
     {
         $value = 0;
         $isBigInt = false;
-        $length = \strlen($bytes);
+        $startAt = $this->pos;
 
-        for ($i = 0; $i < $length; $i++) {
+        for ($this->pos; $this->pos < $this->maxLen; $this->pos++) {
             if (!$isBigInt) {
                 $lshift = $value << 7;
                 # An overflow bitshift will result in a negative number. This will check if GMP is available and flip it
@@ -548,15 +588,16 @@ class BerEncoder implements EncoderInterface
             if ($isBigInt) {
                 $lshift = \gmp_mul($value, \gmp_pow("2", 7));
             }
-            $orVal = (\ord($bytes[$i]) & 0x7f);
+            $orVal = (\ord($this->binary[$this->pos]) & 0x7f);
             if ($isBigInt) {
                 $value = \gmp_or($lshift, \gmp_init($orVal));
             } else {
                 $value = $lshift | $orVal;
             }
             # We have reached the last byte if the MSB is not set.
-            if ((\ord($bytes[$i]) & 0x80) === 0) {
-                return ['length' => $i + 1, 'value' => ($isBigInt ? \gmp_strval($value) : $value)];
+            if ((\ord($this->binary[$this->pos]) & 0x80) === 0) {
+                $this->pos++;
+                return ['length' => ($this->pos - $startAt) + 1, 'value' => ($isBigInt ? \gmp_strval($value) : $value)];
             }
         }
 
@@ -817,13 +858,11 @@ class BerEncoder implements EncoderInterface
      */
     protected function encodeInteger(AbstractType $type) : string
     {
-        $int = $type->getValue();
         $isBigInt = $type->isBigInt();
-        $isNegative = ($int < 0);
         $this->throwIfBigIntGmpNeeded($isBigInt);
-        if ($isNegative) {
-            $int = $isBigInt ? \gmp_abs($type->getValue()) : ($int * -1);
-        }
+        $int = $isBigInt ? \gmp_abs($type->getValue()) : \abs((int) $type->getValue());
+        # Seems like a hack to check the big int this way...but probably the quickest
+        $isNegative = $isBigInt ? $type->getValue()[0] === '-' : ($type->getValue() < 0);
 
         # Subtract one for Two's Complement...
         if ($isNegative) {
@@ -835,7 +874,7 @@ class BerEncoder implements EncoderInterface
         } else {
             # dechex can produce uneven hex while hex2bin requires it to be even
             $hex = \dechex($int);
-            $bytes = \hex2bin((\strlen($hex) % 2) === 0 ? $hex : '0'.$hex);
+            $bytes = \hex2bin((\strlen($hex) % 2) === 0 ? $hex : '0' . $hex);
         }
 
         # Two's Complement, invert the bits...
@@ -884,35 +923,37 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param $bytes
-     * @return array
+     * @param int $length
+     * @return GeneralizedTimeType
      * @throws EncoderException
      */
-    protected function decodeGeneralizedTime($bytes)
+    protected function decodeGeneralizedTime($length) : GeneralizedTimeType
     {
-        return $this->decodeTime($bytes, 'YmdH', GeneralizedTimeType::TIME_REGEX, GeneralizedTimeType::REGEX_MAP);
+        return new GeneralizedTimeType(...$this->decodeTime('YmdH', GeneralizedTimeType::TIME_REGEX, GeneralizedTimeType::REGEX_MAP, $length));
     }
 
     /**
-     * @param $bytes
-     * @return array
+     * @param int $length
+     * @return UtcTimeType
      * @throws EncoderException
      */
-    protected function decodeUtcTime($bytes)
+    protected function decodeUtcTime($length) : UtcTimeType
     {
-        return $this->decodeTime($bytes, 'ymdH', UtcTimeType::TIME_REGEX, UtcTimeType::REGEX_MAP);
+        return new UtcTimeType(...$this->decodeTime('ymdH', UtcTimeType::TIME_REGEX, UtcTimeType::REGEX_MAP, $length));
     }
 
     /**
-     * @param string $bytes
      * @param string $format
      * @param string $regex
      * @param array $matchMap
+     * @param int $length
      * @return array
      * @throws EncoderException
      */
-    protected function decodeTime($bytes, string $format, string $regex, array $matchMap) : array
+    protected function decodeTime(string $format, string $regex, array $matchMap, $length) : array
     {
+        $bytes = \substr($this->binary, $this->pos, $length);
+        $this->pos += $length;
         if (!\preg_match($regex, $bytes, $matches)) {
             throw new EncoderException('The datetime format is invalid and cannot be decoded.');
         }
@@ -948,6 +989,7 @@ class BerEncoder implements EncoderInterface
         if ($dateTime === false) {
             throw new EncoderException('Unable to decode time to a DateTime object.');
         }
+        $bytes = null;
 
         return [$dateTime, $dtFormat, $tzFormat];
     }
@@ -963,64 +1005,67 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param string $bytes
+     * @param $length
      * @return string
      * @throws EncoderException
      */
-    protected function decodeOid($bytes) : string
+    protected function decodeOid($length) : string
     {
+        if ($length === 0) {
+            throw new EncoderException('Zero length not permitted for an OID type.');
+        }
         # The first 2 digits are contained within the first byte
-        $byte = \ord($bytes[0]);
+        $byte = \ord($this->binary[$this->pos++]);
         $first = (int) ($byte / 40);
         $second =  $byte - (40 * $first);
+        $length--;
 
         $oid = $first.'.'.$second;
-        $bytes = \substr($bytes, 1);
-        if ((string) $bytes !== '') {
-            $oid .= '.'.$this->decodeRelativeOid($bytes);
+        if ($length) {
+            $oid .= '.'.$this->decodeRelativeOid($length);
         }
 
         return $oid;
     }
 
     /**
-     * @param $bytes
+     * @param $length
      * @return string
      * @throws EncoderException
      */
-    protected function decodeRelativeOid($bytes) : string
+    protected function decodeRelativeOid($length) : string
     {
+        if ($length === 0) {
+            throw new EncoderException('Zero length not permitted for an OID type.');
+        }
         $oid = '';
+        $endAt = $this->pos + $length;
 
-        while ($bytes !== '') {
-            ['value' => $int, 'length' => $length] = $this->getVlqBytesToInt($bytes);
+        while ($this->pos < $endAt) {
+            ['value' => $int] = $this->getVlqBytesToInt();
             $oid .= ($oid === '' ? '' : '.').$int;
-            $bytes = \substr($bytes, $length);
         }
 
         return $oid;
     }
 
     /**
-     * @param $bytes
-     * @return bool
+     * @return BooleanType
      */
-    protected function decodeBoolean($bytes) : bool
+    protected function decodeBoolean() : BooleanType
     {
-        return $bytes[0] !== "\x00";
+        return new BooleanType(\ord($this->binary[$this->pos++]) !== 0);
     }
 
     /**
-     * @param string $bytes
+     * @param int $length
      * @return string
      * @throws EncoderException
      */
-    protected function decodeBitString($bytes) : string
+    protected function decodeBitString($length) : string
     {
         # The first byte represents the number of unused bits at the end.
-        $unused = \ord($bytes[0]);
-        $bytes = \substr($bytes, 1);
-        $length = \strlen($bytes);
+        $unused = \ord($this->binary[$this->pos++]);
 
         if ($unused > 7) {
             throw new EncoderException(sprintf(
@@ -1035,23 +1080,24 @@ class BerEncoder implements EncoderInterface
                 $length
             ));
         }
+        $length--;
 
-        return $this->binaryToBitString($bytes, $length, $unused);
+        return $this->binaryToBitString($length, $unused);
     }
 
     /**
-     * @param string $bytes
      * @param int $length
      * @param int $unused
      * @return string
      */
-    protected function binaryToBitString($bytes, int $length, int $unused) : string
+    protected function binaryToBitString(int $length, int $unused) : string
     {
         $bitstring = '';
+        $endAt = $this->pos + $length;
 
-        for ($i = 0; $i < $length; $i++) {
-            $octet = \sprintf( "%08d", \decbin(\ord($bytes[$i])));
-            if ($i === ($length - 1) && $unused) {
+        for ($this->pos; $this->pos < $endAt; $this->pos++) {
+            $octet = \sprintf( "%08d", \decbin(\ord($this->binary[$this->pos])));
+            if ($this->pos === ($endAt - 1) && $unused) {
                 $bitstring .= \substr($octet, 0, ($unused * -1));
             } else {
                 $bitstring .= $octet;
@@ -1062,18 +1108,22 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param string $bytes
+     * @param int $length
      * @return string|int number
      * @throws EncoderException
      */
-    protected function decodeInteger($bytes)
+    protected function decodeInteger($length)
     {
-        $isNegative = (\ord($bytes[0]) & 0x80);
+        if ($length === 0) {
+            throw new EncoderException('Zero length not permitted for an integer type.');
+        }
+        $bytes = \substr($this->binary, $this->pos, $length);
+        $this->pos += $length;
 
+        $isNegative = (\ord($bytes[0]) & 0x80);
         # Need to reverse Two's Complement. Invert the bits...
         if ($isNegative) {
-            $len = \strlen($bytes);
-            for ($i = 0; $i < $len; $i++) {
+            for ($i = 0; $i < $length; $i++) {
                 $bytes[$i] = ~$bytes[$i];
             }
         }
@@ -1084,6 +1134,7 @@ class BerEncoder implements EncoderInterface
         if ($isBigInt) {
             $int = \gmp_import($bytes);
         }
+        $bytes = null;
 
         # Complete Two's Complement by adding 1 and turning it negative...
         if ($isNegative) {
@@ -1108,17 +1159,17 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param string $bytes
+     * @param int $length
      * @return float
      * @throws EncoderException
      */
-    protected function decodeReal($bytes) : float
+    protected function decodeReal($length) : float
     {
-        if ($bytes === '') {
+        if ($length === 0) {
             return 0;
         }
 
-        $ident = \ord($bytes[0]);
+        $ident = \ord($this->binary[$this->pos++]);
         if ($ident === 0x40) {
             return INF;
         }
@@ -1171,115 +1222,21 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param string $bytes
+     * @param int $length
      * @param array $tagMap
      * @return array
      * @throws EncoderException
      * @throws PartialPduException
      */
-    protected function decodeConstructedType($bytes, array $tagMap)
+    protected function decodeConstructedType($length, array $tagMap)
     {
         $children = [];
+        $endAt = $this->pos + $length;
 
-        while ($bytes !== '') {
-            list('type' => $type, 'bytes' => $bytes) = $this->decodeBytes($bytes, $tagMap);
-            $children[] = $type;
+        while ($this->pos < $endAt) {
+            $children[] = $this->decodeBytes($tagMap);
         }
 
         return $children;
-    }
-
-    /**
-     * Given a tag number, value, and whether it should be constructed, construct the type object.
-     *
-     * @param mixed $value
-     * @param int|null $tagType
-     * @param bool $isConstructed
-     * @return AbstractType
-     * @throws EncoderException
-     */
-    protected function createType(int $tagType, $value, bool $isConstructed = false) : EncodedType\AbstractType
-    {
-        $value = (array) $value;
-
-        switch ($tagType) {
-            case EncodedType\AbstractType::TAG_TYPE_BOOLEAN:
-                return new EncodedType\BooleanType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_INTEGER:
-                return new EncodedType\IntegerType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_BIT_STRING:
-                return $isConstructed ? (new EncodedType\BitStringType())->setChildren(...$value) : new EncodedType\BitStringType(...$value);
-                break;
-            case  EncodedType\AbstractType::TAG_TYPE_OCTET_STRING:
-                return $isConstructed ? (new EncodedType\OctetStringType())->setChildren(...$value) : new EncodedType\OctetStringType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_NULL:
-                return new EncodedType\NullType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_OID:
-                return new EncodedType\OidType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_RELATIVE_OID:
-                return new EncodedType\RelativeOidType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_REAL:
-                return new EncodedType\RealType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_ENUMERATED:
-                return new EncodedType\EnumeratedType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_UTF8_STRING:
-                return $isConstructed ? (new EncodedType\Utf8StringType())->setChildren(...$value) : new EncodedType\Utf8StringType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_SEQUENCE:
-                return new EncodedType\SequenceType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_SET:
-                return new EncodedType\SetType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_NUMERIC_STRING:
-                return $isConstructed ? (new EncodedType\NumericStringType())->setChildren(...$value) : new EncodedType\NumericStringType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_PRINTABLE_STRING:
-                return $isConstructed ? (new EncodedType\PrintableStringType())->setChildren(...$value) : new EncodedType\PrintableStringType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_TELETEX_STRING:
-                return $isConstructed ? (new EncodedType\TeletexStringType())->setChildren(...$value) : new EncodedType\TeletexStringType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_VIDEOTEX_STRING:
-                return $isConstructed ? (new EncodedType\VideotexStringType())->setChildren(...$value) : new EncodedType\VideotexStringType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_IA5_STRING:
-                return $isConstructed ? (new EncodedType\IA5StringType())->setChildren(...$value) : new EncodedType\IA5StringType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_UTC_TIME:
-                return $isConstructed ? (new EncodedType\UtcTimeType())->setChildren(...$value) : new EncodedType\UtcTimeType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_GENERALIZED_TIME:
-                return $isConstructed ? (new EncodedType\GeneralizedTimeType())->setChildren(...$value) : new EncodedType\GeneralizedTimeType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_GRAPHIC_STRING:
-                return $isConstructed ? (new EncodedType\GraphicStringType())->setChildren(...$value) : new EncodedType\GraphicStringType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_VISIBLE_STRING:
-                return $isConstructed ? (new EncodedType\VisibleStringType())->setChildren(...$value) : new EncodedType\VisibleStringType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_GENERAL_STRING:
-                return $isConstructed ? (new EncodedType\GeneralStringType())->setChildren(...$value) : new EncodedType\GeneralStringType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_UNIVERSAL_STRING:
-                return $isConstructed ? (new EncodedType\UniversalStringType())->setChildren(...$value) : new EncodedType\UniversalStringType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_CHARACTER_STRING:
-                return $isConstructed ? (new EncodedType\CharacterStringType())->setChildren(...$value) : new EncodedType\CharacterStringType(...$value);
-                break;
-            case EncodedType\AbstractType::TAG_TYPE_BMP_STRING:
-                return $isConstructed ? (new EncodedType\BmpStringType())->setChildren(...$value) : new EncodedType\BmpStringType(...$value);
-                break;
-        }
-
-        throw new EncoderException(sprintf('Tag type %s has no class mapping.', $tagType));
     }
 }

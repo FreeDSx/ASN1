@@ -37,21 +37,6 @@ class DerEncoder extends BerEncoder
         parent::__construct($options);
         $this->setOptions([
             'bitstring_padding' => '0',
-            'primitive_only' => [
-                AbstractType::TAG_TYPE_NUMERIC_STRING,
-                AbstractType::TAG_TYPE_PRINTABLE_STRING,
-                AbstractType::TAG_TYPE_TELETEX_STRING,
-                AbstractType::TAG_TYPE_VIDEOTEX_STRING,
-                AbstractType::TAG_TYPE_IA5_STRING,
-                AbstractType::TAG_TYPE_GRAPHIC_STRING,
-                AbstractType::TAG_TYPE_VISIBLE_STRING,
-                AbstractType::TAG_TYPE_GENERAL_STRING,
-                AbstractType::TAG_TYPE_BMP_STRING,
-                AbstractType::TAG_TYPE_UNIVERSAL_STRING,
-                AbstractType::TAG_TYPE_UTF8_STRING,
-                AbstractType::TAG_TYPE_BIT_STRING,
-                AbstractType::TAG_TYPE_OCTET_STRING,
-            ]
         ]);
     }
 
@@ -65,12 +50,20 @@ class DerEncoder extends BerEncoder
         return parent::getEncodedValue($type);
     }
 
+    protected function decodeBytes(array $tagMap, bool $isRoot = false): AbstractType
+    {
+        $type = parent::decodeBytes($tagMap, $isRoot);
+        $this->validate($type);
+
+        return $type;
+    }
+
     /**
      *{@inheritdoc}
      */
-    protected function getDecodedType(?int $tagType, bool $isConstructed, $bytes, array $tagMap) : AbstractType
+    protected function getDecodedType(?int $tagType, bool $isConstructed, $length, array $tagMap) : AbstractType
     {
-        $type = parent::getDecodedType($tagType, $isConstructed, $bytes, $tagMap);
+        $type = parent::getDecodedType($tagType, $isConstructed, $length, $tagMap);
         $this->validate($type);
 
         return $type;
@@ -79,9 +72,9 @@ class DerEncoder extends BerEncoder
     /**
      * {@inheritdoc}
      */
-    protected function decodeLongDefiniteLength($bytes, array $info): array
+    protected function decodeLongDefiniteLength(array $info): array
     {
-        $info = parent::decodeLongDefiniteLength($bytes, $info);
+        $info = parent::decodeLongDefiniteLength($info);
 
         if ($info['value_length'] < 127) {
             throw new EncoderException('DER must be encoded using the shortest possible length form, but it is not.');

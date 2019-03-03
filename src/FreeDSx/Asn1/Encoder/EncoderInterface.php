@@ -52,4 +52,11 @@ interface EncoderInterface
      * @throws PartialPduException
      */
     public function decode($binary, array $tagMap = []) : AbstractType;
+
+    /**
+     * Get the last position of the binary byte stream after a decode operation.
+     *
+     * @return int|null
+     */
+    public function getLastPosition() : ?int;
 }

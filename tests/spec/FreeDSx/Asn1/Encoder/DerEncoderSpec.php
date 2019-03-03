@@ -134,7 +134,7 @@ class DerEncoderSpec extends ObjectBehavior
 
     function it_should_only_allow_primitive_decoding_for_bitstrings()
     {
-        $this->shouldThrow(new EncoderException('The tag type 3 is marked constructed, but it can only be primitive.'))->during('decode', [hex2bin('2304030200ff')]);
+        $this->shouldThrow(new EncoderException('The bit string must be primitive. It cannot be constructed.'))->during('decode', [hex2bin('2304030200ff')]);
     }
 
     function it_should_only_allow_primitive_encoding_for_octetstrings()
@@ -144,7 +144,7 @@ class DerEncoderSpec extends ObjectBehavior
 
     function it_should_only_allow_primitive_decoding_for_octetstrings()
     {
-        $this->shouldThrow(new EncoderException('The tag type 4 is marked constructed, but it can only be primitive.'))->during('decode', [hex2bin('2403040101')]);
+        $this->shouldThrow(new EncoderException('The octet string must be primitive. It cannot be constructed.'))->during('decode', [hex2bin('2403040101')]);
     }
 
     function it_should_only_allow_primitive_encoding_for_restricted_character_strings()
@@ -164,17 +164,17 @@ class DerEncoderSpec extends ObjectBehavior
 
     function it_should_only_allow_primitive_decoding_for_restricted_character_strings()
     {
-        $this->shouldThrow(new EncoderException('The tag type 18 is marked constructed, but it can only be primitive.'))->during('decode', [hex2bin('3203120101')]);
-        $this->shouldThrow(new EncoderException('The tag type 19 is marked constructed, but it can only be primitive.'))->during('decode', [hex2bin('3303130101')]);
-        $this->shouldThrow(new EncoderException('The tag type 20 is marked constructed, but it can only be primitive.'))->during('decode', [hex2bin('3403140101')]);
-        $this->shouldThrow(new EncoderException('The tag type 21 is marked constructed, but it can only be primitive.'))->during('decode', [hex2bin('3503150101')]);
-        $this->shouldThrow(new EncoderException('The tag type 22 is marked constructed, but it can only be primitive.'))->during('decode', [hex2bin('3603160101')]);
-        $this->shouldThrow(new EncoderException('The tag type 25 is marked constructed, but it can only be primitive.'))->during('decode', [hex2bin('3903190101')]);
-        $this->shouldThrow(new EncoderException('The tag type 26 is marked constructed, but it can only be primitive.'))->during('decode', [hex2bin('3a031a0101')]);
-        $this->shouldThrow(new EncoderException('The tag type 27 is marked constructed, but it can only be primitive.'))->during('decode', [hex2bin('3b031b0101')]);
-        $this->shouldThrow(new EncoderException('The tag type 30 is marked constructed, but it can only be primitive.'))->during('decode', [hex2bin('3e031e0101')]);
-        $this->shouldThrow(new EncoderException('The tag type 28 is marked constructed, but it can only be primitive.'))->during('decode', [hex2bin('3c031c0101')]);
-        $this->shouldThrow(new EncoderException('The tag type 12 is marked constructed, but it can only be primitive.'))->during('decode', [hex2bin('2c030c0101')]);
+        $this->shouldThrow(new EncoderException('Character restricted string types must be primitive.'))->during('decode', [hex2bin('3203120101')]);
+        $this->shouldThrow(new EncoderException('Character restricted string types must be primitive.'))->during('decode', [hex2bin('3303130101')]);
+        $this->shouldThrow(new EncoderException('Character restricted string types must be primitive.'))->during('decode', [hex2bin('3403140101')]);
+        $this->shouldThrow(new EncoderException('Character restricted string types must be primitive.'))->during('decode', [hex2bin('3503150101')]);
+        $this->shouldThrow(new EncoderException('Character restricted string types must be primitive.'))->during('decode', [hex2bin('3603160101')]);
+        $this->shouldThrow(new EncoderException('Character restricted string types must be primitive.'))->during('decode', [hex2bin('3903190101')]);
+        $this->shouldThrow(new EncoderException('Character restricted string types must be primitive.'))->during('decode', [hex2bin('3a031a0101')]);
+        $this->shouldThrow(new EncoderException('Character restricted string types must be primitive.'))->during('decode', [hex2bin('3b031b0101')]);
+        $this->shouldThrow(new EncoderException('Character restricted string types must be primitive.'))->during('decode', [hex2bin('3e031e0101')]);
+        $this->shouldThrow(new EncoderException('Character restricted string types must be primitive.'))->during('decode', [hex2bin('3c031c0101')]);
+        $this->shouldThrow(new EncoderException('Character restricted string types must be primitive.'))->during('decode', [hex2bin('2c030c0101')]);
     }
 
     function it_should_require_that_generalized_time_has_seconds_or_fractions_when_encoding()

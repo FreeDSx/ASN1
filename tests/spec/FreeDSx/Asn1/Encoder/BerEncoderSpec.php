@@ -56,13 +56,9 @@ class BerEncoderSpec extends ObjectBehavior
 
     function it_should_set_options()
     {
-        $this->setOptions(['primitive_only' => [AbstractType::TAG_TYPE_OCTET_STRING]]);
+        $this->setOptions(['bitstring_padding' => '1']);
         $this->getOptions()->shouldBeEqualTo([
-            'bitstring_padding' => '0',
-            'primitive_only' => [
-                AbstractType::TAG_TYPE_OCTET_STRING,
-            ],
-            'constructed_only' => [],
+            'bitstring_padding' => '1',
         ]);
     }
 
@@ -70,8 +66,6 @@ class BerEncoderSpec extends ObjectBehavior
     {
         $this->getOptions()->shouldBeEqualTo([
             'bitstring_padding' => '0',
-            'primitive_only' => [],
-            'constructed_only' => [],
         ]);
     }
 
@@ -682,7 +676,7 @@ class BerEncoderSpec extends ObjectBehavior
 
     function it_should_throw_an_error_when_decoding_incorrect_length()
     {
-        $this->shouldThrow(new EncoderException('The expected byte length was 4, but received 3.'))->duringDecode(hex2bin('010201'));
+        $this->shouldThrow(new EncoderException('The expected byte length was 2, but received 1.'))->duringDecode(hex2bin('010201'));
     }
 
     function it_should_throw_an_error_if_indefinite_length_encoding_is_used()
@@ -690,10 +684,10 @@ class BerEncoderSpec extends ObjectBehavior
         $this->shouldThrow(new EncoderException('Indefinite length encoding is not currently supported.'))->duringDecode(hex2bin('0180010000'));
     }
 
-    function it_should_save_trailing_data()
+    function it_should_get_the_last_ending_position()
     {
-        $type = (new BooleanType(true))->setTrailingData(0x00);
-        $this->decode(hex2bin('0101FF00'))->shouldBeLike($type);
+        $this->decode(hex2bin('0101FF00'))->shouldBeLike(new BooleanType(true));
+        $this->getLastPosition()->shouldBeEqualTo(3);
     }
 
     function it_should_throw_a_partial_PDU_exception_with_only_a_byte_of_data()

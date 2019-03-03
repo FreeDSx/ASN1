@@ -114,11 +114,6 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
     protected $children = [];
 
     /**
-     * @var null|string
-     */
-    protected $trailingData;
-
-    /**
      * @param $value
      */
     public function __construct($value)
@@ -180,25 +175,6 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
     {
         $this->validateTag($int);
         $this->tagNumber = $int;
-
-        return $this;
-    }
-
-    /**
-     * @return null|string
-     */
-    public function getTrailingData() : ?string
-    {
-        return $this->trailingData;
-    }
-
-    /**
-     * @param null|string $data
-     * @return $this
-     */
-    public function setTrailingData($data)
-    {
-        $this->trailingData = $data;
 
         return $this;
     }

@@ -13,6 +13,7 @@ namespace FreeDSx\Asn1\Encoder;
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Type\AbstractTimeType;
 use FreeDSx\Asn1\Type\AbstractType;
+use FreeDSx\Asn1\Type\BooleanType;
 use FreeDSx\Asn1\Type\SetOfType;
 
 /**
@@ -23,38 +24,34 @@ use FreeDSx\Asn1\Type\SetOfType;
 trait CerDerTrait
 {
     /**
-     * @param string $bytes
      * @param int $length
      * @param int $unused
      * @return string
      * @throws EncoderException
      */
-    protected function binaryToBitString($bytes, int $length, int $unused) : string
+    protected function binaryToBitString(int $length, int $unused) : string
     {
-        if ($unused && $length && \ord($bytes[-1]) !== 0 && ((8 - $length) << \ord($bytes[-1])) !== 0) {
+        if ($unused && $length && \ord($this->binary[$this->pos + ($length- 1)]) !== 0 && ((8 - $length) << \ord($this->binary[$this->pos + ($length- 1)])) !== 0) {
             throw new EncoderException(sprintf(
                 'The last %s unused bits of the bit string must be 0, but they are not.',
                 $unused
             ));
         }
 
-        return parent::binaryToBitString($bytes, $length, $unused);
+        return parent::binaryToBitString($length, $unused);
     }
 
     /**
-     * @param string $bytes
-     * @return bool
+     * @return BooleanType
      * @throws EncoderException
      */
-    protected function decodeBoolean($bytes) : bool
+    protected function decodeBoolean() : BooleanType
     {
-        if ($bytes[0] === "\x00") {
-            return false;
-        } elseif ($bytes[0] === "\xff") {
-            return true;
-        } else {
-            throw new EncoderException(sprintf('The encoded boolean must be 0 or 255, received "%s".', ord($bytes[0])));
+        if (!($this->binary[$this->pos] === "\x00" || $this->binary[$this->pos] === "\xff")) {
+            throw new EncoderException(sprintf('The encoded boolean must be 0 or 255, received "%s".', ord($this->binary[$this->pos])));
         }
+
+        return new BooleanType(($this->binary[$this->pos] === "\xff"));
     }
 
     /**
