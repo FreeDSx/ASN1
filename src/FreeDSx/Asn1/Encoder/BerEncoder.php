@@ -447,9 +447,6 @@ class BerEncoder implements EncoderInterface
      */
     protected function getDecodedLength() : int
     {
-        if (!isset($this->binary[$this->pos])) {
-            throw new PartialPduException('There is no length to decode.');
-        }
         $length = \ord($this->binary[$this->pos++]);
         if ($length === 128) {
             throw new EncoderException('Indefinite length encoding is not currently supported.');
