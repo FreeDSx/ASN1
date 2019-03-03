@@ -50,9 +50,9 @@ class DerEncoder extends BerEncoder
         return parent::getEncodedValue($type);
     }
 
-    protected function decodeBytes(array $tagMap, bool $isRoot = false): AbstractType
+    protected function decodeBytes(bool $isRoot = false): AbstractType
     {
-        $type = parent::decodeBytes($tagMap, $isRoot);
+        $type = parent::decodeBytes($isRoot);
         $this->validate($type);
 
         return $type;
@@ -61,9 +61,9 @@ class DerEncoder extends BerEncoder
     /**
      *{@inheritdoc}
      */
-    protected function getDecodedType(?int $tagType, bool $isConstructed, $length, array $tagMap) : AbstractType
+    protected function getDecodedType(?int $tagType, bool $isConstructed, $length) : AbstractType
     {
-        $type = parent::getDecodedType($tagType, $isConstructed, $length, $tagMap);
+        $type = parent::getDecodedType($tagType, $isConstructed, $length);
         $this->validate($type);
 
         return $type;
@@ -72,15 +72,15 @@ class DerEncoder extends BerEncoder
     /**
      * {@inheritdoc}
      */
-    protected function decodeLongDefiniteLength(array $info): array
+    protected function decodeLongDefiniteLength(int $length) : int
     {
-        $info = parent::decodeLongDefiniteLength($info);
+        $length = parent::decodeLongDefiniteLength($length);
 
-        if ($info['value_length'] < 127) {
+        if ($length < 127) {
             throw new EncoderException('DER must be encoded using the shortest possible length form, but it is not.');
         }
 
-        return $info;
+        return $length;
     }
 
     /**

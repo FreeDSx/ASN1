@@ -47,6 +47,8 @@ class BerEncoder implements EncoderInterface
         AbstractType::TAG_CLASS_PRIVATE => [],
     ];
 
+    protected $tmpTagMap = [];
+
     /**
      * @var array
      */
@@ -93,13 +95,13 @@ class BerEncoder implements EncoderInterface
      */
     public function decode($binary, array $tagMap = []) : AbstractType
     {
-        $this->startEncoding($binary);
+        $this->startEncoding($binary, $tagMap);
         if ($this->maxLen === 0) {
             throw new InvalidArgumentException('The data to decode cannot be empty.');
         } elseif ($this->maxLen === 1) {
             throw new PartialPduException('Received only 1 byte of data.');
         }
-        $type = $this->decodeBytes($tagMap, true);
+        $type = $this->decodeBytes(true);
         $this->stopEncoding();
 
         return $type;
@@ -110,8 +112,8 @@ class BerEncoder implements EncoderInterface
      */
     public function complete(IncompleteType $type, int $tagType, array $tagMap = []) : AbstractType
     {
-        $this->startEncoding($type->getValue());
-        $newType = $this->getDecodedType($tagType, $type->getIsConstructed(), $this->maxLen, $tagMap);
+        $this->startEncoding($type->getValue(), $tagMap);
+        $newType = $this->getDecodedType($tagType, $type->getIsConstructed(), $this->maxLen);
         $this->stopEncoding();
         $newType->setTagNumber($type->getTagNumber())
             ->setTagClass($type->getTagClass());
@@ -179,8 +181,9 @@ class BerEncoder implements EncoderInterface
         return $this->lastPos;
     }
 
-    protected function startEncoding(string $binary) : void
+    protected function startEncoding(string $binary, array $tagMap) : void
     {
+        $this->tmpTagMap = $tagMap + $this->tagMap;
         $this->binary = $binary;
         $this->lastPos = null;
         $this->pos = 0;
@@ -189,6 +192,7 @@ class BerEncoder implements EncoderInterface
 
     protected function stopEncoding() : void
     {
+        $this->tmpTagMap = [];
         $this->binary = null;
         $this->maxLen = 0;
         $this->lastPos = $this->pos;
@@ -198,29 +202,18 @@ class BerEncoder implements EncoderInterface
     /**
      * Given a specific tag type / map, decode and construct the type.
      *
-     * @param int|null $tagType
+     * @param int $tagType
      * @param bool $isConstructed
      * @param int $length
-     * @param array $tagMap
      * @return AbstractType
      * @throws EncoderException
      */
-    protected function getDecodedType(?int $tagType, bool $isConstructed, $length, array $tagMap) : AbstractType
+    protected function getDecodedType(int $tagType, bool $isConstructed, $length) : AbstractType
     {
-        if ($tagType === null) {
-            $type = new IncompleteType(\substr($this->binary, $this->pos, $length));
-            $this->pos += $length;
-
-            return $type;
-        }
-
         switch ($tagType) {
             case AbstractType::TAG_TYPE_BOOLEAN:
                 if ($length !== 1 || $isConstructed) {
-                    throw new EncoderException(sprintf(
-                        'The encoded boolean type is malformed.',
-                        $length
-                    ));
+                    throw new EncoderException('The encoded boolean type is malformed.');
                 }
                 return $this->decodeBoolean();
                 break;
@@ -338,13 +331,13 @@ class BerEncoder implements EncoderInterface
                 if (!$isConstructed) {
                     throw new EncoderException('The encoded sequence type is malformed.');
                 }
-                return new EncodedType\SequenceType(...$this->decodeConstructedType($length, $tagMap));
+                return new EncodedType\SequenceType(...$this->decodeConstructedType($length));
                 break;
             case AbstractType::TAG_TYPE_SET:
                 if (!$isConstructed) {
                     throw new EncoderException('The encoded set type is malformed.');
                 }
-                return new EncodedType\SetType(...$this->decodeConstructedType($length, $tagMap));
+                return new EncodedType\SetType(...$this->decodeConstructedType($length));
                 break;
             default:
                 throw new EncoderException(sprintf('Unable to decode value to a type for tag %s.', $tagType));
@@ -410,24 +403,21 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param array $tagMap
      * @param bool $isRoot
      * @return AbstractType
      * @throws EncoderException
      * @throws PartialPduException
      */
-    protected function decodeBytes(array $tagMap, bool $isRoot = false) : AbstractType
+    protected function decodeBytes(bool $isRoot = false) : AbstractType
     {
-        $tagMap = $tagMap + $this->tagMap;
-
         $tag = $this->getDecodedTag($isRoot);
         $length = $this->getDecodedLength();
-        $tagType = $this->getTagType($tag['number'], $tag['class'], $tagMap);
+        $tagType = ($tag['class'] === AbstractType::TAG_CLASS_UNIVERSAL) ? $tag['number'] : ($this->tmpTagMap[$tag['class']][$tag['number']] ?? null);
 
-        if (($this->maxLen - $this->pos) < $length['value_length']) {
+        if (($this->maxLen - $this->pos) < $length) {
             $message = sprintf(
                 'The expected byte length was %s, but received %s.',
-                $length['value_length'],
+                $length,
                 ($this->maxLen - $this->pos)
             );
             if ($isRoot) {
@@ -437,7 +427,13 @@ class BerEncoder implements EncoderInterface
             }
         }
 
-        $type = $this->getDecodedType($tagType, $tag['constructed'], $length['value_length'], $tagMap);
+        if ($tagType !== null) {
+            $type = $this->getDecodedType($tagType, $tag['constructed'], $length);
+        } else {
+            $type = new IncompleteType(\substr($this->binary, $this->pos, $length));
+            $this->pos += $length;
+        }
+
         $type->setTagClass($tag['class']);
         $type->setTagNumber($tag['number']);
         $type->setIsConstructed($tag['constructed']);
@@ -446,72 +442,49 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * From a specific tag number and class try to determine what universal ASN1 type it should be mapped to. If there
-     * is no mapping defined it will return null. In this case the binary data will be wrapped into an IncompleteType.
-     *
-     * @param int|string $tagNumber
-     * @param int $tagClass
-     * @param array $map
-     * @return int|null
-     */
-    protected function getTagType($tagNumber, int $tagClass, array $map) : ?int
-    {
-        if ($tagClass === AbstractType::TAG_CLASS_UNIVERSAL) {
-            return $tagNumber;
-        }
-
-        return $map[$tagClass][$tagNumber] ?? null;
-    }
-
-    /**
-     * @return array
+     * @return int
      * @throws EncoderException
      */
-    protected function getDecodedLength() : array
+    protected function getDecodedLength() : int
     {
-        $info = ['value_length' => isset($this->binary[$this->pos]) ? \ord($this->binary[$this->pos++]) : 0, 'length_length' => 1];
-
-        if ($info['value_length'] === 128) {
+        if (!isset($this->binary[$this->pos])) {
+            throw new PartialPduException('There is no length to decode.');
+        }
+        $length = \ord($this->binary[$this->pos++]);
+        if ($length === 128) {
             throw new EncoderException('Indefinite length encoding is not currently supported.');
         }
 
-        # Long definite length has a special encoding.
-        if ($info['value_length'] > 127) {
-            $info = $this->decodeLongDefiniteLength($info);
-        }
-
-        return $info;
+        return ($length < 128) ? $length : $this->decodeLongDefiniteLength($length);
     }
 
     /**
-     * @param array $info
-     * @return array
+     * @param int $length
+     * @return int
      * @throws EncoderException
      * @throws PartialPduException
      */
-    protected function decodeLongDefiniteLength(array $info) : array
+    protected function decodeLongDefiniteLength(int $length) : int
     {
         # The length of the length bytes is in the first 7 bits. So remove the MSB to get the value.
-        $info['length_length'] = $info['value_length'] & ~0x80;
+        $lengthOfLength = $length & ~0x80;
 
         # The value of 127 is marked as reserved in the spec
-        if ($info['length_length'] === 127) {
+        if ($lengthOfLength === 127) {
             throw new EncoderException('The decoded length cannot be equal to 127 bytes.');
         }
-        if (($info['length_length'] + 1) > ($this->maxLen - $this->pos)) {
+        if (($lengthOfLength + 1) > ($this->maxLen - $this->pos)) {
             throw new PartialPduException('Not enough data to decode the length.');
         }
-        $endAt = $this->pos + $info['length_length'];
+        $endAt = $this->pos + $lengthOfLength;
 
         # Base 256 encoded
-        $info['value_length'] = 0;
+        $length = 0;
         for ($this->pos; $this->pos < $endAt; $this->pos++) {
-            $info['value_length'] = $info['value_length'] * 256 + \ord($this->binary[$this->pos]);
+            $length = $length * 256 + \ord($this->binary[$this->pos]);
         }
-        # Add the byte that represents the length of the length
-        $info['length_length']++;
 
-        return $info;
+        return $length;
     }
 
     /**
@@ -523,7 +496,7 @@ class BerEncoder implements EncoderInterface
     protected function getDecodedTag(bool $isRoot) : array
     {
         $tag = \ord($this->binary[$this->pos++]);
-        $info = ['class' => null, 'number' => null, 'constructed' => null, 'length' => 1];
+        $info = ['class' => null, 'number' => null, 'constructed' => null];
 
         if ($tag & AbstractType::TAG_CLASS_APPLICATION && $tag & AbstractType::TAG_CLASS_CONTEXT_SPECIFIC) {
             $info['class'] = AbstractType::TAG_CLASS_PRIVATE;
@@ -544,8 +517,8 @@ class BerEncoder implements EncoderInterface
 
         # A high tag number is determined using VLQ (like the OID identifier encoding) of the subsequent bytes.
         try {
-            ['value' => $info['number'], 'length' => $info['length']] = $this->getVlqBytesToInt();
-            # It's possible we only got part of the VLQ for the high tag, as there is no way to know it's ending length.
+            $info['number'] = $this->getVlqBytesToInt();
+        # It's possible we only got part of the VLQ for the high tag, as there is no way to know its ending length.
         } catch (EncoderException $e) {
             if ($isRoot) {
                 throw new PartialPduException(
@@ -554,7 +527,6 @@ class BerEncoder implements EncoderInterface
             }
             throw $e;
         }
-        $info['length'] += 1;
 
         return $info;
     }
@@ -562,14 +534,13 @@ class BerEncoder implements EncoderInterface
     /**
      * Given what should be VLQ bytes represent an int, get the int and the length of bytes.
      *
-     * @return array
+     * @return string|int
      * @throws EncoderException
      */
-    protected function getVlqBytesToInt() : array
+    protected function getVlqBytesToInt()
     {
         $value = 0;
         $isBigInt = false;
-        $startAt = $this->pos;
 
         for ($this->pos; $this->pos < $this->maxLen; $this->pos++) {
             if (!$isBigInt) {
@@ -594,7 +565,7 @@ class BerEncoder implements EncoderInterface
             # We have reached the last byte if the MSB is not set.
             if ((\ord($this->binary[$this->pos]) & 0x80) === 0) {
                 $this->pos++;
-                return ['length' => ($this->pos - $startAt) + 1, 'value' => ($isBigInt ? \gmp_strval($value) : $value)];
+                return $isBigInt ? \gmp_strval($value) : $value;
             }
         }
 
@@ -1041,8 +1012,7 @@ class BerEncoder implements EncoderInterface
         $endAt = $this->pos + $length;
 
         while ($this->pos < $endAt) {
-            ['value' => $int] = $this->getVlqBytesToInt();
-            $oid .= ($oid === '' ? '' : '.').$int;
+            $oid .= ($oid === '' ? '' : '.').$this->getVlqBytesToInt();
         }
 
         return $oid;
@@ -1222,18 +1192,17 @@ class BerEncoder implements EncoderInterface
 
     /**
      * @param int $length
-     * @param array $tagMap
      * @return array
      * @throws EncoderException
      * @throws PartialPduException
      */
-    protected function decodeConstructedType($length, array $tagMap)
+    protected function decodeConstructedType($length)
     {
         $children = [];
         $endAt = $this->pos + $length;
 
         while ($this->pos < $endAt) {
-            $children[] = $this->decodeBytes($tagMap);
+            $children[] = $this->decodeBytes();
         }
 
         return $children;
