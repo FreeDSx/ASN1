@@ -684,6 +684,11 @@ class BerEncoderSpec extends ObjectBehavior
         $this->shouldThrow(new EncoderException('Indefinite length encoding is not currently supported.'))->duringDecode(hex2bin('0180010000'));
     }
 
+    function it_should_return_null_for_the_last_ending_position_if_there_is_none_yet()
+    {
+        $this->getLastPosition()->shouldBeNull();
+    }
+
     function it_should_get_the_last_ending_position()
     {
         $this->decode(hex2bin('0101FF00'))->shouldBeLike(new BooleanType(true));
