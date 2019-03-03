@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.4.0 (2019-03-03)
+------------------
+* Performance and memory improvements.
+* Removed the 'trailing data' aspect of decoded types.
+* Added a 'getLastPosition' method for encoders. Returns the last position in the byte stream the decoder stopped at.
+* Removed the 'constructed_only' and 'primitive_only' options for the encoder.
+
 0.3.1 (2019-01-21)
 ------------------
 * Additional minor performance improvements.
