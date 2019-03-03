@@ -207,9 +207,6 @@ class BerEncoder implements EncoderInterface
      */
     protected function getDecodedType(?int $tagType, bool $isConstructed, $length, array $tagMap) : AbstractType
     {
-        if (($this->maxLen - $this->pos) < $length) {
-            throw new EncoderException('The actual length is less than the expected length.');
-        }
         if ($tagType === null) {
             $type = new IncompleteType(\substr($this->binary, $this->pos, $length));
             $this->pos += $length;
