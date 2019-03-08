@@ -52,28 +52,10 @@ class IntegerTypeSpec extends ObjectBehavior
         $this->isBigInt()->shouldBeEqualTo(true);
     }
 
-    function it_should_throw_an_error_on_construction_if_the_value_is_not_numeric()
+    function it_should_be_constructed_with_tag_information()
     {
-        $this->shouldThrow(InvalidArgumentException::class)->during('__construct', ['foo']);
-        $this->shouldThrow(InvalidArgumentException::class)->during('__construct', ['1.5']);
-    }
-
-    function it_should_throw_an_error_on_set_if_the_value_is_not_numeric()
-    {
-        $this->shouldThrow(InvalidArgumentException::class)->during('setValue', ['foo']);
-        $this->shouldThrow(InvalidArgumentException::class)->during('setValue', ['1.5']);
-    }
-
-    function it_should_throw_an_error_when_setting_the_tag_number_if_it_is_not_numeric()
-    {
-        $this->shouldThrow(InvalidArgumentException::class)->during('setTagNumber', ['foo']);
-        $this->shouldThrow(InvalidArgumentException::class)->during('setTagNumber', ['1.5']);
-        $this->shouldNotThrow(InvalidArgumentException::class)->during('setTagNumber', [null]);
-    }
-
-    function it_should_allow_a_numeric_string_as_a_tag_number()
-    {
-        $this->setTagNumber('99999999999999999');
-        $this->getTagNumber()->shouldBeEqualTo('99999999999999999');
+        $this::withTag(1, AbstractType::TAG_CLASS_APPLICATION, 1)->shouldBeLike(
+            (new IntegerType(1))->setTagNumber(1)->setTagClass(AbstractType::TAG_CLASS_APPLICATION)
+        );
     }
 }

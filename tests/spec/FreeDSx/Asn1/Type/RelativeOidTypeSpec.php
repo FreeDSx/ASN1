@@ -36,4 +36,11 @@ class RelativeOidTypeSpec extends ObjectBehavior
     {
         $this->getTagNumber()->shouldBeEqualTo(AbstractType::TAG_TYPE_RELATIVE_OID);
     }
+
+    function it_should_be_constructed_with_tag_information()
+    {
+        $this::withTag(1, AbstractType::TAG_CLASS_APPLICATION, '1.2.3.4')->shouldBeLike(
+            (new RelativeOidType('1.2.3.4'))->setTagNumber(1)->setTagClass(AbstractType::TAG_CLASS_APPLICATION)
+        );
+    }
 }

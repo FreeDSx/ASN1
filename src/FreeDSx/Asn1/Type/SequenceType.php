@@ -23,12 +23,32 @@ class SequenceType extends AbstractType
     protected $tagNumber = self::TAG_TYPE_SEQUENCE;
 
     /**
+     * @var bool
+     */
+    protected $isConstructed = true;
+
+    /**
      * @param AbstractType ...$types
      */
-    public function __construct(AbstractType ...$types)
+    public function __construct(...$types)
     {
         parent::__construct(null);
-        $this->setIsConstructed(true);
-        $this->setChildren(...$types);
+        $this->children = $types;
+    }
+
+    /**
+     * @param string|int $tagNumber
+     * @param int $class
+     * @param array $children
+     * @return SequenceType
+     */
+    public static function withTag($tagNumber, int $class, array $children = [])
+    {
+        $type = new static();
+        $type->children = $children;
+        $type->tagNumber = $tagNumber;
+        $type->taggingClass = $class;
+
+        return $type;
     }
 }

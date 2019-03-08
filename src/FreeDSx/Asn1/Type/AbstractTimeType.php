@@ -156,4 +156,23 @@ class AbstractTimeType extends AbstractType
 
         return $this;
     }
+
+    /**
+     * @param string|int $tagNumber
+     * @param int $class
+     * @param bool $isConstructed
+     * @param \DateTime|null $dateTime
+     * @param string $dateFormat
+     * @param string $tzFormat
+     * @return AbstractTimeType
+     */
+    public static function withTag($tagNumber, int $class, bool $isConstructed, ?\DateTime $dateTime = null, string $dateFormat, string $tzFormat)
+    {
+        $type = new static($dateTime, $dateFormat, $tzFormat);
+        $type->tagNumber = $tagNumber;
+        $type->taggingClass = $class;
+        $type->isConstructed = $isConstructed;
+
+        return $type;
+    }
 }

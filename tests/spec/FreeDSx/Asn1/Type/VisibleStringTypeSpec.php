@@ -40,4 +40,11 @@ class VisibleStringTypeSpec extends ObjectBehavior
     {
         $this->isCharacterRestricted()->shouldBeEqualTo(true);
     }
+
+    function it_should_be_constructed_with_tag_information()
+    {
+        $this::withTag(1, AbstractType::TAG_CLASS_APPLICATION, false, 'foo')->shouldBeLike(
+            (new VisibleStringType('foo'))->setTagNumber(1)->setTagClass(AbstractType::TAG_CLASS_APPLICATION)
+        );
+    }
 }

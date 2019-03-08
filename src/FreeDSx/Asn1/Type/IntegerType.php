@@ -21,21 +21,29 @@ class IntegerType extends AbstractType
 
     protected $tagNumber = self::TAG_TYPE_INTEGER;
 
-    public function __construct($integer)
-    {
-        $this->validate($integer);
-        parent::__construct($integer);
-    }
-
     /**
      * @param int|string $value
      * @return $this
      */
     public function setValue($value)
     {
-        $this->validate($value);
         $this->value = $value;
 
         return $this;
+    }
+
+    /**
+     * @param string|int $tagNumber
+     * @param int $class
+     * @param string|int $value
+     * @return IntegerType
+     */
+    public static function withTag($tagNumber, int $class, $value)
+    {
+        $type = new self($value);
+        $type->tagNumber = $tagNumber;
+        $type->taggingClass = $class;
+
+        return $type;
     }
 }

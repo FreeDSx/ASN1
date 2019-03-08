@@ -36,6 +36,17 @@ class BitStringType extends AbstractType
     }
 
     /**
+     * @param string $value
+     * @return BitStringType
+     */
+    public function setValue(string $value)
+    {
+        $this->value = $value;
+
+        return $this;
+    }
+
+    /**
      * Get the integer representation of the bit string.
      *
      * @return int
@@ -107,5 +118,22 @@ class BitStringType extends AbstractType
         }
 
         return new self($bitstring);
+    }
+
+    /**
+     * @param string|int $tagNumber
+     * @param int $class
+     * @param bool $isConstructed
+     * @param string $value
+     * @return AbstractType
+     */
+    public static function withTag($tagNumber, int $class, bool $isConstructed, string $value = '')
+    {
+        $type = new self($value);
+        $type->taggingClass = $class;
+        $type->tagNumber = $tagNumber;
+        $type->isConstructed = $isConstructed;
+
+        return $type;
     }
 }

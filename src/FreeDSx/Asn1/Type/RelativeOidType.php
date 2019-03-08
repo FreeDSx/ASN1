@@ -53,4 +53,19 @@ class RelativeOidType extends AbstractType
     {
         return (string) $this->value;
     }
+
+    /**
+     * @param string|int $tagNumber
+     * @param int $class
+     * @param string $value
+     * @return RelativeOidType
+     */
+    public static function withTag($tagNumber, int $class, string $value)
+    {
+        $type = new self($value);
+        $type->tagNumber = $tagNumber;
+        $type->taggingClass = $class;
+
+        return $type;
+    }
 }

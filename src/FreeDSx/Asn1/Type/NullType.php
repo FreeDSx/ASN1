@@ -19,8 +19,17 @@ class NullType extends AbstractType
 {
     protected $tagNumber = self::TAG_TYPE_NULL;
 
-    public function __construct($value = null)
+    public function __construct()
     {
         parent::__construct(null);
+    }
+
+    public static function withTag($tagNumber, $class)
+    {
+        $type = new self();
+        $type->tagNumber = $tagNumber;
+        $type->taggingClass = $class;
+
+        return $type;
     }
 }

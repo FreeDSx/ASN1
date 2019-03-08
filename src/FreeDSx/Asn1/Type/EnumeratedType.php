@@ -22,23 +22,28 @@ class EnumeratedType extends AbstractType
     protected $tagNumber = self::TAG_TYPE_ENUMERATED;
 
     /**
-     * @param string|int $enumValue
-     */
-    public function __construct($enumValue)
-    {
-        $this->validate($enumValue);
-        parent::__construct($enumValue);
-    }
-
-    /**
      * @param string|int $value
      * @return $this
      */
     public function setValue($value)
     {
-        $this->validate($value);
         $this->value = $value;
 
         return $this;
+    }
+
+    /**
+     * @param string|int $tagNumber
+     * @param int $class
+     * @param $value
+     * @return EnumeratedType
+     */
+    public static function withTag($tagNumber, int $class, $value)
+    {
+        $type = new self($value);
+        $type->tagNumber = $tagNumber;
+        $type->taggingClass = $class;
+
+        return $type;
     }
 }

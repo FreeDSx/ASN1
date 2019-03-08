@@ -94,4 +94,11 @@ class SequenceTypeSpec extends ObjectBehavior
     {
         $this->count()->shouldBeEqualTo(2);
     }
+
+    function it_should_be_constructed_with_tag_information()
+    {
+        $this::withTag(1, AbstractType::TAG_CLASS_APPLICATION, [new IntegerType(1)])->shouldBeLike(
+            (new SequenceType(new IntegerType(1)))->setTagNumber(1)->setTagClass(AbstractType::TAG_CLASS_APPLICATION)
+        );
+    }
 }

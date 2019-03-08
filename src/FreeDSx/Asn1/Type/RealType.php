@@ -45,4 +45,19 @@ class RealType extends AbstractType
     {
         return $this->value;
     }
+
+    /**
+     * @param string|int $tagNumber
+     * @param int $class
+     * @param float $value
+     * @return RealType
+     */
+    public static function withTag($tagNumber, int $class, float $value)
+    {
+        $type = new self($value);
+        $type->tagNumber = $tagNumber;
+        $type->taggingClass = $class;
+
+        return $type;
+    }
 }

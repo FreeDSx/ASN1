@@ -50,20 +50,12 @@ class DerEncoder extends BerEncoder
         return parent::getEncodedValue($type);
     }
 
-    protected function decodeBytes(bool $isRoot = false): AbstractType
-    {
-        $type = parent::decodeBytes($isRoot);
-        $this->validate($type);
-
-        return $type;
-    }
-
     /**
-     *{@inheritdoc}
+     * {@inheritdoc}
      */
-    protected function getDecodedType(?int $tagType, bool $isConstructed, $length) : AbstractType
+    protected function decodeBytes(bool $isRoot = false, $tagType = null, $length = null, $isConstructed = null, $class = null): AbstractType
     {
-        $type = parent::getDecodedType($tagType, $isConstructed, $length);
+        $type = parent::decodeBytes($isRoot, $tagType, $length, $isConstructed, $class);
         $this->validate($type);
 
         return $type;

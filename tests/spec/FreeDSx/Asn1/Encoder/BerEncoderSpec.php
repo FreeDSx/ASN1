@@ -668,8 +668,7 @@ class BerEncoderSpec extends ObjectBehavior
 
     function it_should_decode_an_unknown_type()
     {
-        $incompleteType = new IncompleteType(hex2bin('01'));
-        $incompleteType->setTagClass(AbstractType::TAG_CLASS_PRIVATE)->setTagNumber(7);
+        $incompleteType = new IncompleteType(hex2bin('01'), 7, AbstractType::TAG_CLASS_PRIVATE, false);
 
         $this->decode(hex2bin('c70101'))->shouldBeLike($incompleteType);
     }
@@ -735,23 +734,17 @@ class BerEncoderSpec extends ObjectBehavior
     function it_should_decode_a_high_tag_number_properly()
     {
         $this->decode(hex2bin('5f1f0101'))->shouldBeLike(
-            (new IncompleteType(hex2bin('01')))
-                ->setTagNumber(31)
-                ->setTagClass(AbstractType::TAG_CLASS_APPLICATION)
+            new IncompleteType(hex2bin('01'), 31, AbstractType::TAG_CLASS_APPLICATION, false)
         );
         $this->decode(hex2bin('5f81000101'))->shouldBeLike(
-            (new IncompleteType(hex2bin('01')))
-                ->setTagNumber(128)
-                ->setTagClass(AbstractType::TAG_CLASS_APPLICATION)
+            new IncompleteType(hex2bin('01'), 128, AbstractType::TAG_CLASS_APPLICATION, false)
         );
     }
 
     function it_should_handle_decoding_a_high_big_int_tag_number()
     {
         $this->decode(hex2bin('5f81ffffffffffffffff7f0101'))->shouldBeLike(
-            (new IncompleteType(hex2bin('01')))
-                ->setTagNumber('18446744073709551615')
-                ->setTagClass(AbstractType::TAG_CLASS_APPLICATION)
+            new IncompleteType(hex2bin('01'), '18446744073709551615', AbstractType::TAG_CLASS_APPLICATION, false)
         );
     }
 
@@ -911,5 +904,20 @@ class BerEncoderSpec extends ObjectBehavior
             throw new SkippingException('Only valid when GMP is not loaded.');
         }
         $this->shouldThrow(EncoderException::class)->during('decode', [hex2bin('060e2a864881ffffffffffffffff7f01')]);
+    }
+
+    function it_should_throw_an_error_when_encoding_the_tag_number_if_it_is_not_numeric()
+    {
+        $this->shouldThrow(EncoderException::class)->during('encode', [(new IntegerType(1))->setTagNumber('foo')]);
+    }
+
+    function it_should_throw_an_error_when_encoding_an_integer_tag_if_it_is_not_numeric()
+    {
+        $this->shouldThrow(EncoderException::class)->during('encode', [(new IntegerType(1))->setTagNumber('foo')]);
+    }
+
+    function it_should_throw_an_error_when_encoding_an_enumerated_type_if_it_is_not_numeric()
+    {
+        $this->shouldThrow(EncoderException::class)->during('encode', [(new IntegerType(1))->setTagNumber('foo')]);
     }
 }

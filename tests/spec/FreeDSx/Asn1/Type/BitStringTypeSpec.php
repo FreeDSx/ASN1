@@ -68,4 +68,11 @@ class BitStringTypeSpec extends ObjectBehavior
         $this::fromInteger(1, 32)->shouldBeLike(new BitStringType('00000001000000000000000000000000'));
         $this::fromBinary("\x02", 16)->shouldBeLike(new BitStringType('0000001000000000'));
     }
+
+    function it_should_be_constructed_with_tag_information()
+    {
+        $this::withTag(1, AbstractType::TAG_CLASS_APPLICATION, false, '1.2.3.4')->shouldBeLike(
+            (new BitStringType('1.2.3.4'))->setTagNumber(1)->setTagClass(AbstractType::TAG_CLASS_APPLICATION)->setValue('1.2.3.4')
+        );
+    }
 }

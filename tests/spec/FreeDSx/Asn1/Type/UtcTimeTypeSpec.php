@@ -85,4 +85,13 @@ class UtcTimeTypeSpec extends ObjectBehavior
     {
         $this->shouldThrow(InvalidArgumentException::class)->during('setTimeZoneFormat', [AbstractTimeType::TZ_LOCAL]);
     }
+
+    function it_should_be_constructed_with_tag_information()
+    {
+        $dt = new \DateTime();
+
+        $this::withTag(1, AbstractType::TAG_CLASS_APPLICATION, false, $dt,AbstractTimeType::FORMAT_SECONDS, AbstractTimeType::TZ_UTC)->shouldBeLike(
+            (new UtcTimeType($dt))->setTagClass(AbstractType::TAG_CLASS_APPLICATION)->setTagNumber(1)
+        );
+    }
 }

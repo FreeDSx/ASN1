@@ -36,4 +36,11 @@ class RealTypeSpec extends ObjectBehavior
     {
         $this->getTagNumber()->shouldBeEqualTo(AbstractType::TAG_TYPE_REAL);
     }
+
+    function it_should_be_constructed_with_tag_information()
+    {
+        $this::withTag(1, AbstractType::TAG_CLASS_APPLICATION, 1.1)->shouldBeLike(
+            (new RealType(1.1))->setTagNumber(1)->setTagClass(AbstractType::TAG_CLASS_APPLICATION)->setValue(1.1)
+        );
+    }
 }

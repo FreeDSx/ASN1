@@ -30,4 +30,11 @@ class NullTypeSpec extends ObjectBehavior
     {
         $this->getTagNumber()->shouldBeEqualTo(AbstractType::TAG_TYPE_NULL);
     }
+
+    function it_should_be_constructed_with_tag_information()
+    {
+        $this::withTag(1, AbstractType::TAG_CLASS_APPLICATION)->shouldBeLike(
+            (new NullType())->setTagNumber(1)->setTagClass(AbstractType::TAG_CLASS_APPLICATION)
+        );
+    }
 }

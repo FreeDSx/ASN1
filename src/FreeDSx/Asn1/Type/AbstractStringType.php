@@ -61,4 +61,21 @@ abstract class AbstractStringType extends AbstractType
     {
         return $this->isCharRestricted;
     }
+
+    /**
+     * @param string|int $tagNumber
+     * @param int $class
+     * @param bool $isConstructed
+     * @param string $value
+     * @return AbstractStringType
+     */
+    public static function withTag($tagNumber, int $class, bool $isConstructed, $value = '')
+    {
+        $type = new static($value);
+        $type->taggingClass = $class;
+        $type->tagNumber = $tagNumber;
+        $type->isConstructed = $isConstructed;
+
+        return $type;
+    }
 }

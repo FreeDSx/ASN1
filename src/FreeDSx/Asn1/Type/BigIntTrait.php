@@ -10,8 +10,6 @@
 
 namespace FreeDSx\Asn1\Type;
 
-use FreeDSx\Asn1\Exception\InvalidArgumentException;
-
 /**
  * Functionality needed between integer / enums for big int validation / checking.
  *
@@ -31,23 +29,5 @@ trait BigIntTrait
         }
 
         return \is_float($this->value + 0);
-    }
-
-    /**
-     * @param $integer
-     */
-    protected function validate($integer) : void
-    {
-        if (\is_int($integer)) {
-            return;
-        }
-        if (\is_string($integer) && \is_numeric($integer) && \strpos($integer, '.') === false) {
-            return;
-        }
-
-        throw new InvalidArgumentException(sprintf(
-            'The value passed to the %s class must be numeric.',
-            get_called_class()
-        ));
     }
 }

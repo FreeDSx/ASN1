@@ -37,4 +37,19 @@ class OidType extends AbstractType
 
         return $this;
     }
+
+    /**
+     * @param int|string $tagNumber
+     * @param int $class
+     * @param string $value
+     * @return OidType
+     */
+    public static function withTag($tagNumber, int $class, string $value)
+    {
+        $type = new self($value);
+        $type->tagNumber = $tagNumber;
+        $type->taggingClass = $class;
+
+        return $type;
+    }
 }

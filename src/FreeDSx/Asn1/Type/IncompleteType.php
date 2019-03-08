@@ -18,4 +18,17 @@ namespace FreeDSx\Asn1\Type;
  */
 class IncompleteType extends AbstractType
 {
+    /**
+     * @param $value
+     * @param $tagNumber
+     * @param int $class
+     * @param bool $isConstructed
+     */
+    public function __construct($value, $tagNumber = null, int $class = AbstractType::TAG_CLASS_UNIVERSAL, bool $isConstructed = false)
+    {
+        $this->tagNumber = $tagNumber;
+        $this->taggingClass = $class;
+        $this->isConstructed = $isConstructed;
+        parent::__construct($value);
+    }
 }

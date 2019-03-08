@@ -42,16 +42,16 @@ trait CerDerTrait
     }
 
     /**
-     * @return BooleanType
+     * @return bool
      * @throws EncoderException
      */
-    protected function decodeBoolean() : BooleanType
+    protected function decodeBoolean() : bool
     {
-        if (!($this->binary[$this->pos] === "\x00" || $this->binary[$this->pos] === "\xff")) {
+        if (!($this->binary[$this->pos] === self::BOOL_FALSE || $this->binary[$this->pos] === self::BOOL_TRUE)) {
             throw new EncoderException(sprintf('The encoded boolean must be 0 or 255, received "%s".', ord($this->binary[$this->pos])));
         }
 
-        return new BooleanType(($this->binary[$this->pos] === "\xff"));
+        return parent::decodeBoolean();
     }
 
     /**

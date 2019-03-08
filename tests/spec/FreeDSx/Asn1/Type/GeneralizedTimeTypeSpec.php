@@ -87,4 +87,13 @@ class GeneralizedTimeTypeSpec extends ObjectBehavior
     {
         $this->shouldThrow(InvalidArgumentException::class)->during('setTimeZoneFormat', ['foo']);
     }
+
+    function it_should_be_constructed_with_tag_information()
+    {
+        $dt = new \DateTime();
+
+        $this::withTag(1, AbstractType::TAG_CLASS_APPLICATION, false, $dt,AbstractTimeType::FORMAT_FRACTIONS, AbstractTimeType::TZ_UTC)->shouldBeLike(
+            (new GeneralizedTimeType($dt))->setTagClass(AbstractType::TAG_CLASS_APPLICATION)->setTagNumber(1)
+        );
+    }
 }

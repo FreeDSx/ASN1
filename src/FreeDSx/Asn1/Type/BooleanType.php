@@ -37,4 +37,19 @@ class BooleanType extends AbstractType
 
         return $this;
     }
+
+    /**
+     * @param string|int $tagNumber
+     * @param int $class
+     * @param bool $value
+     * @return BooleanType
+     */
+    public static function withTag($tagNumber, int $class, bool $value)
+    {
+        $type = new self($value);
+        $type->taggingClass = $class;
+        $type->tagNumber = $tagNumber;
+
+        return $type;
+    }
 }

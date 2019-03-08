@@ -21,14 +21,15 @@ class SetType extends AbstractType
 
     protected $tagNumber = self::TAG_TYPE_SET;
 
+    protected $isConstructed = true;
+
     /**
      * @param AbstractType ...$types
      */
-    public function __construct(AbstractType ...$types)
+    public function __construct(...$types)
     {
         parent::__construct(null);
-        $this->setIsConstructed(true);
-        $this->setChildren(...$types);
+        $this->children = $types;
     }
 
     /**
@@ -39,5 +40,21 @@ class SetType extends AbstractType
     public function isCanonical() : bool
     {
         return $this->children === $this->canonicalize(...$this->children);
+    }
+
+    /**
+     * @param int|string $tagNumber
+     * @param int $class
+     * @param array $children
+     * @return SetType
+     */
+    public static function withTag($tagNumber, int $class, array $children = [])
+    {
+        $type = new static();
+        $type->children = $children;
+        $type->tagNumber = $tagNumber;
+        $type->taggingClass = $class;
+
+        return $type;
     }
 }
