@@ -40,14 +40,11 @@ class DerEncoder extends BerEncoder
         ]);
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function getEncodedValue(AbstractType $type)
+    public function encode(AbstractType $type): string
     {
         $this->validate($type);
 
-        return parent::getEncodedValue($type);
+        return parent::encode($type);
     }
 
     /**

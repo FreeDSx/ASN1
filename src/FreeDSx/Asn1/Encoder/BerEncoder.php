@@ -136,10 +136,67 @@ class BerEncoder implements EncoderInterface
      */
     public function encode(AbstractType $type) : string
     {
-        $valueBytes = $this->getEncodedValue($type);
-        $lengthBytes = $this->getEncodedLength(strlen($valueBytes));
+        switch ($type) {
+            case $type instanceof BooleanType:
+                $bytes = $type->getValue() ? self::BOOL_TRUE : self::BOOL_FALSE;
+                break;
+            case $type instanceof IntegerType:
+            case $type instanceof EnumeratedType:
+                $bytes = $this->encodeInteger($type);
+                break;
+            case $type instanceof RealType:
+                $bytes = $this->encodeReal($type);
+                break;
+            case $type instanceof AbstractStringType:
+                $bytes = $type->getValue();
+                break;
+            case $type instanceof SetOfType:
+                $bytes = $this->encodeSetOf($type);
+                break;
+            case $type instanceof SetType:
+                $bytes = $this->encodeSet($type);
+                break;
+            case $type->getIsConstructed():
+                $bytes = $this->encodeConstructedType(...$type->getChildren());
+                break;
+            case $type instanceof BitStringType:
+                $bytes = $this->encodeBitString($type);
+                break;
+            case $type instanceof OidType:
+                $bytes = $this->encodeOid($type);
+                break;
+            case $type instanceof RelativeOidType:
+                $bytes = $this->encodeRelativeOid($type);
+                break;
+            case $type instanceof GeneralizedTimeType:
+                $bytes = $this->encodeGeneralizedTime($type);
+                break;
+            case $type instanceof UtcTimeType:
+                $bytes = $this->encodeUtcTime($type);
+                break;
+            case $type instanceof NullType:
+                $bytes = '';
+                break;
+            default:
+                throw new EncoderException(sprintf('The type "%s" is not currently supported.', $type));
+        }
+        $length = \strlen($bytes);
+        $bytes = ($length < 128)  ? \chr($length).$bytes : $this->encodeLongDefiniteLength($length).$bytes;
 
-        return $this->getEncodedTag($type).$lengthBytes.$valueBytes;
+        # The first byte of a tag always contains the class (bits 8 and 7) and whether it is constructed (bit 6).
+        $tag = $type->getTagClass() | ($type->getIsConstructed() ? AbstractType::CONSTRUCTED_TYPE : 0);
+
+        $this->validateNumericInt($type->getTagNumber());
+        # For a high tag (>=31) we flip the first 5 bits on (0x1f) to make the first byte, then the subsequent bytes is
+        # the VLV encoding of the tag number.
+        if ($type->getTagNumber() >= 31) {
+            $bytes = \chr($tag | 0x1f).$this->intToVlqBytes($type->getTagNumber()).$bytes;
+            # For a tag less than 31, everything fits comfortably into a single byte.
+        } else {
+            $bytes = \chr($tag | $type->getTagNumber()).$bytes;
+        }
+
+        return $bytes;
     }
 
     /**
@@ -207,64 +264,6 @@ class BerEncoder implements EncoderInterface
         $this->maxLen = 0;
         $this->lastPos = $this->pos;
         $this->pos = 0;
-    }
-
-    /**
-     * Get the encoded value for a specific type.
-     *
-     * @param AbstractType $type
-     * @return string
-     * @throws EncoderException
-     */
-    protected function getEncodedValue(AbstractType $type)
-    {
-        $bytes = null;
-
-        switch ($type) {
-            case $type instanceof BooleanType:
-                $bytes = $this->encodeBoolean($type);
-                break;
-            case $type instanceof IntegerType:
-            case $type instanceof EnumeratedType:
-                $bytes = $this->encodeInteger($type);
-                break;
-            case $type instanceof RealType:
-                $bytes = $this->encodeReal($type);
-                break;
-            case $type instanceof AbstractStringType:
-                $bytes = $type->getValue();
-                break;
-            case $type instanceof SetOfType:
-                $bytes = $this->encodeSetOf($type);
-                break;
-            case $type instanceof SetType:
-                $bytes = $this->encodeSet($type);
-                break;
-            case $type->getIsConstructed():
-                $bytes = $this->encodeConstructedType(...$type->getChildren());
-                break;
-            case $type instanceof BitStringType:
-                $bytes = $this->encodeBitString($type);
-                break;
-            case $type instanceof OidType:
-                $bytes = $this->encodeOid($type);
-                break;
-            case $type instanceof RelativeOidType:
-                $bytes = $this->encodeRelativeOid($type);
-                break;
-            case $type instanceof GeneralizedTimeType:
-                $bytes = $this->encodeGeneralizedTime($type);
-                break;
-            case $type instanceof UtcTimeType:
-                $bytes = $this->encodeUtcTime($type);
-                break;
-            case $type instanceof NullType:
-                break;
-            default:
-                throw new EncoderException(sprintf('The type "%s" is not currently supported.', $type));
-        }
-
-        return $bytes;
     }
 
     /**
@@ -566,31 +565,6 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * Get the encoded tag byte(s) for a given type.
-     *
-     * @param AbstractType $type
-     * @return string
-     * @throws EncoderException
-     */
-    protected function getEncodedTag(AbstractType $type)
-    {
-        # The first byte of a tag always contains the class (bits 8 and 7) and whether it is constructed (bit 6).
-        $tag = $type->getTagClass() | ($type->getIsConstructed() ? AbstractType::CONSTRUCTED_TYPE : 0);
-
-        $this->validateNumericInt($type->getTagNumber());
-        # For a high tag (>=31) we flip the first 5 bits on (0x1f) to make the first byte, then the subsequent bytes is
-        # the VLV encoding of the tag number.
-        if ($type->getTagNumber() >= 31) {
-            $bytes = \chr($tag | 0x1f).$this->intToVlqBytes($type->getTagNumber());
-            # For a tag less than 31, everything fits comfortably into a single byte.
-        } else {
-            $bytes = \chr($tag | $type->getTagNumber());
-        }
-
-        return $bytes;
-    }
-
-    /**
      * @param string|integer $integer
      * @throws EncoderException
      */
@@ -604,21 +578,6 @@ class BerEncoder implements EncoderInterface
         }
 
         throw new EncoderException('The value to encode for "%s" must must be numeric.');
-    }
-
-    /**
-     * @param int $num
-     * @return string
-     * @throws EncoderException
-     */
-    protected function getEncodedLength(int $num)
-    {
-        # Short definite length, nothing to do
-        if ($num < 128) {
-            return \chr($num);
-        } else {
-            return $this->encodeLongDefiniteLength($num);
-        }
     }
 
     /**
@@ -643,15 +602,6 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param BooleanType $type
-     * @return string
-     */
-    protected function encodeBoolean(BooleanType $type)
-    {
-        return $type->getValue() ? self::BOOL_TRUE : self::BOOL_FALSE;
-    }
-
-    /**
      * @param BitStringType $type
      * @return string
      */
@@ -663,10 +613,11 @@ class BerEncoder implements EncoderInterface
         if ($length % 8) {
             $unused = 8 - ($length % 8);
             $data = \str_pad($data, $length + $unused, $this->options['bitstring_padding']);
+            $length = \strlen($data);
         }
 
         $bytes = \chr($unused);
-        for ($i = 0; $i < \strlen($data) / 8; $i++) {
+        for ($i = 0; $i < $length / 8; $i++) {
             $bytes .= \chr(\bindec(\substr($data, $i * 8, 8)));
         }
 
@@ -698,13 +649,14 @@ class BerEncoder implements EncoderInterface
     protected function encodeOid(OidType $type)
     {
         $oids = \explode('.', $type->getValue());
-        if (\count($oids) < 2) {
+        $length = \count($oids);
+        if ($length < 2) {
             throw new EncoderException(sprintf('To encode the OID it must have at least 2 components: %s', $type->getValue()));
         }
 
         # The first and second components of the OID are represented by one byte using the formula: (X * 40) + Y
         $bytes = \chr(($oids[0] * 40) + $oids[1]);
-        $length = \count($oids);
+
         for ($i = 2; $i < $length; $i++) {
             $bytes .= $this->intToVlqBytes($oids[$i]);
         }
