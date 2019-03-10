@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.4.1 (2019-03-10)
+------------------
+* More performance optimizations in the encoding / decoding process for large amounts of data structures.
+
 0.4.0 (2019-03-03)
 ------------------
 * Performance and memory improvements.
