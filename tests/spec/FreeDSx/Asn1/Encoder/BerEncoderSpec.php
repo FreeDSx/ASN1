@@ -688,6 +688,14 @@ class BerEncoderSpec extends ObjectBehavior
         $this->getLastPosition()->shouldBeNull();
     }
 
+    function it_should_not_change_the_last_position_when_completing_a_type()
+    {
+        $this->decode(hex2bin('0101FF00'));
+        $this->complete((new IncompleteType(hex2bin('FF')))->setTagNumber(5), AbstractType::TAG_TYPE_BOOLEAN);
+
+        $this->getLastPosition()->shouldBeEqualTo(3);
+    }
+
     function it_should_get_the_last_ending_position()
     {
         $this->decode(hex2bin('0101FF00'))->shouldBeLike(new BooleanType(true));

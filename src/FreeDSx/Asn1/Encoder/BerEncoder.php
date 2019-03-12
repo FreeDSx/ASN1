@@ -122,11 +122,13 @@ class BerEncoder implements EncoderInterface
      */
     public function complete(IncompleteType $type, int $tagType, array $tagMap = []) : AbstractType
     {
+        $lastPos = $this->lastPos;
         $this->startEncoding($type->getValue(), $tagMap);
         $newType = $this->decodeBytes(false, $tagType, $this->maxLen, $type->getIsConstructed(), AbstractType::TAG_CLASS_UNIVERSAL);
         $this->stopEncoding();
         $newType->setTagNumber($type->getTagNumber())
             ->setTagClass($type->getTagClass());
+        $this->lastPos = $lastPos;
 
         return $newType;
     }
