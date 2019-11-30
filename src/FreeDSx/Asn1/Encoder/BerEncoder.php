@@ -180,7 +180,10 @@ class BerEncoder implements EncoderInterface
                 $bytes = '';
                 break;
             default:
-                throw new EncoderException(sprintf('The type "%s" is not currently supported.', $type));
+                throw new EncoderException(sprintf(
+                    'The type "%s" is not currently supported.',
+                    get_class($type)
+                ));
         }
         $length = \strlen($bytes);
         $bytes = ($length < 128)  ? \chr($length).$bytes : $this->encodeLongDefiniteLength($length).$bytes;
