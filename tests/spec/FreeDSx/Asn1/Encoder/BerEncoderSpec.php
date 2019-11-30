@@ -160,8 +160,8 @@ class BerEncoderSpec extends ObjectBehavior
         $this->encode(new IntegerType('9223372036854775807'))->shouldBeEqualTo(hex2bin('02087FFFFFFFFFFFFFFF'));
         $this->encode(new IntegerType('4294967296'))->shouldBeEqualTo(hex2bin('02050100000000'));
         $this->encode(new IntegerType('4294967295'))->shouldBeEqualTo(hex2bin('020500FFFFFFFF'));
-        $this->encode(new IntegerType(2147483648))->shouldBeEqualTo(hex2bin('02050080000000'));
-        $this->encode(new IntegerType(2147483647))->shouldBeEqualTo(hex2bin('02047FFFFFFF'));
+        $this->encode(new IntegerType('2147483648'))->shouldBeEqualTo(hex2bin('02050080000000'));
+        $this->encode(new IntegerType('2147483647'))->shouldBeEqualTo(hex2bin('02047FFFFFFF'));
         $this->encode(new IntegerType(27066))->shouldBeEqualTo(hex2bin('020269BA'));
         $this->encode(new IntegerType(256))->shouldBeEqualTo(hex2bin('02020100'));
         $this->encode(new IntegerType(255))->shouldBeEqualTo(hex2bin('020200FF'));
