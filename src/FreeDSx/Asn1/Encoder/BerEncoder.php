@@ -496,6 +496,7 @@ class BerEncoder implements EncoderInterface
     protected function getVlqBytesToInt()
     {
         $value = 0;
+        $lshift = 0;
         $isBigInt = false;
 
         for ($this->pos; $this->pos < $this->maxLen; $this->pos++) {
