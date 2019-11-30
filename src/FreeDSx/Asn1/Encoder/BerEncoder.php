@@ -87,7 +87,7 @@ class BerEncoder implements EncoderInterface
     protected $maxLen;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $binary;
 
@@ -654,6 +654,7 @@ class BerEncoder implements EncoderInterface
      */
     protected function encodeOid(OidType $type)
     {
+        /** @var int[] $oids */
         $oids = \explode('.', $type->getValue());
         $length = \count($oids);
         if ($length < 2) {
@@ -750,7 +751,7 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param AbstractType|IntegerType|EnumeratedType $type
+     * @param IntegerType|EnumeratedType $type
      * @return string
      * @throws EncoderException
      */
