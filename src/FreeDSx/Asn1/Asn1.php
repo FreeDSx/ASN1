@@ -312,7 +312,7 @@ class Asn1
     }
 
     /**
-     * @param $tagNumber
+     * @param int $tagNumber
      * @param AbstractType $type
      * @return AbstractType
      */
@@ -322,7 +322,7 @@ class Asn1
     }
 
     /**
-     * @param $tagNumber
+     * @param int $tagNumber
      * @param AbstractType $type
      * @return AbstractType
      */

@@ -906,7 +906,7 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param $length
+     * @param int $length
      * @return string
      * @throws EncoderException
      */
@@ -930,7 +930,7 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param $length
+     * @param int $length
      * @return string
      * @throws EncoderException
      */
@@ -1106,7 +1106,7 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param AbstractType[] $types
+     * @param AbstractType ...$types
      * @return string
      * @throws EncoderException
      */

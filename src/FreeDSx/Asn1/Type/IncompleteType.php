@@ -19,8 +19,8 @@ namespace FreeDSx\Asn1\Type;
 class IncompleteType extends AbstractType
 {
     /**
-     * @param $value
-     * @param $tagNumber
+     * @param string $value
+     * @param int $tagNumber
      * @param int $class
      * @param bool $isConstructed
      */

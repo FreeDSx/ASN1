@@ -37,7 +37,7 @@ interface EncoderInterface
      * @param IncompleteType $type
      * @param int $tagType
      * @param array $tagMap
-     * @return mixed
+     * @return AbstractType
      * @throws EncoderException
      */
     public function complete(IncompleteType $type, int $tagType, array $tagMap = []) : AbstractType;

@@ -112,7 +112,7 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
     protected $children = [];
 
     /**
-     * @param $value
+     * @param mixed $value
      */
     public function __construct($value)
     {

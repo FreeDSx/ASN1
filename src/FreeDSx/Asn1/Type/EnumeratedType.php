@@ -35,7 +35,7 @@ class EnumeratedType extends AbstractType
     /**
      * @param string|int $tagNumber
      * @param int $class
-     * @param $value
+     * @param string|int $value
      * @return EnumeratedType
      */
     public static function withTag($tagNumber, int $class, $value)

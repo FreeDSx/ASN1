@@ -75,7 +75,7 @@ class BitStringType extends AbstractType
     /**
      * Construct the bit string from a binary string value.
      *
-     * @param $bytes
+     * @param string $bytes
      * @param int|null $minLength
      * @return BitStringType
      */
