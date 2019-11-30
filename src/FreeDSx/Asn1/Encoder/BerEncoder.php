@@ -579,7 +579,10 @@ class BerEncoder implements EncoderInterface
             return;
         }
 
-        throw new EncoderException('The value to encode for "%s" must must be numeric.');
+        throw new EncoderException(sprintf(
+            'The value to encode for "%s" must be numeric.',
+            $integer
+        ));
     }
 
     /**
