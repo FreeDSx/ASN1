@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.4.2 (2020-05-02)
+------------------
+* Fix the length-of-length check for a partial PDU with long definite encoding under certain circumstances. 
+
 0.4.1 (2019-03-10)
 ------------------
 * More performance optimizations in the encoding / decoding process for large amounts of data structures.
