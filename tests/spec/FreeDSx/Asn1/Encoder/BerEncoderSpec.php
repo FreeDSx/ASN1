@@ -69,6 +69,16 @@ class BerEncoderSpec extends ObjectBehavior
         ]);
     }
 
+    function it_should_decode_long_definite_length_when_the_length_is_the_exact_size_of_the_payload()
+    {
+        $tagAndLength = hex2bin('3084000000350201');
+        $value = hex2bin('1e63840000002c040864633d6c6f63616c0a01000a0100020100020100010100870b6f626a656374636c617373308400000000');
+        $length = strlen($tagAndLength.$value);
+
+        $this->decode($tagAndLength.$value)->shouldBeAnInstanceOf(SequenceType::class);
+        $this->getLastPosition()->shouldBeEqualTo($length);
+    }
+
     function it_should_decode_long_definite_length()
     {
         $chars = str_pad('0', 131071, '0');
