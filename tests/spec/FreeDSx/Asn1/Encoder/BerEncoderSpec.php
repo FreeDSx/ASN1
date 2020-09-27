@@ -348,6 +348,11 @@ class BerEncoderSpec extends ObjectBehavior
         $this->encode(new OidType('1.2.268435455'))->shouldBeEqualTo(hex2bin('06052affffff7f'));
     }
 
+    function it_should_not_accept_an_oid_with_a_first_identifier_greater_than_2()
+    {
+        $this->shouldThrow(EncoderException::class)->during('encode', [new OidType('3.1')]);
+    }
+
     function it_should_encode_a_generalized_time_string_non_utc_with_a_differential()
     {
         $datetime = new \DateTime('20180318', new \DateTimeZone('America/Chicago'));

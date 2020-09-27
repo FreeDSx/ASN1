@@ -664,6 +664,12 @@ class BerEncoder implements EncoderInterface
         if ($length < 2) {
             throw new EncoderException(sprintf('To encode the OID it must have at least 2 components: %s', $type->getValue()));
         }
+        if ($oids[0] > 2) {
+            throw new EncoderException(sprintf(
+                'The value of the first OID component cannot be greater than 2. Received:  %s',
+                $type->getValue()
+            ));
+        }
 
         # The first and second components of the OID are represented by one byte using the formula: (X * 40) + Y
         $bytes = \chr(($oids[0] * 40) + $oids[1]);
