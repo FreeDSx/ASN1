@@ -312,6 +312,14 @@ class BerEncoderSpec extends ObjectBehavior
         $this->decode(hex2bin('060e2a864881ffffffffffffffff7f01'))->shouldBeLike(new OidType('1.2.840.18446744073709551615.1'));
     }
 
+    function it_should_decode_an_oid_with_a_bigint_in_the_second_component()
+    {
+        if (!extension_loaded('gmp')) {
+            throw new SkippingException('The GMP extension must be loaded for bigint specs.');
+        }
+        $this->decode(hex2bin('060A8280808080808080804F'))->shouldBeLike(new OidType('2.18446744073709551615'));
+    }
+
     function it_should_decode_an_oid()
     {
         $this->decode(hex2bin('060100'))->shouldBeLike(new OidType('0.0'));
@@ -334,6 +342,14 @@ class BerEncoderSpec extends ObjectBehavior
             throw new SkippingException('The GMP extension must be loaded for bigint specs.');
         }
         $this->encode(new OidType('1.2.840.18446744073709551615.1'))->shouldBeEqualTo(hex2bin('060e2a864881ffffffffffffffff7f01'));
+    }
+
+    function it_should_encode_an_oid_with_a_bigint_in_the_second_component()
+    {
+        if (!extension_loaded('gmp')) {
+            throw new SkippingException('The GMP extension must be loaded for bigint specs.');
+        }
+        $this->encode(new OidType('2.18446744073709551615'))->shouldBeEqualTo(hex2bin('060A8280808080808080804F'));
     }
 
     function it_should_encode_an_oid()
