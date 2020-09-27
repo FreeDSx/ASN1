@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.4.3 (2020-09-27)
+------------------
+* Fix the encoding / decoding of OIDs when the first / second component is more than one byte (found by @danielmarschall)
+
 0.4.2 (2020-05-02)
 ------------------
 * Fix the length-of-length check for a partial PDU with long definite encoding under certain circumstances. 

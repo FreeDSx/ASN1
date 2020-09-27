@@ -312,8 +312,20 @@ class BerEncoderSpec extends ObjectBehavior
         $this->decode(hex2bin('060e2a864881ffffffffffffffff7f01'))->shouldBeLike(new OidType('1.2.840.18446744073709551615.1'));
     }
 
+    function it_should_decode_an_oid_with_a_bigint_in_the_second_component()
+    {
+        if (!extension_loaded('gmp')) {
+            throw new SkippingException('The GMP extension must be loaded for bigint specs.');
+        }
+        $this->decode(hex2bin('060A8280808080808080804F'))->shouldBeLike(new OidType('2.18446744073709551615'));
+    }
+
     function it_should_decode_an_oid()
     {
+        $this->decode(hex2bin('060100'))->shouldBeLike(new OidType('0.0'));
+        $this->decode(hex2bin('06012A'))->shouldBeLike(new OidType('1.2'));
+        $this->decode(hex2bin('0602824F'))->shouldBeLike(new OidType('2.255'));
+        $this->decode(hex2bin('0603883703'))->shouldBeLike(new OidType('2.999.3'));
         $this->decode(hex2bin('06092b0601040182371514'))->shouldBeLike(new OidType('1.3.6.1.4.1.311.21.20'));
         $this->decode(hex2bin('06062a864886f70d'))->shouldBeLike(new OidType('1.2.840.113549'));
         $this->decode(hex2bin('06022a7f'))->shouldBeLike(new OidType('1.2.127'));
@@ -332,8 +344,20 @@ class BerEncoderSpec extends ObjectBehavior
         $this->encode(new OidType('1.2.840.18446744073709551615.1'))->shouldBeEqualTo(hex2bin('060e2a864881ffffffffffffffff7f01'));
     }
 
+    function it_should_encode_an_oid_with_a_bigint_in_the_second_component()
+    {
+        if (!extension_loaded('gmp')) {
+            throw new SkippingException('The GMP extension must be loaded for bigint specs.');
+        }
+        $this->encode(new OidType('2.18446744073709551615'))->shouldBeEqualTo(hex2bin('060A8280808080808080804F'));
+    }
+
     function it_should_encode_an_oid()
     {
+        $this->encode(new OidType('0.0'))->shouldBeEqualTo(hex2bin('060100'));
+        $this->encode(new OidType('1.2'))->shouldBeEqualTo(hex2bin('06012A'));
+        $this->encode(new OidType('2.255'))->shouldBeEqualTo(hex2bin('0602824F'));
+        $this->encode(new OidType('2.999.3'))->shouldBeEqualTo(hex2bin('0603883703'));
         $this->encode(new OidType('1.3.6.1.4.1.311.21.20'))->shouldBeEqualTo(hex2bin('06092b0601040182371514'));
         $this->encode(new OidType('1.2.840.113549'))->shouldBeEqualTo(hex2bin('06062a864886f70d'));
         $this->encode(new OidType('1.2.127'))->shouldBeEqualTo(hex2bin('06022a7f'));
@@ -342,6 +366,11 @@ class BerEncoderSpec extends ObjectBehavior
         $this->encode(new OidType('1.2.16383'))->shouldBeEqualTo(hex2bin('06032aff7f'));
         $this->encode(new OidType('1.2.2097152'))->shouldBeEqualTo(hex2bin('06052a81808000'));
         $this->encode(new OidType('1.2.268435455'))->shouldBeEqualTo(hex2bin('06052affffff7f'));
+    }
+
+    function it_should_not_accept_an_oid_with_a_first_identifier_greater_than_2()
+    {
+        $this->shouldThrow(EncoderException::class)->during('encode', [new OidType('3.1')]);
     }
 
     function it_should_encode_a_generalized_time_string_non_utc_with_a_differential()

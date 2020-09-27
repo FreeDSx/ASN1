@@ -505,9 +505,9 @@ class BerEncoder implements EncoderInterface
         for ($this->pos; $this->pos < $this->maxLen; $this->pos++) {
             if (!$isBigInt) {
                 $lshift = $value << 7;
-                # An overflow bitshift will result in a negative number. This will check if GMP is available and flip it
-                # to a bigint safe method in one shot.
-                if ($lshift < 0) {
+                # An overflow bitshift will result in a negative number or zero.
+                # This will check if GMP is available and flip it to a bigint safe method in one shot.
+                if ($value > 0 && $lshift <= 0) {
                     $isBigInt = true;
                     $this->throwIfBigIntGmpNeeded(true);
                     $value = \gmp_init($value);
@@ -525,6 +525,7 @@ class BerEncoder implements EncoderInterface
             # We have reached the last byte if the MSB is not set.
             if ((\ord($this->binary[$this->pos]) & 0x80) === 0) {
                 $this->pos++;
+
                 return $isBigInt ? \gmp_strval($value) : $value;
             }
         }
@@ -661,11 +662,26 @@ class BerEncoder implements EncoderInterface
         $oids = \explode('.', $type->getValue());
         $length = \count($oids);
         if ($length < 2) {
-            throw new EncoderException(sprintf('To encode the OID it must have at least 2 components: %s', $type->getValue()));
+            throw new EncoderException(sprintf(
+                'To encode the OID it must have at least 2 components: %s',
+                $type->getValue()
+            ));
+        }
+        if ($oids[0] > 2) {
+            throw new EncoderException(sprintf(
+                'The value of the first OID component cannot be greater than 2. Received:  %s',
+                $oids[0]
+            ));
         }
 
-        # The first and second components of the OID are represented by one byte using the formula: (X * 40) + Y
-        $bytes = \chr(($oids[0] * 40) + $oids[1]);
+        # The first and second components of the OID are represented using the formula: (X * 40) + Y
+        if ($oids[1] > PHP_INT_MAX) {
+            $this->throwIfBigIntGmpNeeded(true);
+            $firstAndSecond = \gmp_strval(\gmp_add((string)($oids[0] * 40), $oids[1]));
+        } else {
+            $firstAndSecond = ($oids[0] * 40) + $oids[1];
+        }
+        $bytes = $this->intToVlqBytes($firstAndSecond);
 
         for ($i = 2; $i < $length; $i++) {
             $bytes .= $this->intToVlqBytes($oids[$i]);
@@ -919,18 +935,25 @@ class BerEncoder implements EncoderInterface
         if ($length === 0) {
             throw new EncoderException('Zero length not permitted for an OID type.');
         }
-        # The first 2 digits are contained within the first byte
-        $byte = \ord($this->binary[$this->pos++]);
-        $first = (int) ($byte / 40);
-        $second =  $byte - (40 * $first);
-        $length--;
+        # We need to get the first part here, as it's used to determine the first 2 components.
+        $startedAt = $this->pos;
+        $firstPart = $this->getVlqBytesToInt();
 
-        $oid = $first.'.'.$second;
-        if ($length) {
-            $oid .= '.'.$this->decodeRelativeOid($length);
+        if ($firstPart < 80) {
+            $oid = \floor($firstPart / 40).'.'.($firstPart % 40);
+        } else {
+            $isBigInt = ($firstPart > PHP_INT_MAX);
+            $this->throwIfBigIntGmpNeeded($isBigInt);
+            # In this case, the first identifier is always 2.
+            # But there is no limit on the value of the second identifier.
+            $oid = '2.'.($isBigInt ? \gmp_strval(\gmp_sub($firstPart, '80')) : (int)$firstPart - 80);
         }
 
-        return $oid;
+        # We could potentially have nothing left to decode at this point.
+        $oidLength = $length - ($this->pos - $startedAt);
+        $subIdentifiers = ($oidLength === 0) ? '' : '.'.$this->decodeRelativeOid($oidLength);
+
+        return $oid.$subIdentifiers;
     }
 
     /**
