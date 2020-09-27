@@ -314,6 +314,10 @@ class BerEncoderSpec extends ObjectBehavior
 
     function it_should_decode_an_oid()
     {
+        $this->decode(hex2bin('060100'))->shouldBeLike(new OidType('0.0'));
+        $this->decode(hex2bin('06012A'))->shouldBeLike(new OidType('1.2'));
+        $this->decode(hex2bin('0602824F'))->shouldBeLike(new OidType('2.255'));
+        $this->decode(hex2bin('0603883703'))->shouldBeLike(new OidType('2.999.3'));
         $this->decode(hex2bin('06092b0601040182371514'))->shouldBeLike(new OidType('1.3.6.1.4.1.311.21.20'));
         $this->decode(hex2bin('06062a864886f70d'))->shouldBeLike(new OidType('1.2.840.113549'));
         $this->decode(hex2bin('06022a7f'))->shouldBeLike(new OidType('1.2.127'));

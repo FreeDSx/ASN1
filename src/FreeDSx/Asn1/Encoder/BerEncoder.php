@@ -525,6 +525,7 @@ class BerEncoder implements EncoderInterface
             # We have reached the last byte if the MSB is not set.
             if ((\ord($this->binary[$this->pos]) & 0x80) === 0) {
                 $this->pos++;
+
                 return $isBigInt ? \gmp_strval($value) : $value;
             }
         }
@@ -919,18 +920,28 @@ class BerEncoder implements EncoderInterface
         if ($length === 0) {
             throw new EncoderException('Zero length not permitted for an OID type.');
         }
-        # The first 2 digits are contained within the first byte
-        $byte = \ord($this->binary[$this->pos++]);
-        $first = (int) ($byte / 40);
-        $second =  $byte - (40 * $first);
-        $length--;
+        # We use this to determine what to do about the first and second components
+        $firstByte = \ord($this->binary[$this->pos]);
 
-        $oid = $first.'.'.$second;
-        if ($length) {
-            $oid .= '.'.$this->decodeRelativeOid($length);
+        # We need to get the first component here, as we use it in the case of first part of the OID being equal to 2
+        $startedAt = $this->pos;
+        $firstComponent = $this->decodeRelativeOid($length, true);
+
+        if ($firstByte < 80) {
+            $oid = \floor($firstByte / 40).'.'.($firstByte % 40);
+        } else {
+            $isBigInt = ($firstComponent > PHP_INT_MAX);
+            $this->throwIfBigIntGmpNeeded($isBigInt);
+            # In this case, the first identifier is always 2.
+            # But there is no limit on the value of the second identifier.
+            $oid = '2.'.($isBigInt ? \gmp_strval(\gmp_sub($firstComponent, '80')) : $firstComponent - 80);
         }
 
-        return $oid;
+        # We could potentially have nothing left to decode at this point.
+        $oidLength = $length - ($this->pos - $startedAt);
+        $subIdentifiers = ($oidLength === 0) ? '' : '.'.$this->decodeRelativeOid($oidLength);
+
+        return $oid.$subIdentifiers;
     }
 
     /**
@@ -938,7 +949,7 @@ class BerEncoder implements EncoderInterface
      * @return string
      * @throws EncoderException
      */
-    protected function decodeRelativeOid($length) : string
+    protected function decodeRelativeOid($length, bool $firstOnly = false) : string
     {
         if ($length === 0) {
             throw new EncoderException('Zero length not permitted for an OID type.');
@@ -948,6 +959,9 @@ class BerEncoder implements EncoderInterface
 
         while ($this->pos < $endAt) {
             $oid .= ($oid === '' ? '' : '.').$this->getVlqBytesToInt();
+            if ($firstOnly) {
+                break;
+            }
         }
 
         return $oid;
