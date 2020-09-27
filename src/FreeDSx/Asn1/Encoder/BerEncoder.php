@@ -940,7 +940,7 @@ class BerEncoder implements EncoderInterface
             $this->throwIfBigIntGmpNeeded($isBigInt);
             # In this case, the first identifier is always 2.
             # But there is no limit on the value of the second identifier.
-            $oid = '2.'.($isBigInt ? \gmp_strval(\gmp_sub($firstComponent, '80')) : $firstComponent - 80);
+            $oid = '2.'.($isBigInt ? \gmp_strval(\gmp_sub($firstComponent, '80')) : (int)$firstComponent - 80);
         }
 
         # We could potentially have nothing left to decode at this point.
