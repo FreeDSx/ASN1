@@ -961,7 +961,7 @@ class BerEncoder implements EncoderInterface
      * @return string
      * @throws EncoderException
      */
-    protected function decodeRelativeOid($length, bool $firstOnly = false) : string
+    protected function decodeRelativeOid($length) : string
     {
         if ($length === 0) {
             throw new EncoderException('Zero length not permitted for an OID type.');
@@ -971,9 +971,6 @@ class BerEncoder implements EncoderInterface
 
         while ($this->pos < $endAt) {
             $oid .= ($oid === '' ? '' : '.').$this->getVlqBytesToInt();
-            if ($firstOnly) {
-                break;
-            }
         }
 
         return $oid;
