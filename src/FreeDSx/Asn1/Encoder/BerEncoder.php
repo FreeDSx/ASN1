@@ -671,8 +671,13 @@ class BerEncoder implements EncoderInterface
             ));
         }
 
-        # The first and second components of the OID are represented by one byte using the formula: (X * 40) + Y
-        $bytes = \chr(($oids[0] * 40) + $oids[1]);
+        # The first and second components of the OID are represented using the formula: (X * 40) + Y
+        if ($oids[1] > PHP_INT_MAX) {
+            $firstAndSecond = gmp_strval(gmp_add((string)($oids[0] * 40), $oids[1]));
+        } else {
+            $firstAndSecond = ($oids[0] * 40) + $oids[1];
+        }
+        $bytes = $this->intToVlqBytes($firstAndSecond);
 
         for ($i = 2; $i < $length; $i++) {
             $bytes .= $this->intToVlqBytes($oids[$i]);

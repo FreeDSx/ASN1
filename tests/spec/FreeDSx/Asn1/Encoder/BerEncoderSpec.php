@@ -338,6 +338,10 @@ class BerEncoderSpec extends ObjectBehavior
 
     function it_should_encode_an_oid()
     {
+        $this->encode(new OidType('0.0'))->shouldBeEqualTo(hex2bin('060100'));
+        $this->encode(new OidType('1.2'))->shouldBeEqualTo(hex2bin('06012A'));
+        $this->encode(new OidType('2.255'))->shouldBeEqualTo(hex2bin('0602824F'));
+        $this->encode(new OidType('2.999.3'))->shouldBeEqualTo(hex2bin('0603883703'));
         $this->encode(new OidType('1.3.6.1.4.1.311.21.20'))->shouldBeEqualTo(hex2bin('06092b0601040182371514'));
         $this->encode(new OidType('1.2.840.113549'))->shouldBeEqualTo(hex2bin('06062a864886f70d'));
         $this->encode(new OidType('1.2.127'))->shouldBeEqualTo(hex2bin('06022a7f'));
