@@ -676,6 +676,7 @@ class BerEncoder implements EncoderInterface
 
         # The first and second components of the OID are represented using the formula: (X * 40) + Y
         if ($oids[1] > PHP_INT_MAX) {
+            $this->throwIfBigIntGmpNeeded(true);
             $firstAndSecond = \gmp_strval(\gmp_add((string)($oids[0] * 40), $oids[1]));
         } else {
             $firstAndSecond = ($oids[0] * 40) + $oids[1];
