@@ -662,12 +662,15 @@ class BerEncoder implements EncoderInterface
         $oids = \explode('.', $type->getValue());
         $length = \count($oids);
         if ($length < 2) {
-            throw new EncoderException(sprintf('To encode the OID it must have at least 2 components: %s', $type->getValue()));
+            throw new EncoderException(sprintf(
+                'To encode the OID it must have at least 2 components: %s',
+                $type->getValue()
+            ));
         }
         if ($oids[0] > 2) {
             throw new EncoderException(sprintf(
                 'The value of the first OID component cannot be greater than 2. Received:  %s',
-                $type->getValue()
+                $oids[0]
             ));
         }
 
