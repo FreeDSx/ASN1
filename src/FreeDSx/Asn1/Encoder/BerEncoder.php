@@ -505,9 +505,9 @@ class BerEncoder implements EncoderInterface
         for ($this->pos; $this->pos < $this->maxLen; $this->pos++) {
             if (!$isBigInt) {
                 $lshift = $value << 7;
-                # An overflow bitshift will result in a negative number. This will check if GMP is available and flip it
-                # to a bigint safe method in one shot.
-                if ($lshift < 0) {
+                # An overflow bitshift will result in a negative number or zero.
+                # This will check if GMP is available and flip it to a bigint safe method in one shot.
+                if ($value > 0 && $lshift <= 0) {
                     $isBigInt = true;
                     $this->throwIfBigIntGmpNeeded(true);
                     $value = \gmp_init($value);
@@ -935,21 +935,18 @@ class BerEncoder implements EncoderInterface
         if ($length === 0) {
             throw new EncoderException('Zero length not permitted for an OID type.');
         }
-        # We use this to determine what to do about the first and second components
-        $firstByte = \ord($this->binary[$this->pos]);
-
-        # We need to get the first component here, as we use it in the case of first part of the OID being equal to 2
+        # We need to get the first part here, as it's used to determine the first 2 components.
         $startedAt = $this->pos;
-        $firstComponent = $this->decodeRelativeOid($length, true);
+        $firstPart = $this->getVlqBytesToInt();
 
-        if ($firstByte < 80) {
-            $oid = \floor($firstByte / 40).'.'.($firstByte % 40);
+        if ($firstPart < 80) {
+            $oid = \floor($firstPart / 40).'.'.($firstPart % 40);
         } else {
-            $isBigInt = ($firstComponent > PHP_INT_MAX);
+            $isBigInt = ($firstPart > PHP_INT_MAX);
             $this->throwIfBigIntGmpNeeded($isBigInt);
             # In this case, the first identifier is always 2.
             # But there is no limit on the value of the second identifier.
-            $oid = '2.'.($isBigInt ? \gmp_strval(\gmp_sub($firstComponent, '80')) : (int)$firstComponent - 80);
+            $oid = '2.'.($isBigInt ? \gmp_strval(\gmp_sub($firstPart, '80')) : (int)$firstPart - 80);
         }
 
         # We could potentially have nothing left to decode at this point.
