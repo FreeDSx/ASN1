@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.4.4 (2020-10-04)
+------------------
+* Fix an OID encoding case when the second component would be near or over the max int as defined by PHP.
+
 0.4.3 (2020-09-27)
 ------------------
 * Fix the encoding / decoding of OIDs when the first / second component is more than one byte (found by @danielmarschall)
