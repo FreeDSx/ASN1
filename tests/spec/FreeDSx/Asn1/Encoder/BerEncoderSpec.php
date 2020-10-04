@@ -368,6 +368,22 @@ class BerEncoderSpec extends ObjectBehavior
         $this->encode(new OidType('1.2.268435455'))->shouldBeEqualTo(hex2bin('06052affffff7f'));
     }
 
+    public function it_should_handle_a_near_max_int_on_64bit()
+    {
+        if (PHP_INT_SIZE !== 8) {
+            throw new SkippingException('This spec is only valid for 64 bit architecture.');
+        }
+        $this->encode(new OidType('2.9223372036854775727'))->shouldBeEqualTo(hex2bin('0609FFFFFFFFFFFFFFFF7F'));
+    }
+
+    public function it_should_handle_a_max_int_on_64bit()
+    {
+        if (!extension_loaded('gmp')) {
+            throw new SkippingException('The GMP extension must be loaded for bigint specs.');
+        }
+        $this->encode(new OidType('2.9223372036854775728'))->shouldBeEqualTo(hex2bin('060A81808080808080808000'));
+    }
+
     function it_should_not_accept_an_oid_with_a_first_identifier_greater_than_2()
     {
         $this->shouldThrow(EncoderException::class)->during('encode', [new OidType('3.1')]);

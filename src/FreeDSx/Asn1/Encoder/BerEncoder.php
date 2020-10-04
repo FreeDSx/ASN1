@@ -49,6 +49,11 @@ class BerEncoder implements EncoderInterface
     protected const BOOL_TRUE = "\xff";
 
     /**
+     * Anything greater than this we assume we may need to deal with a bigint in an OIDs second component.
+     */
+    protected const MAX_SECOND_COMPONENT = PHP_INT_MAX - 80;
+
+    /**
      * @var array
      */
     protected $tagMap = [
@@ -675,7 +680,7 @@ class BerEncoder implements EncoderInterface
         }
 
         # The first and second components of the OID are represented using the formula: (X * 40) + Y
-        if ($oids[1] > PHP_INT_MAX) {
+        if ($oids[1] > self::MAX_SECOND_COMPONENT) {
             $this->throwIfBigIntGmpNeeded(true);
             $firstAndSecond = \gmp_strval(\gmp_add((string)($oids[0] * 40), $oids[1]));
         } else {
