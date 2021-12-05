@@ -10,6 +10,8 @@
 
 namespace FreeDSx\Asn1\Type;
 
+use ArrayIterator;
+
 /**
  * Abstract ASN.1 type.
  *
@@ -237,16 +239,16 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
     /**
      * @return int
      */
-    public function count()
+    public function count(): int
     {
         return \count($this->children);
     }
 
     /**
-     * @return \ArrayIterator
+     * @return ArrayIterator
      */
-    public function getIterator()
+    public function getIterator(): ArrayIterator
     {
-        return new \ArrayIterator($this->children);
+        return new ArrayIterator($this->children);
     }
 }
