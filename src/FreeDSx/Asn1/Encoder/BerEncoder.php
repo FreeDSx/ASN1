@@ -807,6 +807,7 @@ class BerEncoder implements EncoderInterface
         if ($isNegative) {
             $len = \strlen($bytes);
             for ($i = 0; $i < $len; $i++) {
+                /** @var string $bytes */
                 $bytes[$i] = ~$bytes[$i];
             }
         }
