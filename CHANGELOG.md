@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.4.5 (2021-12-11)
+------------------
+* Support PHP 8.0 / 8.1.
+* Fix non-optional params on some objects and return type declarations.
+
 0.4.4 (2020-10-04)
 ------------------
 * Fix an OID encoding case when the second component would be near or over the max int as defined by PHP.
