@@ -10,6 +10,7 @@
 
 namespace FreeDSx\Asn1\Type;
 
+use DateTime;
 use FreeDSx\Asn1\Exception\InvalidArgumentException;
 
 /**
@@ -75,22 +76,22 @@ class AbstractTimeType extends AbstractType
     protected $dateFormat;
 
     /**
-     * @param \DateTime $dateTime
+     * @param DateTime|null $dateTime
      * @param string $dateFormat Represents the furthest datetime element to represent in the datetime object.
      * @param string $tzFormat Represents the format of the timezone.
      */
-    public function __construct(?\DateTime $dateTime = null, string $dateFormat, string $tzFormat)
+    public function __construct(?DateTime $dateTime, string $dateFormat, string $tzFormat)
     {
         $this->setDateTimeFormat($dateFormat);
         $this->setTimeZoneFormat($tzFormat);
-        parent::__construct($dateTime ?? new \DateTime());
+        parent::__construct($dateTime ?? new DateTime());
     }
 
     /**
-     * @param \DateTime $dateTime
+     * @param DateTime $dateTime
      * @return $this
      */
-    public function setValue(\DateTime $dateTime)
+    public function setValue(DateTime $dateTime)
     {
         $this->value = $dateTime;
 
@@ -98,9 +99,9 @@ class AbstractTimeType extends AbstractType
     }
 
     /**
-     * @return \DateTime
+     * @return DateTime
      */
-    public function getValue() : \DateTime
+    public function getValue() : DateTime
     {
         return $this->value;
     }
@@ -161,12 +162,12 @@ class AbstractTimeType extends AbstractType
      * @param string|int $tagNumber
      * @param int $class
      * @param bool $isConstructed
-     * @param \DateTime|null $dateTime
+     * @param DateTime|null $dateTime
      * @param string $dateFormat
      * @param string $tzFormat
      * @return AbstractTimeType
      */
-    public static function withTag($tagNumber, int $class, bool $isConstructed, ?\DateTime $dateTime = null, string $dateFormat, string $tzFormat)
+    public static function withTag($tagNumber, int $class, bool $isConstructed, ?DateTime $dateTime, string $dateFormat, string $tzFormat)
     {
         $type = new static($dateTime, $dateFormat, $tzFormat);
         $type->tagNumber = $tagNumber;
