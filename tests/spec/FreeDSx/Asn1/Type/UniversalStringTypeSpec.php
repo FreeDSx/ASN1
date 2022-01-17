@@ -16,33 +16,33 @@ use PhpSpec\ObjectBehavior;
 
 class UniversalStringTypeSpec extends ObjectBehavior
 {
-    function let()
+    public function let()
     {
         $this->beConstructedWith('foo');
     }
 
-    function it_is_initializable()
+    public function it_is_initializable()
     {
         $this->shouldHaveType(UniversalStringType::class);
     }
 
-    function it_should_set_the_value()
+    public function it_should_set_the_value()
     {
         $this->getValue()->shouldBeEqualTo('foo');
         $this->setValue('bar')->getValue()->shouldBeEqualTo('bar');
     }
 
-    function it_should_have_a_default_tag_type()
+    public function it_should_have_a_default_tag_type()
     {
         $this->getTagNumber()->shouldBeEqualTo(AbstractType::TAG_TYPE_UNIVERSAL_STRING);
     }
 
-    function it_should_be_character_restricted()
+    public function it_should_be_character_restricted()
     {
         $this->isCharacterRestricted()->shouldBeEqualTo(true);
     }
 
-    function it_should_be_constructed_with_tag_information()
+    public function it_should_be_constructed_with_tag_information()
     {
         $this::withTag(1, AbstractType::TAG_CLASS_APPLICATION, false, 'foo')->shouldBeLike(
             (new UniversalStringType('foo'))->setTagNumber(1)->setTagClass(AbstractType::TAG_CLASS_APPLICATION)

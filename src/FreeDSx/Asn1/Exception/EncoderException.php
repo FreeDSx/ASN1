@@ -10,11 +10,13 @@
 
 namespace FreeDSx\Asn1\Exception;
 
+use Exception;
+
 /**
  * Thrown when there are issues encoding/decoding ASN1 data.
  *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
-class EncoderException extends \Exception
+class EncoderException extends Exception
 {
 }

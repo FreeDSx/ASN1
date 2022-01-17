@@ -17,17 +17,17 @@ use PhpSpec\ObjectBehavior;
 
 class EncodersSpec extends ObjectBehavior
 {
-    function it_is_initializable()
+    public function it_is_initializable()
     {
         $this->shouldHaveType(Encoders::class);
     }
 
-    function it_should_get_a_ber_encoder()
+    public function it_should_get_a_ber_encoder()
     {
         $this::ber()->shouldBeAnInstanceOf(BerEncoder::class);
     }
 
-    function it_should_get_a_der_encoder()
+    public function it_should_get_a_der_encoder()
     {
         $this::der()->shouldBeAnInstanceOf(DerEncoder::class);
     }

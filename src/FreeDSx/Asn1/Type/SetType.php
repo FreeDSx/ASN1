@@ -37,7 +37,7 @@ class SetType extends AbstractType
      *
      * Used to determine if the set is in canonical order, which is required by some encodings for a SET.
      */
-    public function isCanonical() : bool
+    public function isCanonical(): bool
     {
         return $this->children === $this->canonicalize(...$this->children);
     }

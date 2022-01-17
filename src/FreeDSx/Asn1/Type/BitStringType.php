@@ -51,7 +51,7 @@ class BitStringType extends AbstractType
      *
      * @return int
      */
-    public function toInteger() : int
+    public function toInteger(): int
     {
         return hexdec(bin2hex(rtrim($this->toBinary(), "\x00")));
     }

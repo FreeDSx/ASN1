@@ -10,6 +10,9 @@
 
 namespace FreeDSx\Asn1\Type;
 
+use function is_float;
+use function is_int;
+
 /**
  * Functionality needed between integer / enums for big int validation / checking.
  *
@@ -22,12 +25,12 @@ trait BigIntTrait
      *
      * @return bool
      */
-    public function isBigInt() : bool
+    public function isBigInt(): bool
     {
-        if (\is_int($this->value)) {
+        if (is_int($this->value)) {
             return false;
         }
 
-        return \is_float($this->value + 0);
+        return is_float($this->value + 0);
     }
 }

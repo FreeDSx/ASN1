@@ -16,28 +16,28 @@ use PhpSpec\ObjectBehavior;
 
 class BooleanTypeSpec extends ObjectBehavior
 {
-    function let()
+    public function let()
     {
         $this->beConstructedWith(true);
     }
 
-    function it_is_initializable()
+    public function it_is_initializable()
     {
         $this->shouldHaveType(BooleanType::class);
     }
 
-    function it_should_set_the_value()
+    public function it_should_set_the_value()
     {
         $this->getValue()->shouldBeEqualTo(true);
         $this->setValue(false)->getValue()->shouldBeEqualTo(false);
     }
 
-    function it_should_have_a_default_tag_type()
+    public function it_should_have_a_default_tag_type()
     {
         $this->getTagNumber()->shouldBeEqualTo(AbstractType::TAG_TYPE_BOOLEAN);
     }
 
-    function it_should_be_constructed_with_tag_information()
+    public function it_should_be_constructed_with_tag_information()
     {
         $this::withTag(1, AbstractType::TAG_CLASS_APPLICATION, true)->shouldBeLike(
             (new BooleanType(true))->setTagNumber(1)->setTagClass(AbstractType::TAG_CLASS_APPLICATION)->setValue(true)

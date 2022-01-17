@@ -11,13 +11,16 @@
 namespace FreeDSx\Asn1\Type;
 
 use ArrayIterator;
+use Countable;
+use IteratorAggregate;
+use function count;
 
 /**
  * Abstract ASN.1 type.
  *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
-abstract class AbstractType implements \Countable, \IteratorAggregate
+abstract class AbstractType implements Countable, IteratorAggregate
 {
     public const TAG_CLASS_UNIVERSAL = 0x00;
 
@@ -124,7 +127,7 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
     /**
      * @return bool
      */
-    public function getIsConstructed() : bool
+    public function getIsConstructed(): bool
     {
         return $this->isConstructed;
     }
@@ -154,7 +157,7 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
     /**
      * @return int
      */
-    public function getTagClass() : int
+    public function getTagClass(): int
     {
         return $this->taggingClass;
     }
@@ -209,7 +212,7 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
     /**
      * @return AbstractType[]
      */
-    public function getChildren() : array
+    public function getChildren(): array
     {
         return $this->children;
     }
@@ -218,7 +221,7 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
      * @param int $index
      * @return null|AbstractType
      */
-    public function getChild(int $index) : ?AbstractType
+    public function getChild(int $index): ?AbstractType
     {
         return $this->children[$index] ?? null;
     }
@@ -241,7 +244,7 @@ abstract class AbstractType implements \Countable, \IteratorAggregate
      */
     public function count(): int
     {
-        return \count($this->children);
+        return count($this->children);
     }
 
     /**

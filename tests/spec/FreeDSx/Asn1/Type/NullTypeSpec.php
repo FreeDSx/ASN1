@@ -16,22 +16,22 @@ use PhpSpec\ObjectBehavior;
 
 class NullTypeSpec extends ObjectBehavior
 {
-    function it_is_initializable()
+    public function it_is_initializable()
     {
         $this->shouldHaveType(NullType::class);
     }
 
-    function it_should_have_a_null_value()
+    public function it_should_have_a_null_value()
     {
         $this->getValue()->shouldBeNull();
     }
 
-    function it_should_have_a_default_tag_type()
+    public function it_should_have_a_default_tag_type()
     {
         $this->getTagNumber()->shouldBeEqualTo(AbstractType::TAG_TYPE_NULL);
     }
 
-    function it_should_be_constructed_with_tag_information()
+    public function it_should_be_constructed_with_tag_information()
     {
         $this::withTag(1, AbstractType::TAG_CLASS_APPLICATION)->shouldBeLike(
             (new NullType())->setTagNumber(1)->setTagClass(AbstractType::TAG_CLASS_APPLICATION)

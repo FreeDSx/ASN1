@@ -13,8 +13,15 @@ namespace FreeDSx\Asn1\Encoder;
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Type\AbstractTimeType;
 use FreeDSx\Asn1\Type\AbstractType;
-use FreeDSx\Asn1\Type\BooleanType;
 use FreeDSx\Asn1\Type\SetOfType;
+use function count;
+use function end;
+use function ord;
+use function reset;
+use function str_pad;
+use function strcmp;
+use function strlen;
+use function usort;
 
 /**
  * Common restrictions on CER and DER encoding.
@@ -29,9 +36,9 @@ trait CerDerTrait
      * @return string
      * @throws EncoderException
      */
-    protected function binaryToBitString(int $length, int $unused) : string
+    protected function binaryToBitString(int $length, int $unused): string
     {
-        if ($unused && $length && \ord($this->binary[$this->pos + ($length- 1)]) !== 0 && ((8 - $length) << \ord($this->binary[$this->pos + ($length- 1)])) !== 0) {
+        if ($unused && $length && ord($this->binary[$this->pos + ($length - 1)]) !== 0 && ((8 - $length) << ord($this->binary[$this->pos + ($length - 1)])) !== 0) {
             throw new EncoderException(sprintf(
                 'The last %s unused bits of the bit string must be 0, but they are not.',
                 $unused
@@ -45,7 +52,7 @@ trait CerDerTrait
      * @return bool
      * @throws EncoderException
      */
-    protected function decodeBoolean() : bool
+    protected function decodeBoolean(): bool
     {
         if (!($this->binary[$this->pos] === self::BOOL_FALSE || $this->binary[$this->pos] === self::BOOL_TRUE)) {
             throw new EncoderException(sprintf('The encoded boolean must be 0 or 255, received "%s".', ord($this->binary[$this->pos])));
@@ -126,7 +133,7 @@ trait CerDerTrait
      */
     protected function encodeSetOf(SetOfType $setOf)
     {
-        if (\count($setOf->getChildren()) === 0) {
+        if (count($setOf->getChildren()) === 0) {
             return '';
         }
         $children = [];
@@ -134,27 +141,27 @@ trait CerDerTrait
         # Encode each child and record the length, we need it later
         foreach ($setOf as $type) {
             $child = ['original' => $this->encode($type)];
-            $child['length'] = \strlen($child['original']);
+            $child['length'] = strlen($child['original']);
             $children[] = $child;
         }
 
         # Sort the encoded types by length first to determine the padding needed.
-        \usort($children, function ($a, $b) {
+        usort($children, function ($a, $b) {
             /* @var AbstractType $a
              * @var AbstractType $b */
             return $a['length'] < $b['length'] ? -1 : 1;
         });
 
         # Get the last child (ie. the longest), and put the array back to normal.
-        $child = \end($children);
+        $child = end($children);
         $padding = $child ['length'];
-        \reset($children);
+        reset($children);
 
         # Sort by padding the items and comparing them.
-        \usort($children, function($a, $b) use ($padding) {
-            return \strcmp(
-                \str_pad($a['original'], $padding, "\x00"),
-                \str_pad($b['original'], $padding, "\x00")
+        usort($children, function ($a, $b) use ($padding) {
+            return strcmp(
+                str_pad($a['original'], $padding, "\x00"),
+                str_pad($b['original'], $padding, "\x00")
             );
         });
 

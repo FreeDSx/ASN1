@@ -24,7 +24,7 @@ class Encoders
      * @param array $options
      * @return BerEncoder
      */
-    public static function ber(array $options = []) : BerEncoder
+    public static function ber(array $options = []): BerEncoder
     {
         return new BerEncoder($options);
     }
@@ -33,7 +33,7 @@ class Encoders
      * @param array $options
      * @return DerEncoder
      */
-    public static function der(array $options = []) : DerEncoder
+    public static function der(array $options = []): DerEncoder
     {
         return new DerEncoder($options);
     }

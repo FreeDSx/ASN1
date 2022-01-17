@@ -101,7 +101,7 @@ class AbstractTimeType extends AbstractType
     /**
      * @return DateTime
      */
-    public function getValue() : DateTime
+    public function getValue(): DateTime
     {
         return $this->value;
     }
@@ -109,7 +109,7 @@ class AbstractTimeType extends AbstractType
     /**
      * @return string
      */
-    public function getTimeZoneFormat() : string
+    public function getTimeZoneFormat(): string
     {
         return $this->tzFormat;
     }
@@ -135,7 +135,7 @@ class AbstractTimeType extends AbstractType
     /**
      * @return string
      */
-    public function getDateTimeFormat() : string
+    public function getDateTimeFormat(): string
     {
         return $this->dateFormat;
     }

@@ -61,7 +61,7 @@ class DerEncoder extends BerEncoder
     /**
      * {@inheritdoc}
      */
-    protected function decodeLongDefiniteLength(int $length) : int
+    protected function decodeLongDefiniteLength(int $length): int
     {
         $length = parent::decodeLongDefiniteLength($length);
 
@@ -85,7 +85,7 @@ class DerEncoder extends BerEncoder
      * @param AbstractType $type
      * @throws EncoderException
      */
-    protected function validate(AbstractType $type) : void
+    protected function validate(AbstractType $type): void
     {
         if ($type instanceof OctetStringType && $type->getIsConstructed()) {
             throw new EncoderException('The octet string must be primitive. It cannot be constructed.');

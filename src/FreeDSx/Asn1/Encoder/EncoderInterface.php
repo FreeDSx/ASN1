@@ -29,7 +29,7 @@ interface EncoderInterface
      * @return string
      * @throws EncoderException
      */
-    public function encode(AbstractType $type) : string;
+    public function encode(AbstractType $type): string;
 
     /**
      * Decodes (completes) an incomplete type to a specific universal tag type object.
@@ -40,7 +40,7 @@ interface EncoderInterface
      * @return AbstractType
      * @throws EncoderException
      */
-    public function complete(IncompleteType $type, int $tagType, array $tagMap = []) : AbstractType;
+    public function complete(IncompleteType $type, int $tagType, array $tagMap = []): AbstractType;
 
     /**
      * Decode binary data to its ASN1 object representation.
@@ -51,12 +51,12 @@ interface EncoderInterface
      * @throws EncoderException
      * @throws PartialPduException
      */
-    public function decode($binary, array $tagMap = []) : AbstractType;
+    public function decode($binary, array $tagMap = []): AbstractType;
 
     /**
      * Get the last position of the binary byte stream after a decode operation.
      *
      * @return int|null
      */
-    public function getLastPosition() : ?int;
+    public function getLastPosition(): ?int;
 }

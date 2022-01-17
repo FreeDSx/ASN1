@@ -10,6 +10,7 @@
 
 namespace FreeDSx\Asn1;
 
+use DateTime;
 use FreeDSx\Asn1\Type\AbstractTimeType;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\BitStringType;
@@ -51,7 +52,7 @@ class Asn1
      * @param AbstractType ...$types
      * @return SequenceType
      */
-    public static function sequence(AbstractType ...$types) : SequenceType
+    public static function sequence(AbstractType ...$types): SequenceType
     {
         return new SequenceType(...$types);
     }
@@ -60,7 +61,7 @@ class Asn1
      * @param AbstractType ...$types
      * @return SequenceOfType
      */
-    public static function sequenceOf(AbstractType ...$types) : SequenceOfType
+    public static function sequenceOf(AbstractType ...$types): SequenceOfType
     {
         return new SequenceOfType(...$types);
     }
@@ -69,7 +70,7 @@ class Asn1
      * @param int $int
      * @return IntegerType
      */
-    public static function integer(int $int) : IntegerType
+    public static function integer(int $int): IntegerType
     {
         return new IntegerType($int);
     }
@@ -78,7 +79,7 @@ class Asn1
      * @param bool $bool
      * @return BooleanType
      */
-    public static function boolean(bool $bool) : BooleanType
+    public static function boolean(bool $bool): BooleanType
     {
         return new BooleanType($bool);
     }
@@ -87,7 +88,7 @@ class Asn1
      * @param int $enum
      * @return EnumeratedType
      */
-    public static function enumerated(int $enum) : EnumeratedType
+    public static function enumerated(int $enum): EnumeratedType
     {
         return new EnumeratedType($enum);
     }
@@ -96,7 +97,7 @@ class Asn1
      * @param float $real
      * @return RealType
      */
-    public static function real(float $real) : RealType
+    public static function real(float $real): RealType
     {
         return new RealType($real);
     }
@@ -104,7 +105,7 @@ class Asn1
     /**
      * @return NullType
      */
-    public static function null() : NullType
+    public static function null(): NullType
     {
         return new NullType();
     }
@@ -113,7 +114,7 @@ class Asn1
      * @param string $string
      * @return OctetStringType
      */
-    public static function octetString(string $string) : OctetStringType
+    public static function octetString(string $string): OctetStringType
     {
         return new OctetStringType($string);
     }
@@ -122,7 +123,7 @@ class Asn1
      * @param string $bitString
      * @return BitStringType
      */
-    public static function bitString(string $bitString) : BitStringType
+    public static function bitString(string $bitString): BitStringType
     {
         return new BitStringType($bitString);
     }
@@ -131,7 +132,7 @@ class Asn1
      * @param int $integer
      * @return BitStringType
      */
-    public static function bitStringFromInteger(int $integer) : BitStringType
+    public static function bitStringFromInteger(int $integer): BitStringType
     {
         return BitStringType::fromInteger($integer);
     }
@@ -140,7 +141,7 @@ class Asn1
      * @param string $binary
      * @return BitStringType
      */
-    public static function bitStringFromBinary($binary) : BitStringType
+    public static function bitStringFromBinary($binary): BitStringType
     {
         return BitStringType::fromBinary($binary);
     }
@@ -149,7 +150,7 @@ class Asn1
      * @param string $oid
      * @return OidType
      */
-    public static function oid(string $oid) : OidType
+    public static function oid(string $oid): OidType
     {
         return new OidType($oid);
     }
@@ -158,7 +159,7 @@ class Asn1
      * @param string $oid
      * @return RelativeOidType
      */
-    public static function relativeOid(string $oid) : RelativeOidType
+    public static function relativeOid(string $oid): RelativeOidType
     {
         return new RelativeOidType($oid);
     }
@@ -167,7 +168,7 @@ class Asn1
      * @param string $string
      * @return BmpStringType
      */
-    public static function bmpString(string $string) : BmpStringType
+    public static function bmpString(string $string): BmpStringType
     {
         return new BmpStringType($string);
     }
@@ -176,7 +177,7 @@ class Asn1
      * @param string $string
      * @return CharacterStringType
      */
-    public static function charString(string $string) : CharacterStringType
+    public static function charString(string $string): CharacterStringType
     {
         return new CharacterStringType($string);
     }
@@ -187,7 +188,7 @@ class Asn1
      * @param string $tzFormat
      * @return GeneralizedTimeType
      */
-    public static function generalizedTime(?\DateTime $dateTime = null, string $dateFormat = AbstractTimeType::FORMAT_FRACTIONS, string $tzFormat = AbstractTimeType::TZ_UTC) : GeneralizedTimeType
+    public static function generalizedTime(?DateTime $dateTime = null, string $dateFormat = AbstractTimeType::FORMAT_FRACTIONS, string $tzFormat = AbstractTimeType::TZ_UTC): GeneralizedTimeType
     {
         return new GeneralizedTimeType($dateTime, $dateFormat, $tzFormat);
     }
@@ -198,7 +199,7 @@ class Asn1
      * @param string $tzFormat
      * @return UtcTimeType
      */
-    public static function utcTime(?\DateTime $dateTime = null, string $dateFormat = AbstractTimeType::FORMAT_SECONDS, string $tzFormat = AbstractTimeType::TZ_UTC) : UtcTimeType
+    public static function utcTime(?DateTime $dateTime = null, string $dateFormat = AbstractTimeType::FORMAT_SECONDS, string $tzFormat = AbstractTimeType::TZ_UTC): UtcTimeType
     {
         return new UtcTimeType($dateTime, $dateFormat, $tzFormat);
     }
@@ -207,7 +208,7 @@ class Asn1
      * @param string $string
      * @return GeneralStringType
      */
-    public static function generalString(string $string) : GeneralStringType
+    public static function generalString(string $string): GeneralStringType
     {
         return new GeneralStringType($string);
     }
@@ -216,7 +217,7 @@ class Asn1
      * @param string $string
      * @return GraphicStringType
      */
-    public static function graphicString(string $string) : GraphicStringType
+    public static function graphicString(string $string): GraphicStringType
     {
         return new GraphicStringType($string);
     }
@@ -225,7 +226,7 @@ class Asn1
      * @param string $string
      * @return IA5StringType
      */
-    public static function ia5String(string $string) : IA5StringType
+    public static function ia5String(string $string): IA5StringType
     {
         return new IA5StringType($string);
     }
@@ -234,7 +235,7 @@ class Asn1
      * @param string $string
      * @return NumericStringType
      */
-    public static function numericString(string $string) : NumericStringType
+    public static function numericString(string $string): NumericStringType
     {
         return new NumericStringType($string);
     }
@@ -243,7 +244,7 @@ class Asn1
      * @param string $string
      * @return PrintableStringType
      */
-    public static function printableString(string $string) : PrintableStringType
+    public static function printableString(string $string): PrintableStringType
     {
         return new PrintableStringType($string);
     }
@@ -252,7 +253,7 @@ class Asn1
      * @param string $string
      * @return TeletexStringType
      */
-    public static function teletexString(string $string) : TeletexStringType
+    public static function teletexString(string $string): TeletexStringType
     {
         return new TeletexStringType($string);
     }
@@ -261,7 +262,7 @@ class Asn1
      * @param string $string
      * @return UniversalStringType
      */
-    public static function universalString(string $string) : UniversalStringType
+    public static function universalString(string $string): UniversalStringType
     {
         return new UniversalStringType($string);
     }
@@ -270,7 +271,7 @@ class Asn1
      * @param string $string
      * @return Utf8StringType
      */
-    public static function utf8String(string $string) : Utf8StringType
+    public static function utf8String(string $string): Utf8StringType
     {
         return new Utf8StringType($string);
     }
@@ -279,7 +280,7 @@ class Asn1
      * @param string $string
      * @return VideotexStringType
      */
-    public static function videotexString(string $string) : VideotexStringType
+    public static function videotexString(string $string): VideotexStringType
     {
         return new VideotexStringType($string);
     }
@@ -288,7 +289,7 @@ class Asn1
      * @param string $string
      * @return VisibleStringType
      */
-    public static function visibleString(string $string) : VisibleStringType
+    public static function visibleString(string $string): VisibleStringType
     {
         return new VisibleStringType($string);
     }
@@ -297,7 +298,7 @@ class Asn1
      * @param AbstractType[] ...$types
      * @return SetType
      */
-    public static function set(AbstractType ...$types) : SetType
+    public static function set(AbstractType ...$types): SetType
     {
         return new SetType(...$types);
     }
@@ -306,7 +307,7 @@ class Asn1
      * @param AbstractType[] ...$types
      * @return SetOfType
      */
-    public static function setOf(AbstractType ...$types) : SetOfType
+    public static function setOf(AbstractType ...$types): SetOfType
     {
         return new SetOfType(...$types);
     }
