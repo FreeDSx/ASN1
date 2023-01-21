@@ -47,5 +47,10 @@
       "phpcbf --standard=ruleset.xml --extensions=php --tab-width=4 -sp src",
       "ecs --fix"
     ]
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
   }
 }
