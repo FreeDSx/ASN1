@@ -248,7 +248,7 @@ abstract class AbstractType implements Countable, IteratorAggregate
     }
 
     /**
-     * @return ArrayIterator
+     * @return ArrayIterator<AbstractType>
      */
     public function getIterator(): ArrayIterator
     {

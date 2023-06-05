@@ -183,7 +183,7 @@ class Asn1
     }
 
     /**
-     * @param \DateTime $dateTime
+     * @param \DateTime|null $dateTime
      * @param string $dateFormat
      * @param string $tzFormat
      * @return GeneralizedTimeType
@@ -194,7 +194,7 @@ class Asn1
     }
 
     /**
-     * @param \DateTime $dateTime
+     * @param \DateTime|null $dateTime
      * @param string $dateFormat
      * @param string $tzFormat
      * @return UtcTimeType
@@ -295,7 +295,7 @@ class Asn1
     }
 
     /**
-     * @param AbstractType[] ...$types
+     * @param AbstractType ...$types
      * @return SetType
      */
     public static function set(AbstractType ...$types): SetType
@@ -304,7 +304,7 @@ class Asn1
     }
 
     /**
-     * @param AbstractType[] ...$types
+     * @param AbstractType ...$types
      * @return SetOfType
      */
     public static function setOf(AbstractType ...$types): SetOfType
@@ -313,9 +313,10 @@ class Asn1
     }
 
     /**
+     * @template T of AbstractType
      * @param int $tagNumber
-     * @param AbstractType $type
-     * @return AbstractType
+     * @param T $type
+     * @return T
      */
     public static function context(int $tagNumber, AbstractType $type)
     {
@@ -323,9 +324,10 @@ class Asn1
     }
 
     /**
+     * @template T of AbstractType
      * @param int $tagNumber
-     * @param AbstractType $type
-     * @return AbstractType
+     * @param T $type
+     * @return T
      */
     public static function application(int $tagNumber, AbstractType $type)
     {
@@ -333,9 +335,10 @@ class Asn1
     }
 
     /**
+     * @template T of AbstractType
      * @param int $tagNumber
-     * @param AbstractType $type
-     * @return AbstractType
+     * @param T $type
+     * @return T
      */
     public static function universal(int $tagNumber, AbstractType $type)
     {
@@ -343,9 +346,10 @@ class Asn1
     }
 
     /**
+     * @template T of AbstractType
      * @param int $tagNumber
-     * @param AbstractType $type
-     * @return AbstractType
+     * @param T $type
+     * @return T
      */
     public static function private(int $tagNumber, AbstractType $type)
     {
