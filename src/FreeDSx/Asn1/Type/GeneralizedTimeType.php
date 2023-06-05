@@ -10,7 +10,7 @@
 
 namespace FreeDSx\Asn1\Type;
 
-use DateTime;
+use DateTimeInterface;
 
 /**
  * Represents a Generalized Time type.
@@ -78,7 +78,7 @@ class GeneralizedTimeType extends AbstractTimeType
     /**
      * {@inheritdoc}
      */
-    public function __construct(?DateTime $dateTime = null, string $dateFormat = self::FORMAT_FRACTIONS, string $tzFormat = self::TZ_UTC)
+    public function __construct(?DateTimeInterface $dateTime = null, string $dateFormat = self::FORMAT_FRACTIONS, string $tzFormat = self::TZ_UTC)
     {
         parent::__construct($dateTime, $dateFormat, $tzFormat);
     }

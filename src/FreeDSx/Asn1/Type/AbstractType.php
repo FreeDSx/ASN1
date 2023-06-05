@@ -92,7 +92,7 @@ abstract class AbstractType implements Countable, IteratorAggregate
     public const CONSTRUCTED_TYPE = 0x20;
 
     /**
-     * @var mixed
+     * @var scalar|null
      */
     protected $value;
 

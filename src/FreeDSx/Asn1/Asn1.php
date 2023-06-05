@@ -10,7 +10,7 @@
 
 namespace FreeDSx\Asn1;
 
-use DateTime;
+use DateTimeInterface;
 use FreeDSx\Asn1\Type\AbstractTimeType;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\BitStringType;
@@ -183,23 +183,23 @@ class Asn1
     }
 
     /**
-     * @param \DateTime|null $dateTime
+     * @param DateTimeInterface|null $dateTime
      * @param string $dateFormat
      * @param string $tzFormat
      * @return GeneralizedTimeType
      */
-    public static function generalizedTime(?DateTime $dateTime = null, string $dateFormat = AbstractTimeType::FORMAT_FRACTIONS, string $tzFormat = AbstractTimeType::TZ_UTC): GeneralizedTimeType
+    public static function generalizedTime(?DateTimeInterface $dateTime = null, string $dateFormat = AbstractTimeType::FORMAT_FRACTIONS, string $tzFormat = AbstractTimeType::TZ_UTC): GeneralizedTimeType
     {
         return new GeneralizedTimeType($dateTime, $dateFormat, $tzFormat);
     }
 
     /**
-     * @param \DateTime|null $dateTime
+     * @param DateTimeInterface|null $dateTime
      * @param string $dateFormat
      * @param string $tzFormat
      * @return UtcTimeType
      */
-    public static function utcTime(?DateTime $dateTime = null, string $dateFormat = AbstractTimeType::FORMAT_SECONDS, string $tzFormat = AbstractTimeType::TZ_UTC): UtcTimeType
+    public static function utcTime(?DateTimeInterface $dateTime = null, string $dateFormat = AbstractTimeType::FORMAT_SECONDS, string $tzFormat = AbstractTimeType::TZ_UTC): UtcTimeType
     {
         return new UtcTimeType($dateTime, $dateFormat, $tzFormat);
     }

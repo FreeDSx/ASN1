@@ -11,6 +11,7 @@
 namespace FreeDSx\Asn1\Type;
 
 use DateTime;
+use DateTimeInterface;
 use FreeDSx\Asn1\Exception\InvalidArgumentException;
 
 /**
@@ -76,11 +77,16 @@ class AbstractTimeType extends AbstractType
     protected $dateFormat;
 
     /**
-     * @param DateTime|null $dateTime
+     * @var DateTimeInterface|null
+     */
+    protected $value;
+
+    /**
+     * @param DateTimeInterface|null $dateTime
      * @param string $dateFormat Represents the furthest datetime element to represent in the datetime object.
      * @param string $tzFormat Represents the format of the timezone.
      */
-    public function __construct(?DateTime $dateTime, string $dateFormat, string $tzFormat)
+    public function __construct(?DateTimeInterface $dateTime, string $dateFormat, string $tzFormat)
     {
         $this->setDateTimeFormat($dateFormat);
         $this->setTimeZoneFormat($tzFormat);
@@ -88,10 +94,10 @@ class AbstractTimeType extends AbstractType
     }
 
     /**
-     * @param DateTime $dateTime
+     * @param DateTimeInterface $dateTime
      * @return $this
      */
-    public function setValue(DateTime $dateTime)
+    public function setValue(DateTimeInterface $dateTime)
     {
         $this->value = $dateTime;
 
@@ -99,9 +105,9 @@ class AbstractTimeType extends AbstractType
     }
 
     /**
-     * @return DateTime
+     * @return DateTimeInterface
      */
-    public function getValue(): DateTime
+    public function getValue(): DateTimeInterface
     {
         return $this->value;
     }
@@ -162,12 +168,12 @@ class AbstractTimeType extends AbstractType
      * @param string|int $tagNumber
      * @param int $class
      * @param bool $isConstructed
-     * @param DateTime|null $dateTime
+     * @param DateTimeInterface|null $dateTime
      * @param string $dateFormat
      * @param string $tzFormat
      * @return AbstractTimeType
      */
-    public static function withTag($tagNumber, int $class, bool $isConstructed, ?DateTime $dateTime, string $dateFormat, string $tzFormat)
+    public static function withTag($tagNumber, int $class, bool $isConstructed, ?DateTimeInterface $dateTime, string $dateFormat, string $tzFormat)
     {
         $type = new static($dateTime, $dateFormat, $tzFormat);
         $type->tagNumber = $tagNumber;
