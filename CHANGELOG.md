@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.4.6 (2023-06-06)
+------------------
+* Update return types for AbstractType and some ASN1 helper methods to provider better hints for static analysis.
+* Time types now accept DateTimeInterface instead of just DateTime.
+
 0.4.5 (2021-12-11)
 ------------------
 * Support PHP 8.0 / 8.1.
