@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.4.7 (2023-06-06)
+------------------
+* Removed return type of AbstractType::getValue, so it can be inferred from the property for static analysis.
+
 0.4.6 (2023-06-06)
 ------------------
 * Update return types for AbstractType and some ASN1 helper methods to provider better hints for static analysis.

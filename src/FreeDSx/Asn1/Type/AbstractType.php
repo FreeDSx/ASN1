@@ -181,9 +181,6 @@ abstract class AbstractType implements Countable, IteratorAggregate
         return $this;
     }
 
-    /**
-     * @return mixed
-     */
     public function getValue()
     {
         return $this->value;
