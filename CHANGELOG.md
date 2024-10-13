@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.4.8 (2024-10-13)
+------------------
+* Update method signature for Asn1::integer to allow numeric strings (for big ints). The underlying code already supports it.
+* Add PHP 8.3 to CI runs.
+
 0.4.7 (2023-06-06)
 ------------------
 * Removed return type of AbstractType::getValue, so it can be inferred from the property for static analysis.
