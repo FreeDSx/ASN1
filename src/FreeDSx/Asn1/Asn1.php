@@ -67,10 +67,10 @@ class Asn1
     }
 
     /**
-     * @param int $int
+     * @param int|string $int
      * @return IntegerType
      */
-    public static function integer(int $int): IntegerType
+    public static function integer($int): IntegerType
     {
         return new IntegerType($int);
     }

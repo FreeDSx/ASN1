@@ -66,6 +66,12 @@ class Asn1Spec extends ObjectBehavior
         $this::integer(1)->shouldBeLike(new IntegerType(1));
     }
 
+    public function it_should_construct_an_integer_type_from_a_numeric_string(): void
+    {
+        $this::integer('99999999999999999')
+            ->shouldBeLike(new IntegerType('99999999999999999'));
+    }
+
     public function it_should_construct_an_enumerated_type()
     {
         $this::enumerated(1)->shouldBeLike(new EnumeratedType(1));
