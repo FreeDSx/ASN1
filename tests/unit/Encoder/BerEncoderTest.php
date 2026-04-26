@@ -126,6 +126,14 @@ final class BerEncoderTest extends TestCase
         $this->subject->decode(hex2bin('04ff'));
     }
 
+    public function test_it_should_throw_when_encoding_an_unsupported_type(): void
+    {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessageMatches('/is not currently supported/');
+
+        $this->subject->encode(new IncompleteType("\x00"));
+    }
+
     public function test_it_should_decode_a_boolean_true_type(): void
     {
         self::assertEquals(

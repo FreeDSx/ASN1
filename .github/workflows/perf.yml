@@ -145,11 +145,18 @@ jobs:
           command: composer install --no-progress --prefer-dist --optimize-autoloader
 
       - name: Run bench-vs-floor
+        id: floor_check
         run: composer bench-vs-floor | tee /tmp/floor-result.txt
+
+      - name: Capture candidate floor
+        if: steps.floor_check.outcome == 'success'
+        run: composer bench-update-floor
 
       - name: Upload artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: perf-floor-${{ github.run_number }}
-          path: /tmp/floor-result.txt
+          path: |
+            /tmp/floor-result.txt
+            tests/performance/baseline-floor.json

@@ -1,36 +1,36 @@
 {
     "meta": {
         "captured_on": "2026-04-26",
-        "runner": "ubuntu-latest",
-        "php": "8.5",
+        "runner": "linux",
+        "php": "8.5.5",
         "margin_pct": 20,
-        "note": "Refreshed after the encoder hot-path variadic-to-array conversion (encodeConstructedType / canonicalize). Each value = measured ns/payload * 1.20 (rounded up). Refresh via `composer bench-update-floor` on a clean ubuntu-latest run after intentional perf changes or runner-generation upgrades."
+        "note": "Captured 2026-04-26T22:42:22+00:00 with samples=15 revs=5. Each value = measured ns/payload * 1.20."
     },
     "floor_ns_per_payload": {
         "ldap_search_entry": {
-            "encode": 15372,
-            "decode": 12062,
-            "round_trip": 27561
+            "encode": 7761,
+            "decode": 10127,
+            "round_trip": 18656
         },
         "string_heavy": {
-            "encode": 2375,
-            "decode": 2465,
-            "round_trip": 5188
+            "encode": 1137,
+            "decode": 2067,
+            "round_trip": 3552
         },
         "oid_heavy": {
-            "encode": 8991,
-            "decode": 6788,
-            "round_trip": 16480
+            "encode": 6718,
+            "decode": 5817,
+            "round_trip": 13097
         },
         "integer_heavy": {
-            "encode": 2094,
-            "decode": 1806,
-            "round_trip": 4236
+            "encode": 1512,
+            "decode": 1607,
+            "round_trip": 3430
         },
         "mixed_message": {
-            "encode": 20069,
-            "decode": 16163,
-            "round_trip": 37341
+            "encode": 10095,
+            "decode": 13149,
+            "round_trip": 24199
         }
     }
 }

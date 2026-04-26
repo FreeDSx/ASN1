@@ -15,23 +15,37 @@ use DateTimeZone;
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\InvalidArgumentException;
 use FreeDSx\Asn1\Exception\PartialPduException;
-use FreeDSx\Asn1\Type\AbstractStringType;
 use FreeDSx\Asn1\Type\AbstractTimeType;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type as EncodedType;
 use FreeDSx\Asn1\Type\BitStringType;
+use FreeDSx\Asn1\Type\BmpStringType;
 use FreeDSx\Asn1\Type\BooleanType;
+use FreeDSx\Asn1\Type\CharacterStringType;
 use FreeDSx\Asn1\Type\EnumeratedType;
 use FreeDSx\Asn1\Type\GeneralizedTimeType;
+use FreeDSx\Asn1\Type\GeneralStringType;
+use FreeDSx\Asn1\Type\GraphicStringType;
+use FreeDSx\Asn1\Type\IA5StringType;
 use FreeDSx\Asn1\Type\IncompleteType;
 use FreeDSx\Asn1\Type\IntegerType;
 use FreeDSx\Asn1\Type\NullType;
+use FreeDSx\Asn1\Type\NumericStringType;
+use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\OidType;
+use FreeDSx\Asn1\Type\PrintableStringType;
 use FreeDSx\Asn1\Type\RealType;
 use FreeDSx\Asn1\Type\RelativeOidType;
+use FreeDSx\Asn1\Type\SequenceOfType;
+use FreeDSx\Asn1\Type\SequenceType;
 use FreeDSx\Asn1\Type\SetOfType;
 use FreeDSx\Asn1\Type\SetType;
+use FreeDSx\Asn1\Type\TeletexStringType;
+use FreeDSx\Asn1\Type\UniversalStringType;
 use FreeDSx\Asn1\Type\UtcTimeType;
+use FreeDSx\Asn1\Type\Utf8StringType;
+use FreeDSx\Asn1\Type\VideotexStringType;
+use FreeDSx\Asn1\Type\VisibleStringType;
 use function bin2hex;
 use function bindec;
 use function chr;
@@ -182,67 +196,63 @@ class BerEncoder implements EncoderInterface
      */
     public function encode(AbstractType $type): string
     {
-        switch ($type) {
-            case $type instanceof BooleanType:
-                $bytes = $type->getValue() ? self::BOOL_TRUE : self::BOOL_FALSE;
-                break;
-            case $type instanceof IntegerType:
-            case $type instanceof EnumeratedType:
-                $bytes = $this->encodeInteger($type);
-                break;
-            case $type instanceof RealType:
-                $bytes = $this->encodeReal($type);
-                break;
-            case $type instanceof AbstractStringType:
-                $bytes = $type->getValue();
-                break;
-            case $type instanceof SetOfType:
-                $bytes = $this->encodeSetOf($type);
-                break;
-            case $type instanceof SetType:
-                $bytes = $this->encodeSet($type);
-                break;
-            case $type->getIsConstructed():
-                $bytes = $this->encodeConstructedType($type->getChildren());
-                break;
-            case $type instanceof BitStringType:
-                $bytes = $this->encodeBitString($type);
-                break;
-            case $type instanceof OidType:
-                $bytes = $this->encodeOid($type);
-                break;
-            case $type instanceof RelativeOidType:
-                $bytes = $this->encodeRelativeOid($type);
-                break;
-            case $type instanceof GeneralizedTimeType:
-                $bytes = $this->encodeGeneralizedTime($type);
-                break;
-            case $type instanceof UtcTimeType:
-                $bytes = $this->encodeUtcTime($type);
-                break;
-            case $type instanceof NullType:
-                $bytes = '';
-                break;
-            default:
-                throw new EncoderException(sprintf(
-                    'The type "%s" is not currently supported.',
-                    get_class($type)
-                ));
-        }
+        # match($type::class) compiles to JMP_TABLE — O(1), so this is strictly for performance.
+        $tagNumber = $type->getTagNumber();
+        $isConstructed = $type->getIsConstructed();
+
+        $bytes = match ($type::class) {
+            OctetStringType::class,
+            Utf8StringType::class,
+            IA5StringType::class,
+            PrintableStringType::class,
+            NumericStringType::class,
+            GeneralStringType::class,
+            GraphicStringType::class,
+            VisibleStringType::class,
+            BmpStringType::class,
+            UniversalStringType::class,
+            TeletexStringType::class,
+            VideotexStringType::class,
+            CharacterStringType::class    => $type->getValue(),
+
+            SequenceType::class,
+            SequenceOfType::class         => $this->encodeConstructedType($type->getChildren()),
+
+            IntegerType::class,
+            EnumeratedType::class         => $this->encodeInteger($type),
+
+            SetOfType::class              => $this->encodeSetOf($type),
+            SetType::class                => $this->encodeSet($type),
+
+            BooleanType::class            => $type->getValue() ? self::BOOL_TRUE : self::BOOL_FALSE,
+            NullType::class               => '',
+            OidType::class                => $this->encodeOid($type),
+            BitStringType::class          => $this->encodeBitString($type),
+            RelativeOidType::class        => $this->encodeRelativeOid($type),
+            GeneralizedTimeType::class    => $this->encodeGeneralizedTime($type),
+            UtcTimeType::class            => $this->encodeUtcTime($type),
+            RealType::class               => $this->encodeReal($type),
+
+            default => throw new EncoderException(sprintf(
+                'The type "%s" is not currently supported.',
+                $type::class,
+            )),
+        };
+
         $length = strlen($bytes);
         $bytes = ($length < 128) ? chr($length) . $bytes : $this->encodeLongDefiniteLength($length) . $bytes;
 
         # The first byte of a tag always contains the class (bits 8 and 7) and whether it is constructed (bit 6).
-        $tag = $type->getTagClass() | ($type->getIsConstructed() ? AbstractType::CONSTRUCTED_TYPE : 0);
+        $tag = $type->getTagClass() | ($isConstructed ? AbstractType::CONSTRUCTED_TYPE : 0);
 
-        $this->validateNumericInt($type->getTagNumber());
+        $this->validateNumericInt($tagNumber);
         # For a high tag (>=31) we flip the first 5 bits on (0x1f) to make the first byte, then the subsequent bytes is
         # the VLV encoding of the tag number.
-        if ($type->getTagNumber() >= 31) {
-            $bytes = chr($tag | 0x1f) . $this->intToVlqBytes($type->getTagNumber()) . $bytes;
+        if ($tagNumber >= 31) {
+            $bytes = chr($tag | 0x1f) . $this->intToVlqBytes($tagNumber) . $bytes;
         # For a tag less than 31, everything fits comfortably into a single byte.
         } else {
-            $bytes = chr($tag | $type->getTagNumber()) . $bytes;
+            $bytes = chr($tag | $tagNumber) . $bytes;
         }
 
         return $bytes;
