@@ -14,21 +14,26 @@ namespace FreeDSx\Asn1\Type;
  * Represents an incomplete ASN1 type where there was not enough information available to decode it. The value contains
  * the complete binary value.
  *
+ * @extends AbstractType<string>
+ *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
 class IncompleteType extends AbstractType
 {
-    /**
-     * @param string $value
-     * @param int|string|null $tagNumber Numeric strings are accepted for big-int tag numbers.
-     * @param int $class
-     * @param bool $isConstructed
-     */
-    public function __construct($value, $tagNumber = null, int $class = AbstractType::TAG_CLASS_UNIVERSAL, bool $isConstructed = false)
-    {
+    public function __construct(
+        string $value,
+        int|string|null $tagNumber = null,
+        int $class = AbstractType::TAG_CLASS_UNIVERSAL,
+        bool $isConstructed = false,
+    ) {
         $this->tagNumber = $tagNumber;
         $this->taggingClass = $class;
         $this->isConstructed = $isConstructed;
         parent::__construct($value);
+    }
+
+    public function getValue(): string
+    {
+        return $this->value;
     }
 }

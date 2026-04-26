@@ -22,8 +22,6 @@ trait BigIntTrait
 {
     /**
      * Whether or not the contained value is larger than the PHP_INT_MAX value (represented as a string value).
-     *
-     * @return bool
      */
     public function isBigInt(): bool
     {
@@ -31,6 +29,6 @@ trait BigIntTrait
             return false;
         }
 
-        return is_float($this->value + 0);
+        return is_float($this->value + 0); // @phpstan-ignore binaryOp.invalid (numeric string addition is intentional)
     }
 }

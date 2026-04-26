@@ -13,31 +13,26 @@ namespace FreeDSx\Asn1\Type;
 /**
  * Represents a bit string type.
  *
+ * @extends AbstractType<string>
+ *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
 class BitStringType extends AbstractType
 {
     protected $tagNumber = self::TAG_TYPE_BIT_STRING;
 
-    /**
-     * @param string $value
-     */
     public function __construct(string $value = '')
     {
         parent::__construct($value);
     }
 
-    /**
-     * @return string
-     */
-    public function getValue()
+    public function getValue(): string
     {
         return $this->value;
     }
 
     /**
-     * @param string $value
-     * @return BitStringType
+     * @return $this
      */
     public function setValue(string $value)
     {
@@ -48,25 +43,24 @@ class BitStringType extends AbstractType
 
     /**
      * Get the integer representation of the bit string.
-     *
-     * @return int
      */
     public function toInteger(): int
     {
-        return hexdec(bin2hex(rtrim($this->toBinary(), "\x00")));
+        return (int) hexdec(bin2hex(rtrim(
+            $this->toBinary(),
+            "\x00",
+        )));
     }
 
     /**
      * Get the packed binary representation.
-     *
-     * @return string
      */
-    public function toBinary()
+    public function toBinary(): string
     {
         $bytes = '';
 
-        foreach (str_split($this->value, 8) as $piece) {
-            $bytes .= chr(bindec($piece));
+        foreach (str_split($this->getValue(), 8) as $piece) {
+            $bytes .= chr(((int) bindec($piece)) & 0xff);
         }
 
         return $bytes;
@@ -74,13 +68,11 @@ class BitStringType extends AbstractType
 
     /**
      * Construct the bit string from a binary string value.
-     *
-     * @param string $bytes
-     * @param int|null $minLength
-     * @return BitStringType
      */
-    public static function fromBinary($bytes, ?int $minLength = null)
-    {
+    public static function fromBinary(
+        string $bytes,
+        ?int $minLength = null,
+    ): self {
         $bitstring = '';
 
         $length = strlen($bytes);
@@ -96,13 +88,11 @@ class BitStringType extends AbstractType
 
     /**
      * Construct the bit string from an integer.
-     *
-     * @param int $int
-     * @param int|null $minLength
-     * @return BitStringType
      */
-    public static function fromInteger(int $int, ?int $minLength = null)
-    {
+    public static function fromInteger(
+        int $int,
+        ?int $minLength = null
+    ): self {
         $pieces = str_split(decbin($int), 8);
         $num = count($pieces);
 
@@ -121,14 +111,14 @@ class BitStringType extends AbstractType
     }
 
     /**
-     * @param string|int $tagNumber
-     * @param int $class
-     * @param bool $isConstructed
-     * @param string $value
-     * @return AbstractType
+     * @param int|string $tagNumber
      */
-    public static function withTag($tagNumber, int $class, bool $isConstructed, string $value = '')
-    {
+    public static function withTag(
+        $tagNumber,
+        int $class,
+        bool $isConstructed,
+        string $value = ''
+    ): self {
         $type = new self($value);
         $type->taggingClass = $class;
         $type->tagNumber = $tagNumber;

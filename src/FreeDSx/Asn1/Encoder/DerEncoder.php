@@ -29,15 +29,10 @@ class DerEncoder extends BerEncoder
     use CerDerTrait,
         SetTrait;
 
-    /**
-     * @param array $options
-     */
-    public function __construct(array $options = [])
+    public function __construct(EncoderOptions $options = new EncoderOptions())
     {
         parent::__construct($options);
-        $this->setOptions([
-            'bitstring_padding' => '0',
-        ]);
+        $this->setOptions(new EncoderOptions(bitstringPadding: '0'));
     }
 
     public function encode(AbstractType $type): string

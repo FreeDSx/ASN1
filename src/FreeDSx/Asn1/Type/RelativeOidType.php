@@ -13,22 +13,20 @@ namespace FreeDSx\Asn1\Type;
 /**
  * Represents a Relative OID type.
  *
+ * @extends AbstractType<string>
+ *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
 class RelativeOidType extends AbstractType
 {
     protected $tagNumber = self::TAG_TYPE_RELATIVE_OID;
 
-    /**
-     * @param string $value
-     */
     public function __construct(string $value)
     {
         parent::__construct($value);
     }
 
     /**
-     * @param string $relativeOid
      * @return $this
      */
     public function setValue(string $relativeOid)
@@ -38,29 +36,24 @@ class RelativeOidType extends AbstractType
         return $this;
     }
 
-    /**
-     * @return string
-     */
     public function getValue(): string
     {
         return $this->value;
     }
 
-    /**
-     * @return string
-     */
-    public function __toString()
+    public function __toString(): string
     {
-        return (string) $this->value;
+        return $this->getValue();
     }
 
     /**
-     * @param string|int $tagNumber
-     * @param int $class
-     * @param string $value
-     * @return RelativeOidType
+     * @param int|string $tagNumber
      */
-    public static function withTag($tagNumber, int $class, string $value)
+    public static function withTag(
+        $tagNumber,
+        int $class,
+        string $value
+    ): self
     {
         $type = new self($value);
         $type->tagNumber = $tagNumber;

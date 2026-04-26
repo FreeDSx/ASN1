@@ -11,6 +11,7 @@
 namespace FreeDSx\Asn1;
 
 use FreeDSx\Asn1\Encoder\BerEncoder;
+use FreeDSx\Asn1\Encoder\EncoderOptions;
 use FreeDSx\Asn1\Encoder\DerEncoder;
 
 /**
@@ -20,20 +21,12 @@ use FreeDSx\Asn1\Encoder\DerEncoder;
  */
 class Encoders
 {
-    /**
-     * @param array $options
-     * @return BerEncoder
-     */
-    public static function ber(array $options = []): BerEncoder
+    public static function ber(EncoderOptions $options = new EncoderOptions()): BerEncoder
     {
         return new BerEncoder($options);
     }
 
-    /**
-     * @param array $options
-     * @return DerEncoder
-     */
-    public static function der(array $options = []): DerEncoder
+    public static function der(EncoderOptions $options = new EncoderOptions()): DerEncoder
     {
         return new DerEncoder($options);
     }

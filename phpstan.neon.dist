@@ -3,12 +3,14 @@ parameters:
     paths:
         - %currentWorkingDirectory%/src
     treatPhpDocTypesAsCertain: false
-    reportUnmatchedIgnoredErrors: false
+    reportUnmatchedIgnoredErrors: true
     ignoreErrors:
         - '#Unsafe usage of new static#'
         -
             identifier: varTag.nativeType
             path: %currentWorkingDirectory%/src/FreeDSx/Asn1/Encoder/BerEncoder.php
         -
-            identifier: property.phpDocType
-            path: %currentWorkingDirectory%/src/FreeDSx/Asn1/Type/AbstractTimeType.php
+            # AbstractType uses covariant T for subclass value narrowing
+            # $value is read+written but is effectively write-once.
+            identifier: generics.variance
+            path: %currentWorkingDirectory%/src/FreeDSx/Asn1/Type/AbstractType.php

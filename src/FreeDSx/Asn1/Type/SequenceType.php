@@ -13,12 +13,14 @@ namespace FreeDSx\Asn1\Type;
 /**
  * Represents a Sequence type.
  *
+ * @extends AbstractType<null>
+ *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
 class SequenceType extends AbstractType
 {
     /**
-     * @var int
+     * @var int|string
      */
     protected $tagNumber = self::TAG_TYPE_SEQUENCE;
 
@@ -37,12 +39,16 @@ class SequenceType extends AbstractType
     }
 
     /**
-     * @param string|int $tagNumber
-     * @param int $class
-     * @param array $children
-     * @return SequenceType
+     * @param int|string $tagNumber
+     * @param array<int, AbstractType> $children
+     *
+     * @return static
      */
-    public static function withTag($tagNumber, int $class, array $children = [])
+    public static function withTag(
+        $tagNumber,
+        int $class,
+        array $children = []
+    )
     {
         $type = new static();
         $type->children = $children;

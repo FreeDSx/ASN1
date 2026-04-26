@@ -93,27 +93,20 @@ class BerEncoder implements EncoderInterface
     protected const MAX_SECOND_COMPONENT = PHP_INT_MAX - 80;
 
     /**
-     * @var array
+     * @var array<int, array<int, int>> Tag class => (tag number => universal tag type).
      */
-    protected $tagMap = [
+    protected array $tagMap = [
         AbstractType::TAG_CLASS_APPLICATION => [],
         AbstractType::TAG_CLASS_CONTEXT_SPECIFIC => [],
         AbstractType::TAG_CLASS_PRIVATE => [],
     ];
 
-    protected $tmpTagMap = [];
-
     /**
-     * @var array
+     * @var array<int, array<int, int>> Tag class => (tag number => universal tag type).
      */
-    protected $options = [
-        'bitstring_padding' => '0',
-    ];
+    protected array $tmpTagMap = [];
 
-    /**
-     * @var bool
-     */
-    protected $isGmpAvailable;
+    protected bool $isGmpAvailable;
 
     /**
      * @var int
@@ -135,20 +128,18 @@ class BerEncoder implements EncoderInterface
      */
     protected $binary;
 
-    /**
-     * @param array $options
-     */
-    public function __construct(array $options = [])
+    public function __construct(protected EncoderOptions $options = new EncoderOptions())
     {
         $this->isGmpAvailable = extension_loaded('gmp');
-        $this->setOptions($options);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function decode($binary, array $tagMap = []): AbstractType
-    {
+    public function decode(
+        string $binary,
+        array $tagMap = []
+    ): AbstractType {
         $this->startEncoding($binary, $tagMap);
         if ($this->maxLen === 0) {
             throw new InvalidArgumentException('The data to decode cannot be empty.');
@@ -164,8 +155,11 @@ class BerEncoder implements EncoderInterface
     /**
      * {@inheritdoc}
      */
-    public function complete(IncompleteType $type, int $tagType, array $tagMap = []): AbstractType
-    {
+    public function complete(
+        IncompleteType $type,
+        int $tagType,
+        array $tagMap = [],
+    ): AbstractType {
         $lastPos = $this->lastPos;
         $this->startEncoding($type->getValue(), $tagMap);
         $newType = $this->decodeBytes(false, $tagType, $this->maxLen, $type->getIsConstructed(), AbstractType::TAG_CLASS_UNIVERSAL);
@@ -251,12 +245,14 @@ class BerEncoder implements EncoderInterface
     /**
      * Map universal types to specific tag class values when decoding.
      *
-     * @param int $class
-     * @param array $map
+     * @param array<int, int> $map Tag number => universal tag type.
+     *
      * @return $this
      */
-    public function setTagMap(int $class, array $map)
-    {
+    public function setTagMap(
+        int $class,
+        array $map,
+    ): self {
         if (isset($this->tagMap[$class])) {
             $this->tagMap[$class] = $map;
         }
@@ -266,10 +262,8 @@ class BerEncoder implements EncoderInterface
 
     /**
      * Get the options for the encoder.
-     *
-     * @return array
      */
-    public function getOptions(): array
+    public function getOptions(): EncoderOptions
     {
         return $this->options;
     }
@@ -277,14 +271,11 @@ class BerEncoder implements EncoderInterface
     /**
      * Set the options for the encoder.
      *
-     * @param array $options
      * @return $this
      */
-    public function setOptions(array $options)
+    public function setOptions(EncoderOptions $options): self
     {
-        if (isset($options['bitstring_padding']) && is_string($options['bitstring_padding'])) {
-            $this->options['bitstring_padding'] = $options['bitstring_padding'];
-        }
+        $this->options = $options;
 
         return $this;
     }
@@ -297,8 +288,13 @@ class BerEncoder implements EncoderInterface
         return $this->lastPos;
     }
 
-    protected function startEncoding(string $binary, array $tagMap): void
-    {
+    /**
+     * @param array<int, array<int, int>> $tagMap Tag class => (tag number => universal tag type).
+     */
+    protected function startEncoding(
+        string $binary,
+        array $tagMap,
+    ): void {
         $this->tmpTagMap = $tagMap + $this->tagMap;
         $this->binary = $binary;
         $this->lastPos = null;
@@ -666,7 +662,11 @@ class BerEncoder implements EncoderInterface
         $unused = 0;
         if ($length % 8) {
             $unused = 8 - ($length % 8);
-            $data = str_pad($data, $length + $unused, $this->options['bitstring_padding']);
+            $data = str_pad(
+                $data,
+                $length + $unused,
+                $this->options->bitstringPadding,
+            );
             $length = strlen($data);
         }
 

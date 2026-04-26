@@ -13,22 +13,25 @@ namespace FreeDSx\Asn1\Type;
 /**
  * Represents an ASN1 boolean type.
  *
+ * @extends AbstractType<bool>
+ *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
 class BooleanType extends AbstractType
 {
     protected $tagNumber = self::TAG_TYPE_BOOLEAN;
 
-    /**
-     * @param bool $value
-     */
     public function __construct(bool $value)
     {
         parent::__construct($value);
     }
 
+    public function getValue(): bool
+    {
+        return $this->value;
+    }
+
     /**
-     * @param bool $value
      * @return $this
      */
     public function setValue(bool $value)
@@ -39,12 +42,13 @@ class BooleanType extends AbstractType
     }
 
     /**
-     * @param string|int $tagNumber
-     * @param int $class
-     * @param bool $value
-     * @return BooleanType
+     * @param int|string $tagNumber
      */
-    public static function withTag($tagNumber, int $class, bool $value)
+    public static function withTag(
+        $tagNumber,
+        int $class,
+        bool $value
+    ): self
     {
         $type = new self($value);
         $type->taggingClass = $class;

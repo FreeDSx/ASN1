@@ -26,11 +26,6 @@ final class NullTypeTest extends TestCase
         $this->subject = new NullType();
     }
 
-    public function test_it_should_have_a_null_value(): void
-    {
-        self::assertNull($this->subject->getValue());
-    }
-
     public function test_it_should_have_a_default_tag_type(): void
     {
         self::assertSame(

@@ -57,44 +57,41 @@ class AbstractTimeType extends AbstractType
     public const TZ_DIFF = 'diff';
 
     /**
-     * @var string[] Valid datetime formats.
+     * @var array<int, string> Valid datetime formats.
      */
     protected $validDateFormats = [];
 
     /**
-     * @var string[] Valid timezone formats
+     * @var array<int, string> Valid timezone formats
      */
     protected $validTzFormats = [];
 
     /**
      * @var string
      */
-    protected $tzFormat;
+    protected $tzFormat = self::TZ_UTC;
 
     /**
      * @var string
      */
-    protected $dateFormat;
+    protected $dateFormat = self::FORMAT_SECONDS;
 
     /**
-     * @var DateTimeInterface|null
-     */
-    protected $value;
-
-    /**
-     * @param DateTimeInterface|null $dateTime
      * @param string $dateFormat Represents the furthest datetime element to represent in the datetime object.
      * @param string $tzFormat Represents the format of the timezone.
      */
-    public function __construct(?DateTimeInterface $dateTime, string $dateFormat, string $tzFormat)
-    {
+    public function __construct(
+        ?DateTimeInterface $dateTime,
+        string $dateFormat,
+        string $tzFormat
+    ) {
         $this->setDateTimeFormat($dateFormat);
         $this->setTimeZoneFormat($tzFormat);
-        parent::__construct($dateTime ?? new DateTime());
+        parent::__construct(null);
+        $this->value = $dateTime ?? new DateTime();
     }
 
     /**
-     * @param DateTimeInterface $dateTime
      * @return $this
      */
     public function setValue(DateTimeInterface $dateTime)
@@ -104,24 +101,17 @@ class AbstractTimeType extends AbstractType
         return $this;
     }
 
-    /**
-     * @return DateTimeInterface
-     */
     public function getValue(): DateTimeInterface
     {
         return $this->value;
     }
 
-    /**
-     * @return string
-     */
     public function getTimeZoneFormat(): string
     {
         return $this->tzFormat;
     }
 
     /**
-     * @param string $tzFormat
      * @return $this
      */
     public function setTimeZoneFormat(string $tzFormat)
@@ -138,16 +128,12 @@ class AbstractTimeType extends AbstractType
         return $this;
     }
 
-    /**
-     * @return string
-     */
     public function getDateTimeFormat(): string
     {
         return $this->dateFormat;
     }
 
     /**
-     * @param string $dateFormat
      * @return $this
      */
     public function setDateTimeFormat(string $dateFormat)
@@ -165,16 +151,18 @@ class AbstractTimeType extends AbstractType
     }
 
     /**
-     * @param string|int $tagNumber
-     * @param int $class
-     * @param bool $isConstructed
-     * @param DateTimeInterface|null $dateTime
-     * @param string $dateFormat
-     * @param string $tzFormat
-     * @return AbstractTimeType
+     * @param int|string $tagNumber
+     *
+     * @return static
      */
-    public static function withTag($tagNumber, int $class, bool $isConstructed, ?DateTimeInterface $dateTime, string $dateFormat, string $tzFormat)
-    {
+    public static function withTag(
+        $tagNumber,
+        int $class,
+        bool $isConstructed,
+        ?DateTimeInterface $dateTime,
+        string $dateFormat,
+        string $tzFormat,
+    ) {
         $type = new static($dateTime, $dateFormat, $tzFormat);
         $type->tagNumber = $tagNumber;
         $type->taggingClass = $class;

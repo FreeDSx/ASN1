@@ -20,6 +20,11 @@ use function count;
  *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
+/**
+ * @template-covariant T
+ *
+ * @implements IteratorAggregate<int, AbstractType<mixed>>
+ */
 abstract class AbstractType implements Countable, IteratorAggregate
 {
     public const TAG_CLASS_UNIVERSAL = 0x00;
@@ -92,12 +97,12 @@ abstract class AbstractType implements Countable, IteratorAggregate
     public const CONSTRUCTED_TYPE = 0x20;
 
     /**
-     * @var scalar|null
+     * @var T
      */
     protected $value;
 
     /**
-     * @var null|int|string
+     * @var int|string|null
      */
     protected $tagNumber;
 
@@ -112,28 +117,24 @@ abstract class AbstractType implements Countable, IteratorAggregate
     protected $isConstructed = false;
 
     /**
-     * @var AbstractType[]
+     * @var array<AbstractType>
      */
     protected $children = [];
 
     /**
-     * @param mixed $value
+     * @param T $value
      */
     public function __construct($value)
     {
         $this->value = $value;
     }
 
-    /**
-     * @return bool
-     */
     public function getIsConstructed(): bool
     {
         return $this->isConstructed;
     }
 
     /**
-     * @param bool $isConstructed
      * @return $this
      */
     public function setIsConstructed(bool $isConstructed)
@@ -144,7 +145,6 @@ abstract class AbstractType implements Countable, IteratorAggregate
     }
 
     /**
-     * @param int $taggingClass
      * @return $this
      */
     public function setTagClass(int $taggingClass)
@@ -154,16 +154,13 @@ abstract class AbstractType implements Countable, IteratorAggregate
         return $this;
     }
 
-    /**
-     * @return int
-     */
     public function getTagClass(): int
     {
         return $this->taggingClass;
     }
 
     /**
-     * @return int|null|string
+     * @return int|string|null
      */
     public function getTagNumber()
     {
@@ -171,7 +168,8 @@ abstract class AbstractType implements Countable, IteratorAggregate
     }
 
     /**
-     * @param int|null|string $int
+     * @param int|string|null $int
+     *
      * @return $this
      */
     public function setTagNumber($int)
@@ -181,22 +179,22 @@ abstract class AbstractType implements Countable, IteratorAggregate
         return $this;
     }
 
+    /**
+     * @return T
+     */
     public function getValue()
     {
         return $this->value;
     }
 
-    /**
-     * @param int $index
-     * @return bool
-     */
-    public function hasChild(int $index)
+    public function hasChild(int $index): bool
     {
         return isset($this->children[$index]);
     }
 
     /**
      * @param AbstractType ...$types
+     *
      * @return $this
      */
     public function setChildren(...$types)
@@ -207,17 +205,13 @@ abstract class AbstractType implements Countable, IteratorAggregate
     }
 
     /**
-     * @return AbstractType[]
+     * @return array<AbstractType>
      */
     public function getChildren(): array
     {
         return $this->children;
     }
 
-    /**
-     * @param int $index
-     * @return null|AbstractType
-     */
     public function getChild(int $index): ?AbstractType
     {
         return $this->children[$index] ?? null;
@@ -225,6 +219,7 @@ abstract class AbstractType implements Countable, IteratorAggregate
 
     /**
      * @param AbstractType ...$types
+     *
      * @return $this
      */
     public function addChild(...$types)
@@ -236,16 +231,13 @@ abstract class AbstractType implements Countable, IteratorAggregate
         return $this;
     }
 
-    /**
-     * @return int
-     */
     public function count(): int
     {
         return count($this->children);
     }
 
     /**
-     * @return ArrayIterator<AbstractType>
+     * @return ArrayIterator<int, AbstractType>
      */
     public function getIterator(): ArrayIterator
     {

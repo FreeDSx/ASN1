@@ -16,6 +16,7 @@ namespace Tests\Unit\FreeDSx\Asn1\Encoder;
 use DateTime;
 use DateTimeZone;
 use FreeDSx\Asn1\Encoder\BerEncoder;
+use FreeDSx\Asn1\Encoder\EncoderOptions;
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\PartialPduException;
 use FreeDSx\Asn1\Type\AbstractType;
@@ -57,10 +58,12 @@ final class BerEncoderTest extends TestCase
 
     public function test_it_should_set_options(): void
     {
-        $this->subject->setOptions(['bitstring_padding' => '1']);
+        $options = new EncoderOptions(bitstringPadding: '1');
+
+        $this->subject->setOptions($options);
 
         self::assertSame(
-            ['bitstring_padding' => '1'],
+            $options,
             $this->subject->getOptions(),
         );
     }
@@ -68,8 +71,18 @@ final class BerEncoderTest extends TestCase
     public function test_it_should_get_options(): void
     {
         self::assertSame(
-            ['bitstring_padding' => '0'],
-            $this->subject->getOptions(),
+            '0',
+            $this->subject->getOptions()->bitstringPadding,
+        );
+    }
+
+    public function test_it_should_accept_options_via_the_constructor(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(bitstringPadding: '1'));
+
+        self::assertSame(
+            '1',
+            $subject->getOptions()->bitstringPadding,
         );
     }
 
