@@ -1,0 +1,155 @@
+name: Perf
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/performance/**'
+      - 'tests/bin/asn1-bench*'
+      - 'composer.json'
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'tests/performance/**'
+      - 'tests/bin/asn1-bench*'
+      - 'composer.json'
+  workflow_dispatch:
+
+# Both jobs are advisory-only at this point. We use `continue-on-error: true`
+# so the workflow surfaces the results to the PR / commit without blocking
+# merges. Promote to required checks once the false-positive rate on
+# GitHub-hosted runners is calibrated.
+
+jobs:
+  regression:
+    name: PR performance regression check (HEAD vs merge-base)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 15
+    env:
+      PAIRS: 5
+      THRESHOLD: 7
+      CONSISTENCY: 80
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, gmp, opcache
+          coverage: none
+          tools: composer:2.9
+          ini-values: opcache.enable_cli=1, opcache.jit_buffer_size=128M, opcache.jit=1255, zend.assertions=-1
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.json') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install Composer dependencies
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Resolve merge-base
+        id: mb
+        run: |
+          MERGE_BASE=$(git merge-base origin/${{ github.base_ref }} HEAD)
+          HEAD_SHA=$(git rev-parse HEAD)
+          echo "merge_base=$MERGE_BASE" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          echo "PR HEAD:     $HEAD_SHA"
+          echo "merge-base:  $MERGE_BASE"
+
+      - name: Run baseline pairs (merge-base)
+        run: |
+          mkdir -p /tmp/perf
+          # Restore merge-base sources for the bench, but keep current bench infrastructure.
+          git checkout ${{ steps.mb.outputs.merge_base }} -- src
+          for i in $(seq 1 $PAIRS); do
+            echo "::group::baseline pair $i"
+            composer bench -- --out=/tmp/perf/baseline-$i.json
+            echo "::endgroup::"
+          done
+
+      - name: Run head pairs
+        run: |
+          # Restore PR HEAD sources.
+          git checkout ${{ steps.mb.outputs.head_sha }} -- src
+          for i in $(seq 1 $PAIRS); do
+            echo "::group::head pair $i"
+            composer bench -- --out=/tmp/perf/head-$i.json
+            echo "::endgroup::"
+          done
+
+      - name: Aggregate
+        run: |
+          AGG_ARGS=()
+          for i in $(seq 1 $PAIRS); do
+            AGG_ARGS+=("--baseline=/tmp/perf/baseline-$i.json")
+          done
+          for i in $(seq 1 $PAIRS); do
+            AGG_ARGS+=("--head=/tmp/perf/head-$i.json")
+          done
+          composer bench-aggregate -- "${AGG_ARGS[@]}" --threshold=$THRESHOLD --consistency=$CONSISTENCY | tee /tmp/perf/aggregate.txt
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-regression-${{ github.run_number }}
+          path: /tmp/perf/
+
+  floor:
+    name: Absolute floor for performance (vs baseline-floor.json)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, gmp, opcache
+          coverage: none
+          tools: composer:2.9
+          ini-values: opcache.enable_cli=1, opcache.jit_buffer_size=128M, opcache.jit=1255, zend.assertions=-1
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.json') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install Composer dependencies
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Run bench-vs-floor
+        run: composer bench-vs-floor | tee /tmp/floor-result.txt
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-floor-${{ github.run_number }}
+          path: /tmp/floor-result.txt

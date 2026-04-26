@@ -72,6 +72,12 @@
     ],
     "bench-vs-baseline": [
       "tests/bin/bench-vs-baseline.sh"
+    ],
+    "bench-vs-floor": [
+      "@php -d opcache.enable_cli=1 -d opcache.jit_buffer_size=128M -d opcache.jit=1255 -d xdebug.mode=off -d zend.assertions=-1 tests/bin/asn1-bench-floor.php"
+    ],
+    "bench-update-floor": [
+      "@php -d opcache.enable_cli=1 -d opcache.jit_buffer_size=128M -d opcache.jit=1255 -d xdebug.mode=off -d zend.assertions=-1 tests/bin/asn1-bench-update-floor.php"
     ]
   },
   "config": {

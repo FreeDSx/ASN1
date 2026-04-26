@@ -1,0 +1,36 @@
+{
+    "meta": {
+        "captured_on": "2026-04-26",
+        "runner": "ubuntu-latest",
+        "php": "8.5",
+        "margin_pct": 20,
+        "note": "Captured from a GitHub Actions ubuntu-latest perf run. Each value = measured ns/payload * 1.20 (rounded up). Refresh via `composer bench-update-floor` after intentional perf changes or runner-generation upgrades."
+    },
+    "floor_ns_per_payload": {
+        "ldap_search_entry": {
+            "encode": 17660,
+            "decode": 12075,
+            "round_trip": 30578
+        },
+        "string_heavy": {
+            "encode": 2664,
+            "decode": 2492,
+            "round_trip": 5643
+        },
+        "oid_heavy": {
+            "encode": 9826,
+            "decode": 6677,
+            "round_trip": 17037
+        },
+        "integer_heavy": {
+            "encode": 2378,
+            "decode": 1948,
+            "round_trip": 4704
+        },
+        "mixed_message": {
+            "encode": 23906,
+            "decode": 15995,
+            "round_trip": 41120
+        }
+    }
+}
