@@ -270,17 +270,19 @@ class BerEncoder implements EncoderInterface
         # The first byte of a tag always contains the class (bits 8 and 7) and whether it is constructed (bit 6).
         $tag = $type->getTagClass() | ($isConstructed ? AbstractType::CONSTRUCTED_TYPE : 0);
 
-        $this->validateNumericInt($tagNumber);
-        # For a high tag (>=31) we flip the first 5 bits on (0x1f) to make the first byte, then the subsequent bytes is
-        # the VLV encoding of the tag number.
-        if ($tagNumber >= 31) {
-            $bytes = chr($tag | 0x1f) . $this->intToVlqBytes($tagNumber) . $bytes;
-        # For a tag less than 31, everything fits comfortably into a single byte.
-        } else {
-            $bytes = chr($tag | $tagNumber) . $bytes;
+        # Most things have an int tag < 31.
+        # This lets us skip numeric int validation in the vast majority of cases.
+        if (is_int($tagNumber) && $tagNumber < 31) {
+            return chr($tag | $tagNumber) . $bytes;
         }
 
-        return $bytes;
+        $this->validateNumericInt($tagNumber);
+        # High tag (>=31): set the first 5 bits to 0x1f, then VLQ-encode the tag number.
+        if ($tagNumber >= 31) {
+            return chr($tag | 0x1f) . $this->intToVlqBytes($tagNumber) . $bytes;
+        }
+
+        return chr($tag | (int) $tagNumber) . $bytes;
     }
 
     /**
@@ -583,8 +585,11 @@ class BerEncoder implements EncoderInterface
         $value = 0;
         $lshift = 0;
         $isBigInt = false;
+        $binary = (string) $this->binary;
+        $pos = $this->pos;
+        $maxLen = $this->maxLen;
 
-        for ($this->pos; $this->pos < $this->maxLen; $this->pos++) {
+        for (; $pos < $maxLen; $pos++) {
             if (!$isBigInt) {
                 $lshift = $value << 7;
                 # An overflow bitshift will result in a negative number or zero.
@@ -598,19 +603,24 @@ class BerEncoder implements EncoderInterface
             if ($isBigInt) {
                 $lshift = gmp_mul($value, gmp_pow('2', 7));
             }
-            $orVal = (ord($this->binary[$this->pos]) & 0x7f);
+            $byte = ord($binary[$pos]);
+            $orVal = $byte & 0x7f;
             if ($isBigInt) {
                 $value = gmp_or($lshift, gmp_init($orVal));
             } else {
                 $value = $lshift | $orVal;
             }
             # We have reached the last byte if the MSB is not set.
-            if ((ord($this->binary[$this->pos]) & 0x80) === 0) {
-                $this->pos++;
+            if (($byte & 0x80) === 0) {
+                $this->pos = $pos + 1;
 
-                return $isBigInt ? gmp_strval($value) : $value;
+                return $isBigInt
+                    ? gmp_strval($value)
+                    : $value;
             }
         }
+
+        $this->pos = $pos;
 
         throw new EncoderException('Expected an ending byte to decode a VLQ, but none was found.');
     }

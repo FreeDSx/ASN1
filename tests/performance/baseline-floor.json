@@ -4,33 +4,33 @@
         "runner": "linux",
         "php": "8.5.5",
         "margin_pct": 20,
-        "note": "Captured 2026-04-26T23:15:06+00:00 with samples=15 revs=5. Each value = measured ns/payload * 1.20."
+        "note": "Captured 2026-04-26T23:33:28+00:00 with samples=15 revs=5. Each value = measured ns/payload * 1.20."
     },
     "floor_ns_per_payload": {
         "ldap_search_entry": {
-            "encode": 9092,
-            "decode": 12210,
-            "round_trip": 21870
+            "encode": 8401,
+            "decode": 12690,
+            "round_trip": 22045
         },
         "string_heavy": {
-            "encode": 1327,
-            "decode": 2427,
-            "round_trip": 4017
+            "encode": 1128,
+            "decode": 2618,
+            "round_trip": 4140
         },
         "oid_heavy": {
-            "encode": 2164,
-            "decode": 2456,
-            "round_trip": 4974
+            "encode": 2042,
+            "decode": 2611,
+            "round_trip": 5118
         },
         "integer_heavy": {
-            "encode": 1649,
-            "decode": 1778,
-            "round_trip": 3813
+            "encode": 1716,
+            "decode": 1927,
+            "round_trip": 4040
         },
         "mixed_message": {
-            "encode": 11242,
-            "decode": 15971,
-            "round_trip": 28198
+            "encode": 10997,
+            "decode": 17263,
+            "round_trip": 29051
         }
     }
 }
