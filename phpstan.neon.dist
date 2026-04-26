@@ -2,5 +2,13 @@ parameters:
     level: 4
     paths:
         - %currentWorkingDirectory%/src
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         - '#Unsafe usage of new static#'
+        -
+            identifier: varTag.nativeType
+            path: %currentWorkingDirectory%/src/FreeDSx/Asn1/Encoder/BerEncoder.php
+        -
+            identifier: property.phpDocType
+            path: %currentWorkingDirectory%/src/FreeDSx/Asn1/Type/AbstractTimeType.php

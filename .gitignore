@@ -3,3 +3,5 @@ composer.phar
 .idea/
 vendor/
 bin/
+.phpunit.result.cache
+.phpunit.cache/

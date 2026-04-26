@@ -20,7 +20,7 @@ class IncompleteType extends AbstractType
 {
     /**
      * @param string $value
-     * @param int $tagNumber
+     * @param int|string|null $tagNumber Numeric strings are accepted for big-int tag numbers.
      * @param int $class
      * @param bool $isConstructed
      */

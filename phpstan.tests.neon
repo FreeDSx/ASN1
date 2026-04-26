@@ -1,0 +1,9 @@
+parameters:
+    treatPhpDocTypesAsCertain: false
+    level: 9
+    paths:
+        - %currentWorkingDirectory%/tests
+    ignoreErrors:
+        -
+            message: '#expects string, string\|false given\.#'
+            identifier: argument.type
