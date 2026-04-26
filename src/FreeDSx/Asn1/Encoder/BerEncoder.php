@@ -107,6 +107,11 @@ class BerEncoder implements EncoderInterface
     protected const MAX_SECOND_COMPONENT = PHP_INT_MAX - 80;
 
     /**
+     * Per-cache entry cap for OID memoization.
+     */
+    private const OID_CACHE_MAX = 1024;
+
+    /**
      * @var array<int, array<int, int>> Tag class => (tag number => universal tag type).
      */
     protected array $tagMap = [
@@ -121,6 +126,26 @@ class BerEncoder implements EncoderInterface
     protected array $tmpTagMap = [];
 
     protected bool $isGmpAvailable;
+
+    /**
+     * @var array<string, string> Dotted OID value => encoded bytes.
+     */
+    private static array $oidEncodeCache = [];
+
+    /**
+     * @var array<string, string> Encoded bytes => dotted OID value.
+     */
+    private static array $oidDecodeCache = [];
+
+    /**
+     * @var array<string, string> Dotted relative OID value => encoded bytes.
+     */
+    private static array $relativeOidEncodeCache = [];
+
+    /**
+     * @var array<string, string> Encoded bytes => dotted relative OID value.
+     */
+    private static array $relativeOidDecodeCache = [];
 
     /**
      * @var int
@@ -702,7 +727,23 @@ class BerEncoder implements EncoderInterface
      */
     protected function encodeRelativeOid(RelativeOidType $type)
     {
-        $oids = explode('.', $type->getValue());
+        $value = $type->getValue();
+        if (isset(self::$relativeOidEncodeCache[$value])) {
+            return self::$relativeOidEncodeCache[$value];
+        }
+        if (count(self::$relativeOidEncodeCache) >= self::OID_CACHE_MAX) {
+            unset(self::$relativeOidEncodeCache[array_key_first(self::$relativeOidEncodeCache)]);
+        }
+
+        return self::$relativeOidEncodeCache[$value] = $this->doEncodeRelativeOid($value);
+    }
+
+    /**
+     * @throws EncoderException
+     */
+    private function doEncodeRelativeOid(string $value): string
+    {
+        $oids = explode('.', $value);
 
         $bytes = '';
         foreach ($oids as $oid) {
@@ -719,13 +760,29 @@ class BerEncoder implements EncoderInterface
      */
     protected function encodeOid(OidType $type)
     {
+        $value = $type->getValue();
+        if (isset(self::$oidEncodeCache[$value])) {
+            return self::$oidEncodeCache[$value];
+        }
+        if (count(self::$oidEncodeCache) >= self::OID_CACHE_MAX) {
+            unset(self::$oidEncodeCache[array_key_first(self::$oidEncodeCache)]);
+        }
+
+        return self::$oidEncodeCache[$value] = $this->doEncodeOid($value);
+    }
+
+    /**
+     * @throws EncoderException
+     */
+    private function doEncodeOid(string $value): string
+    {
         /** @var int[] $oids */
-        $oids = explode('.', $type->getValue());
+        $oids = explode('.', $value);
         $length = count($oids);
         if ($length < 2) {
             throw new EncoderException(sprintf(
                 'To encode the OID it must have at least 2 components: %s',
-                $type->getValue()
+                $value
             ));
         }
         if ($oids[0] > 2) {
@@ -994,6 +1051,18 @@ class BerEncoder implements EncoderInterface
         if ($length === 0) {
             throw new EncoderException('Zero length not permitted for an OID type.');
         }
+
+        $bytes = substr(
+            (string) $this->binary,
+            $this->pos,
+            $length,
+        );
+        if (isset(self::$oidDecodeCache[$bytes])) {
+            $this->pos += $length;
+
+            return self::$oidDecodeCache[$bytes];
+        }
+
         # We need to get the first part here, as it's used to determine the first 2 components.
         $startedAt = $this->pos;
         $firstPart = $this->getVlqBytesToInt();
@@ -1010,9 +1079,13 @@ class BerEncoder implements EncoderInterface
 
         # We could potentially have nothing left to decode at this point.
         $oidLength = $length - ($this->pos - $startedAt);
-        $subIdentifiers = ($oidLength === 0) ? '' : '.' . $this->decodeRelativeOid($oidLength);
+        $subIdentifiers = ($oidLength === 0) ? '' : '.' . $this->decodeRelativeOidValue($oidLength);
 
-        return $oid . $subIdentifiers;
+        if (count(self::$oidDecodeCache) >= self::OID_CACHE_MAX) {
+            unset(self::$oidDecodeCache[array_key_first(self::$oidDecodeCache)]);
+        }
+
+        return self::$oidDecodeCache[$bytes] = $oid . $subIdentifiers;
     }
 
     /**
@@ -1025,6 +1098,29 @@ class BerEncoder implements EncoderInterface
         if ($length === 0) {
             throw new EncoderException('Zero length not permitted for an OID type.');
         }
+
+        $bytes = substr(
+            (string) $this->binary,
+            $this->pos,
+            $length,
+        );
+        if (isset(self::$relativeOidDecodeCache[$bytes])) {
+            $this->pos += $length;
+
+            return self::$relativeOidDecodeCache[$bytes];
+        }
+        if (count(self::$relativeOidDecodeCache) >= self::OID_CACHE_MAX) {
+            unset(self::$relativeOidDecodeCache[array_key_first(self::$relativeOidDecodeCache)]);
+        }
+
+        return self::$relativeOidDecodeCache[$bytes] = $this->decodeRelativeOidValue($length);
+    }
+
+    /**
+     * @throws EncoderException
+     */
+    private function decodeRelativeOidValue(int $length): string
+    {
         $oid = '';
         $endAt = $this->pos + $length;
 

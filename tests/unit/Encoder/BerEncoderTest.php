@@ -134,6 +134,36 @@ final class BerEncoderTest extends TestCase
         $this->subject->encode(new IncompleteType("\x00"));
     }
 
+    public function test_it_should_return_consistent_results_when_encoding_and_decoding_the_same_oid_twice(): void
+    {
+        $oid = '1.3.6.1.4.1.311.21.20';
+        $first = $this->subject->encode(new OidType($oid));
+        $second = $this->subject->encode(new OidType($oid));
+
+        self::assertSame($first, $second);
+
+        $firstDecoded = $this->subject->decode($first);
+        $secondDecoded = $this->subject->decode($first);
+
+        self::assertSame($oid, $firstDecoded->getValue());
+        self::assertSame($oid, $secondDecoded->getValue());
+    }
+
+    public function test_it_should_return_consistent_results_when_encoding_and_decoding_the_same_relative_oid_twice(): void
+    {
+        $oid = '8571.3.2';
+        $first = $this->subject->encode(new RelativeOidType($oid));
+        $second = $this->subject->encode(new RelativeOidType($oid));
+
+        self::assertSame($first, $second);
+
+        $firstDecoded = $this->subject->decode($first);
+        $secondDecoded = $this->subject->decode($first);
+
+        self::assertSame($oid, $firstDecoded->getValue());
+        self::assertSame($oid, $secondDecoded->getValue());
+    }
+
     public function test_it_should_decode_a_boolean_true_type(): void
     {
         self::assertEquals(
