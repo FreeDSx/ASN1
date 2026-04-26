@@ -13,6 +13,8 @@ namespace FreeDSx\Asn1\Type;
 /**
  * Represents the various ASN1 string types.
  *
+ * @extends AbstractType<string>
+ *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
 abstract class AbstractStringType extends AbstractType
@@ -22,55 +24,47 @@ abstract class AbstractStringType extends AbstractType
      */
     protected $isCharRestricted = false;
 
-    public function __construct($value = '')
+    public function __construct(string $value = '')
     {
         parent::__construct($value);
     }
 
-    /**
-     * @return string
-     */
-    public function getValue()
+    public function getValue(): string
     {
         return $this->value;
     }
 
     /**
-     * @param string $value
      * @return $this
      */
-    public function setValue($value)
+    public function setValue(string $value)
     {
         $this->value = $value;
 
         return $this;
     }
 
-    /**
-     * @return string
-     */
-    public function __toString()
+    public function __toString(): string
     {
-        return (string) $this->value;
+        return $this->getValue();
     }
 
-    /**
-     * @return bool
-     */
-    public function isCharacterRestricted()
+    public function isCharacterRestricted(): bool
     {
         return $this->isCharRestricted;
     }
 
     /**
-     * @param string|int $tagNumber
-     * @param int $class
-     * @param bool $isConstructed
-     * @param string $value
-     * @return AbstractStringType
+     * @param int|string $tagNumber
+     *
+     * @return static
      */
-    public static function withTag($tagNumber, int $class, bool $isConstructed, $value = '')
-    {
+    public static function withTag(
+        $tagNumber,
+        int $class,
+        bool $isConstructed,
+        string $value = '',
+    ) {
         $type = new static($value);
         $type->taggingClass = $class;
         $type->tagNumber = $tagNumber;

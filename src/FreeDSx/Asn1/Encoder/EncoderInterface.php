@@ -34,10 +34,8 @@ interface EncoderInterface
     /**
      * Decodes (completes) an incomplete type to a specific universal tag type object.
      *
-     * @param IncompleteType $type
-     * @param int $tagType
-     * @param array $tagMap
-     * @return AbstractType
+     * @param array<int, array<int, int>> $tagMap Tag class => (tag number => universal tag type).
+     *
      * @throws EncoderException
      */
     public function complete(IncompleteType $type, int $tagType, array $tagMap = []): AbstractType;
@@ -45,13 +43,15 @@ interface EncoderInterface
     /**
      * Decode binary data to its ASN1 object representation.
      *
-     * @param string $binary
-     * @param array $tagMap
-     * @return AbstractType
+     * @param array<int, array<int, int>> $tagMap Tag class => (tag number => universal tag type).
+     *
      * @throws EncoderException
      * @throws PartialPduException
      */
-    public function decode($binary, array $tagMap = []): AbstractType;
+    public function decode(
+        string $binary,
+        array $tagMap = []
+    ): AbstractType;
 
     /**
      * Get the last position of the binary byte stream after a decode operation.

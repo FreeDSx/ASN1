@@ -13,6 +13,8 @@ namespace FreeDSx\Asn1\Type;
 /**
  * Represents an ASN1 integer type.
  *
+ * @extends AbstractType<int|string>
+ *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
 class IntegerType extends AbstractType
@@ -20,6 +22,14 @@ class IntegerType extends AbstractType
     use BigIntTrait;
 
     protected $tagNumber = self::TAG_TYPE_INTEGER;
+
+    /**
+     * @return int|string
+     */
+    public function getValue()
+    {
+        return $this->value;
+    }
 
     /**
      * @param int|string $value
@@ -33,12 +43,14 @@ class IntegerType extends AbstractType
     }
 
     /**
-     * @param string|int $tagNumber
-     * @param int $class
-     * @param string|int $value
-     * @return IntegerType
+     * @param int|string $tagNumber
+     * @param int|string $value
      */
-    public static function withTag($tagNumber, int $class, $value)
+    public static function withTag(
+        $tagNumber,
+        int $class,
+        $value
+    ): self
     {
         $type = new self($value);
         $type->tagNumber = $tagNumber;

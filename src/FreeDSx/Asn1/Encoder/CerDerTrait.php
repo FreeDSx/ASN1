@@ -12,7 +12,6 @@ namespace FreeDSx\Asn1\Encoder;
 
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Type\AbstractTimeType;
-use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\SetOfType;
 use function count;
 use function end;
@@ -23,6 +22,7 @@ use function strcmp;
 use function strlen;
 use function usort;
 
+
 /**
  * Common restrictions on CER and DER encoding.
  *
@@ -31,9 +31,6 @@ use function usort;
 trait CerDerTrait
 {
     /**
-     * @param int $length
-     * @param int $unused
-     * @return string
      * @throws EncoderException
      */
     protected function binaryToBitString(int $length, int $unused): string
@@ -49,7 +46,6 @@ trait CerDerTrait
     }
 
     /**
-     * @return bool
      * @throws EncoderException
      */
     protected function decodeBoolean(): bool
@@ -65,8 +61,10 @@ trait CerDerTrait
      * {@inheritdoc}
      * @throws EncoderException
      */
-    protected function encodeTime(AbstractTimeType $type, string $format)
-    {
+    protected function encodeTime(
+        AbstractTimeType $type,
+        string $format
+    ): string {
         $this->validateTimeType($type);
 
         return parent::encodeTime($type, $format);
@@ -74,10 +72,16 @@ trait CerDerTrait
 
     /**
      * {@inheritdoc}
+     *
+     * @param array<int, string> $matches
+     * @param array<string, int> $matchMap
+     *
      * @throws EncoderException
      */
-    protected function validateDateFormat(array $matches, array $matchMap)
-    {
+    protected function validateDateFormat(
+        array $matches,
+        array $matchMap,
+    ): void {
         if (isset($matchMap['fractions']) && isset($matches[$matchMap['fractions']]) && $matches[$matchMap['fractions']] !== '') {
             if ($matches[$matchMap['fractions']][-1] === '0') {
                 throw new EncoderException('Trailing zeros must be omitted from Generalized Time types, but it is not.');
@@ -86,10 +90,9 @@ trait CerDerTrait
     }
 
     /**
-     * @param AbstractTimeType $type
      * @throws EncoderException
      */
-    protected function validateTimeType(AbstractTimeType $type)
+    protected function validateTimeType(AbstractTimeType $type): void
     {
         if ($type->getTimeZoneFormat() !== AbstractTimeType::TZ_UTC) {
             throw new EncoderException(sprintf(
@@ -128,14 +131,13 @@ trait CerDerTrait
      * come by in ASN.1 libraries for some reason.
      *
      * @todo Is this assumed ordering correct? Confirmation needed. This could probably be simplified too.
-     * @param SetOfType $setOf
-     * @return string
      */
-    protected function encodeSetOf(SetOfType $setOf)
+    protected function encodeSetOf(SetOfType $setOf): string
     {
         if (count($setOf->getChildren()) === 0) {
             return '';
         }
+        /** @var list<array{original: string, length: int}> $children */
         $children = [];
 
         # Encode each child and record the length, we need it later
@@ -147,14 +149,13 @@ trait CerDerTrait
 
         # Sort the encoded types by length first to determine the padding needed.
         usort($children, function ($a, $b) {
-            /* @var AbstractType $a
-             * @var AbstractType $b */
             return $a['length'] < $b['length'] ? -1 : 1;
         });
 
         # Get the last child (ie. the longest), and put the array back to normal.
+        /** @var array{original: string, length: int} $child */
         $child = end($children);
-        $padding = $child ['length'];
+        $padding = $child['length'];
         reset($children);
 
         # Sort by padding the items and comparing them.

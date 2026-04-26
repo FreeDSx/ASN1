@@ -13,23 +13,21 @@ namespace FreeDSx\Asn1\Type;
 /**
  * Represents an ASN.1 Real type.
  *
+ * @extends AbstractType<float>
+ *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
 class RealType extends AbstractType
 {
     protected $tagNumber = self::TAG_TYPE_REAL;
 
-    /**
-     * @param float $value
-     */
     public function __construct(float $value)
     {
         parent::__construct($value);
     }
 
     /**
-     * @param float $value
-     * @return RealType
+     * @return $this
      */
     public function setValue(float $value)
     {
@@ -38,21 +36,19 @@ class RealType extends AbstractType
         return $this;
     }
 
-    /**
-     * @return float
-     */
     public function getValue(): float
     {
         return $this->value;
     }
 
     /**
-     * @param string|int $tagNumber
-     * @param int $class
-     * @param float $value
-     * @return RealType
+     * @param int|string $tagNumber
      */
-    public static function withTag($tagNumber, int $class, float $value)
+    public static function withTag(
+        $tagNumber,
+        int $class,
+        float $value
+    ): self
     {
         $type = new self($value);
         $type->tagNumber = $tagNumber;

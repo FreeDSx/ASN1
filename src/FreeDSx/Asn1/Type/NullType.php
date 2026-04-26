@@ -13,6 +13,8 @@ namespace FreeDSx\Asn1\Type;
 /**
  * Represents an ASN1 null type.
  *
+ * @extends AbstractType<null>
+ *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
 class NullType extends AbstractType
@@ -24,7 +26,18 @@ class NullType extends AbstractType
         parent::__construct(null);
     }
 
-    public static function withTag($tagNumber, $class)
+    public function getValue(): null
+    {
+        return null;
+    }
+
+    /**
+     * @param int|string $tagNumber
+     */
+    public static function withTag(
+        $tagNumber,
+        int $class
+    ): self
     {
         $type = new self();
         $type->tagNumber = $tagNumber;

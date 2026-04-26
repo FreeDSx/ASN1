@@ -13,14 +13,22 @@ namespace FreeDSx\Asn1\Type;
 /**
  * Represents an ASN1 set type.
  *
+ * @extends AbstractType<null>
+ *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
 class SetType extends AbstractType
 {
     use SetTrait;
 
+    /**
+     * @var int|string
+     */
     protected $tagNumber = self::TAG_TYPE_SET;
 
+    /**
+     * @var bool
+     */
     protected $isConstructed = true;
 
     /**
@@ -44,11 +52,15 @@ class SetType extends AbstractType
 
     /**
      * @param int|string $tagNumber
-     * @param int $class
-     * @param array $children
-     * @return SetType
+     * @param array<int, AbstractType> $children
+     *
+     * @return static
      */
-    public static function withTag($tagNumber, int $class, array $children = [])
+    public static function withTag(
+        $tagNumber,
+        int $class,
+        array $children = []
+    )
     {
         $type = new static();
         $type->children = $children;

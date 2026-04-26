@@ -13,22 +13,25 @@ namespace FreeDSx\Asn1\Type;
 /**
  * Represents an OID ASN1 type.
  *
+ * @extends AbstractType<string>
+ *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
 class OidType extends AbstractType
 {
     protected $tagNumber = self::TAG_TYPE_OID;
 
-    /**
-     * @param string $value
-     */
     public function __construct(string $value)
     {
         parent::__construct($value);
     }
 
+    public function getValue(): string
+    {
+        return $this->value;
+    }
+
     /**
-     * @param string $oid
      * @return $this
      */
     public function setValue(string $oid)
@@ -40,11 +43,12 @@ class OidType extends AbstractType
 
     /**
      * @param int|string $tagNumber
-     * @param int $class
-     * @param string $value
-     * @return OidType
      */
-    public static function withTag($tagNumber, int $class, string $value)
+    public static function withTag(
+        $tagNumber,
+        int $class,
+        string $value
+    ): self
     {
         $type = new self($value);
         $type->tagNumber = $tagNumber;
