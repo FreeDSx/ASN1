@@ -17,15 +17,16 @@
     }
   ],
   "require": {
-    "php": ">=7.1"
+    "php": ">=8.2"
   },
   "require-dev": {
-    "phpspec/phpspec": "^5.1|^6.1|^7.1",
-    "phpstan/phpstan": "^0.11.15|^0.12",
-    "symplify/easy-coding-standard": "^6.1|^7.3|^9.0",
-    "friends-of-phpspec/phpspec-code-coverage": "^4.3|^6.1",
-    "squizlabs/php_codesniffer": "3.*",
-    "slevomat/coding-standard": "~7.0"
+    "phpunit/phpunit": "^11.5",
+    "phpstan/phpstan": "^2.1",
+    "phpstan/phpstan-phpunit": "^2.0",
+    "phpstan/extension-installer": "^1.4",
+    "symplify/easy-coding-standard": "^9.4",
+    "squizlabs/php_codesniffer": "^3.7",
+    "slevomat/coding-standard": "^7.2"
   },
   "suggest": {
     "ext-gmp": "For big integer support in Integer/Enumerated/OID types and tag numbers."
@@ -33,15 +34,24 @@
   "autoload": {
     "psr-4": {"FreeDSx\\Asn1\\": "src/FreeDSx/Asn1"}
   },
+  "autoload-dev": {
+    "psr-4": {"Tests\\Unit\\FreeDSx\\Asn1\\": "tests/unit"}
+  },
   "scripts": {
-    "test-coverage": [
-      "phpspec run --no-interaction -c phpspec.cov.yml"
-    ],
     "test": [
-      "phpspec run --no-interaction"
+      "@php -d xdebug.mode=off vendor/bin/phpunit --testsuite unit"
+    ],
+    "test-unit": [
+      "@php -d xdebug.mode=off vendor/bin/phpunit --testsuite unit"
+    ],
+    "test-coverage": [
+      "@php -d xdebug.mode=coverage vendor/bin/phpunit --testsuite unit --coverage-clover=coverage.xml"
     ],
     "analyse": [
-      "phpstan analyse"
+      "phpstan --memory-limit=-1 analyse"
+    ],
+    "analyse-tests": [
+      "phpstan --memory-limit=-1 analyse -c phpstan.tests.neon"
     ],
     "cs-fix": [
       "phpcbf --standard=ruleset.xml --extensions=php --tab-width=4 -sp src",
@@ -50,7 +60,8 @@
   },
   "config": {
     "allow-plugins": {
-      "dealerdirect/phpcodesniffer-composer-installer": true
+      "dealerdirect/phpcodesniffer-composer-installer": true,
+      "phpstan/extension-installer": true
     }
   }
 }
