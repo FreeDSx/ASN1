@@ -79,11 +79,12 @@ class DerEncoder extends BerEncoder
 
     /**
      * {@inheritdoc}
+     *
      * @throws EncoderException
      */
-    protected function encodeSet(SetType $set)
+    protected function encodeSet(SetType $set): string
     {
-        return $this->encodeConstructedType(...$this->canonicalize(...$set->getChildren()));
+        return $this->encodeConstructedType($this->canonicalize($set->getChildren()));
     }
 
     /**

@@ -203,7 +203,7 @@ class BerEncoder implements EncoderInterface
                 $bytes = $this->encodeSet($type);
                 break;
             case $type->getIsConstructed():
-                $bytes = $this->encodeConstructedType(...$type->getChildren());
+                $bytes = $this->encodeConstructedType($type->getChildren());
                 break;
             case $type instanceof BitStringType:
                 $bytes = $this->encodeBitString($type);
@@ -1160,33 +1160,29 @@ class BerEncoder implements EncoderInterface
     /**
      * Encoding subsets may require specific ordering on set types. Allow this to be overridden.
      *
-     * @param SetType $set
-     * @return string
      * @throws EncoderException
      */
-    protected function encodeSet(SetType $set)
+    protected function encodeSet(SetType $set): string
     {
-        return $this->encodeConstructedType(...$set->getChildren());
+        return $this->encodeConstructedType($set->getChildren());
     }
 
     /**
      * Encoding subsets may require specific ordering on set of types. Allow this to be overridden.
      *
-     * @param SetOfType $set
-     * @return string
      * @throws EncoderException
      */
-    protected function encodeSetOf(SetOfType $set)
+    protected function encodeSetOf(SetOfType $set): string
     {
-        return $this->encodeConstructedType(...$set->getChildren());
+        return $this->encodeConstructedType($set->getChildren());
     }
 
     /**
-     * @param AbstractType<mixed> ...$types
+     * @param array<int, AbstractType<mixed>> $types
      *
      * @throws EncoderException
      */
-    protected function encodeConstructedType(AbstractType ...$types): string
+    protected function encodeConstructedType(array $types): string
     {
         $bytes = '';
 

@@ -47,7 +47,7 @@ class SetType extends AbstractType
      */
     public function isCanonical(): bool
     {
-        return $this->children === $this->canonicalize(...$this->children);
+        return $this->children === $this->canonicalize($this->children);
     }
 
     /**
