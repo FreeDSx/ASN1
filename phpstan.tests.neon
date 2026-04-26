@@ -2,7 +2,8 @@ parameters:
     treatPhpDocTypesAsCertain: false
     level: 9
     paths:
-        - %currentWorkingDirectory%/tests
+        - %currentWorkingDirectory%/tests/unit
+        - %currentWorkingDirectory%/tests/performance
     ignoreErrors:
         -
             message: '#expects string, string\|false given\.#'
