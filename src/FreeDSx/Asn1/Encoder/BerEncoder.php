@@ -135,6 +135,8 @@ class BerEncoder implements EncoderInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @return AbstractType<mixed>
      */
     public function decode(
         string $binary,
@@ -154,6 +156,8 @@ class BerEncoder implements EncoderInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @return AbstractType<mixed>
      */
     public function complete(
         IncompleteType $type,
@@ -173,6 +177,8 @@ class BerEncoder implements EncoderInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @param AbstractType<mixed> $type
      */
     public function encode(AbstractType $type): string
     {
@@ -312,12 +318,13 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param bool $isRoot
-     * @param null|int $tagType
-     * @param null|int $length
-     * @param null|bool $isConstructed
-     * @param null|int $class
-     * @return AbstractType
+     * @param int|null $tagType
+     * @param int|null $length
+     * @param bool|null $isConstructed
+     * @param int|null $class
+     *
+     * @return AbstractType<mixed>
+     *
      * @throws EncoderException
      * @throws PartialPduException
      */
@@ -774,21 +781,14 @@ class BerEncoder implements EncoderInterface
         }
 
         return $this->formatDateTime(
-            clone $type->getValue(),
+            DateTime::createFromInterface($type->getValue()),
             $type->getDateTimeFormat(),
             $type->getTimeZoneFormat(),
             $format
         );
     }
 
-    /**
-     * @param \DateTime $dateTime
-     * @param string $dateTimeFormat
-     * @param string $tzFormat
-     * @param string $format
-     * @return string
-     */
-    protected function formatDateTime(DateTime $dateTime, string $dateTimeFormat, string $tzFormat, string $format)
+    protected function formatDateTime(DateTime $dateTime, string $dateTimeFormat, string $tzFormat, string $format): string
     {
         if ($tzFormat === GeneralizedTimeType::TZ_LOCAL) {
             $dateTime->setTimezone(new DateTimeZone(date_default_timezone_get()));
@@ -890,7 +890,9 @@ class BerEncoder implements EncoderInterface
 
     /**
      * @param int $length
-     * @return array
+     *
+     * @return array{0: DateTime, 1: string, 2: string}
+     *
      * @throws EncoderException
      */
     protected function decodeGeneralizedTime($length): array
@@ -900,7 +902,9 @@ class BerEncoder implements EncoderInterface
 
     /**
      * @param int $length
-     * @return array
+     *
+     * @return array{0: DateTime, 1: string, 2: string}
+     *
      * @throws EncoderException
      */
     protected function decodeUtcTime($length): array
@@ -909,11 +913,11 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param string $format
-     * @param string $regex
-     * @param array $matchMap
+     * @param array<string, int> $matchMap
      * @param int $length
-     * @return array
+     *
+     * @return array{0: DateTime, 1: string, 2: string}
+     *
      * @throws EncoderException
      */
     protected function decodeTime(string $format, string $regex, array $matchMap, $length): array
@@ -963,10 +967,10 @@ class BerEncoder implements EncoderInterface
     /**
      * Some encodings have specific restrictions. Allow them to override and validate this.
      *
-     * @param array $matches
-     * @param array $matchMap
+     * @param array<int, string> $matches
+     * @param array<string, int> $matchMap
      */
-    protected function validateDateFormat(array $matches, array $matchMap)
+    protected function validateDateFormat(array $matches, array $matchMap): void
     {
     }
 
@@ -1178,11 +1182,11 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param AbstractType ...$types
-     * @return string
+     * @param AbstractType<mixed> ...$types
+     *
      * @throws EncoderException
      */
-    protected function encodeConstructedType(AbstractType ...$types)
+    protected function encodeConstructedType(AbstractType ...$types): string
     {
         $bytes = '';
 
@@ -1195,11 +1199,13 @@ class BerEncoder implements EncoderInterface
 
     /**
      * @param int $length
-     * @return array
+     *
+     * @return list<AbstractType<mixed>>
+     *
      * @throws EncoderException
      * @throws PartialPduException
      */
-    protected function decodeConstructedType($length)
+    protected function decodeConstructedType($length): array
     {
         $children = [];
         $endAt = $this->pos + $length;

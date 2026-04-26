@@ -28,8 +28,9 @@ trait SetTrait
      *    - Private classes last.
      *    - Within each group of classes above, tag numbers should be ordered in ascending order.
      *
-     * @param AbstractType ...$set
-     * @return AbstractType[]
+     * @param AbstractType<mixed> ...$set
+     *
+     * @return list<AbstractType<mixed>>
      */
     protected function canonicalize(AbstractType ...$set): array
     {

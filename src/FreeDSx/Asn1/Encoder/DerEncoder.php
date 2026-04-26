@@ -35,6 +35,9 @@ class DerEncoder extends BerEncoder
         $this->setOptions(new EncoderOptions(bitstringPadding: '0'));
     }
 
+    /**
+     * @param AbstractType<mixed> $type
+     */
     public function encode(AbstractType $type): string
     {
         $this->validate($type);
@@ -44,6 +47,13 @@ class DerEncoder extends BerEncoder
 
     /**
      * {@inheritdoc}
+     *
+     * @param int|null $tagType
+     * @param int|null $length
+     * @param bool|null $isConstructed
+     * @param int|null $class
+     *
+     * @return AbstractType<mixed>
      */
     protected function decodeBytes(bool $isRoot = false, $tagType = null, $length = null, $isConstructed = null, $class = null): AbstractType
     {
@@ -77,7 +87,8 @@ class DerEncoder extends BerEncoder
     }
 
     /**
-     * @param AbstractType $type
+     * @param AbstractType<mixed> $type
+     *
      * @throws EncoderException
      */
     protected function validate(AbstractType $type): void

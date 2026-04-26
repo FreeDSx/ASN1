@@ -49,8 +49,7 @@ use FreeDSx\Asn1\Type\VisibleStringType;
 class Asn1
 {
     /**
-     * @param AbstractType ...$types
-     * @return SequenceType
+     * @param AbstractType<mixed> ...$types
      */
     public static function sequence(AbstractType ...$types): SequenceType
     {
@@ -58,8 +57,7 @@ class Asn1
     }
 
     /**
-     * @param AbstractType ...$types
-     * @return SequenceOfType
+     * @param AbstractType<mixed> ...$types
      */
     public static function sequenceOf(AbstractType ...$types): SequenceOfType
     {
@@ -295,8 +293,7 @@ class Asn1
     }
 
     /**
-     * @param AbstractType ...$types
-     * @return SetType
+     * @param AbstractType<mixed> ...$types
      */
     public static function set(AbstractType ...$types): SetType
     {
@@ -304,8 +301,7 @@ class Asn1
     }
 
     /**
-     * @param AbstractType ...$types
-     * @return SetOfType
+     * @param AbstractType<mixed> ...$types
      */
     public static function setOf(AbstractType ...$types): SetOfType
     {
@@ -313,9 +309,10 @@ class Asn1
     }
 
     /**
-     * @template T of AbstractType
-     * @param int $tagNumber
+     * @template T of AbstractType<mixed>
+     *
      * @param T $type
+     *
      * @return T
      */
     public static function context(int $tagNumber, AbstractType $type)
@@ -324,7 +321,7 @@ class Asn1
     }
 
     /**
-     * @template T of AbstractType
+     * @template T of AbstractType<mixed>
      * @param int $tagNumber
      * @param T $type
      * @return T
@@ -335,7 +332,7 @@ class Asn1
     }
 
     /**
-     * @template T of AbstractType
+     * @template T of AbstractType<mixed>
      * @param int $tagNumber
      * @param T $type
      * @return T
@@ -346,7 +343,7 @@ class Asn1
     }
 
     /**
-     * @template T of AbstractType
+     * @template T of AbstractType<mixed>
      * @param int $tagNumber
      * @param T $type
      * @return T

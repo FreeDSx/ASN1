@@ -32,7 +32,7 @@ class SetType extends AbstractType
     protected $isConstructed = true;
 
     /**
-     * @param AbstractType ...$types
+     * @param AbstractType<mixed> ...$types
      */
     public function __construct(...$types)
     {
@@ -52,7 +52,7 @@ class SetType extends AbstractType
 
     /**
      * @param int|string $tagNumber
-     * @param array<int, AbstractType> $children
+     * @param array<int, AbstractType<mixed>> $children
      *
      * @return static
      */

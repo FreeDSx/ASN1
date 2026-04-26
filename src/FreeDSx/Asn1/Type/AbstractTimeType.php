@@ -17,6 +17,8 @@ use FreeDSx\Asn1\Exception\InvalidArgumentException;
 /**
  * Generalized / UTC time type.
  *
+ * @extends AbstractType<DateTimeInterface>
+ *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
 class AbstractTimeType extends AbstractType
@@ -87,8 +89,7 @@ class AbstractTimeType extends AbstractType
     ) {
         $this->setDateTimeFormat($dateFormat);
         $this->setTimeZoneFormat($tzFormat);
-        parent::__construct(null);
-        $this->value = $dateTime ?? new DateTime();
+        parent::__construct($dateTime ?? new DateTime());
     }
 
     /**
