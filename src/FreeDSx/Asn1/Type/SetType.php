@@ -32,7 +32,7 @@ class SetType extends AbstractType
     protected $isConstructed = true;
 
     /**
-     * @param AbstractType ...$types
+     * @param AbstractType<mixed> ...$types
      */
     public function __construct(...$types)
     {
@@ -47,12 +47,12 @@ class SetType extends AbstractType
      */
     public function isCanonical(): bool
     {
-        return $this->children === $this->canonicalize(...$this->children);
+        return $this->children === $this->canonicalize($this->children);
     }
 
     /**
      * @param int|string $tagNumber
-     * @param array<int, AbstractType> $children
+     * @param array<int, AbstractType<mixed>> $children
      *
      * @return static
      */

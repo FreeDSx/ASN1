@@ -117,7 +117,7 @@ abstract class AbstractType implements Countable, IteratorAggregate
     protected $isConstructed = false;
 
     /**
-     * @var array<AbstractType>
+     * @var array<AbstractType<mixed>>
      */
     protected $children = [];
 
@@ -193,7 +193,7 @@ abstract class AbstractType implements Countable, IteratorAggregate
     }
 
     /**
-     * @param AbstractType ...$types
+     * @param AbstractType<mixed> ...$types
      *
      * @return $this
      */
@@ -205,20 +205,23 @@ abstract class AbstractType implements Countable, IteratorAggregate
     }
 
     /**
-     * @return array<AbstractType>
+     * @return array<AbstractType<mixed>>
      */
     public function getChildren(): array
     {
         return $this->children;
     }
 
+    /**
+     * @return AbstractType<mixed>|null
+     */
     public function getChild(int $index): ?AbstractType
     {
         return $this->children[$index] ?? null;
     }
 
     /**
-     * @param AbstractType ...$types
+     * @param AbstractType<mixed> ...$types
      *
      * @return $this
      */
@@ -237,7 +240,7 @@ abstract class AbstractType implements Countable, IteratorAggregate
     }
 
     /**
-     * @return ArrayIterator<int, AbstractType>
+     * @return ArrayIterator<int, AbstractType<mixed>>
      */
     public function getIterator(): ArrayIterator
     {

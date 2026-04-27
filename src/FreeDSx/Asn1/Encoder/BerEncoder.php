@@ -15,23 +15,37 @@ use DateTimeZone;
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\InvalidArgumentException;
 use FreeDSx\Asn1\Exception\PartialPduException;
-use FreeDSx\Asn1\Type\AbstractStringType;
 use FreeDSx\Asn1\Type\AbstractTimeType;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type as EncodedType;
 use FreeDSx\Asn1\Type\BitStringType;
+use FreeDSx\Asn1\Type\BmpStringType;
 use FreeDSx\Asn1\Type\BooleanType;
+use FreeDSx\Asn1\Type\CharacterStringType;
 use FreeDSx\Asn1\Type\EnumeratedType;
 use FreeDSx\Asn1\Type\GeneralizedTimeType;
+use FreeDSx\Asn1\Type\GeneralStringType;
+use FreeDSx\Asn1\Type\GraphicStringType;
+use FreeDSx\Asn1\Type\IA5StringType;
 use FreeDSx\Asn1\Type\IncompleteType;
 use FreeDSx\Asn1\Type\IntegerType;
 use FreeDSx\Asn1\Type\NullType;
+use FreeDSx\Asn1\Type\NumericStringType;
+use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\OidType;
+use FreeDSx\Asn1\Type\PrintableStringType;
 use FreeDSx\Asn1\Type\RealType;
 use FreeDSx\Asn1\Type\RelativeOidType;
+use FreeDSx\Asn1\Type\SequenceOfType;
+use FreeDSx\Asn1\Type\SequenceType;
 use FreeDSx\Asn1\Type\SetOfType;
 use FreeDSx\Asn1\Type\SetType;
+use FreeDSx\Asn1\Type\TeletexStringType;
+use FreeDSx\Asn1\Type\UniversalStringType;
 use FreeDSx\Asn1\Type\UtcTimeType;
+use FreeDSx\Asn1\Type\Utf8StringType;
+use FreeDSx\Asn1\Type\VideotexStringType;
+use FreeDSx\Asn1\Type\VisibleStringType;
 use function bin2hex;
 use function bindec;
 use function chr;
@@ -93,6 +107,11 @@ class BerEncoder implements EncoderInterface
     protected const MAX_SECOND_COMPONENT = PHP_INT_MAX - 80;
 
     /**
+     * Per-cache entry cap for OID memoization.
+     */
+    private const OID_CACHE_MAX = 1024;
+
+    /**
      * @var array<int, array<int, int>> Tag class => (tag number => universal tag type).
      */
     protected array $tagMap = [
@@ -107,6 +126,26 @@ class BerEncoder implements EncoderInterface
     protected array $tmpTagMap = [];
 
     protected bool $isGmpAvailable;
+
+    /**
+     * @var array<string, string> Dotted OID value => encoded bytes.
+     */
+    private static array $oidEncodeCache = [];
+
+    /**
+     * @var array<string, string> Encoded bytes => dotted OID value.
+     */
+    private static array $oidDecodeCache = [];
+
+    /**
+     * @var array<string, string> Dotted relative OID value => encoded bytes.
+     */
+    private static array $relativeOidEncodeCache = [];
+
+    /**
+     * @var array<string, string> Encoded bytes => dotted relative OID value.
+     */
+    private static array $relativeOidDecodeCache = [];
 
     /**
      * @var int
@@ -135,6 +174,8 @@ class BerEncoder implements EncoderInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @return AbstractType<mixed>
      */
     public function decode(
         string $binary,
@@ -154,6 +195,8 @@ class BerEncoder implements EncoderInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @return AbstractType<mixed>
      */
     public function complete(
         IncompleteType $type,
@@ -173,73 +216,73 @@ class BerEncoder implements EncoderInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @param AbstractType<mixed> $type
      */
     public function encode(AbstractType $type): string
     {
-        switch ($type) {
-            case $type instanceof BooleanType:
-                $bytes = $type->getValue() ? self::BOOL_TRUE : self::BOOL_FALSE;
-                break;
-            case $type instanceof IntegerType:
-            case $type instanceof EnumeratedType:
-                $bytes = $this->encodeInteger($type);
-                break;
-            case $type instanceof RealType:
-                $bytes = $this->encodeReal($type);
-                break;
-            case $type instanceof AbstractStringType:
-                $bytes = $type->getValue();
-                break;
-            case $type instanceof SetOfType:
-                $bytes = $this->encodeSetOf($type);
-                break;
-            case $type instanceof SetType:
-                $bytes = $this->encodeSet($type);
-                break;
-            case $type->getIsConstructed():
-                $bytes = $this->encodeConstructedType(...$type->getChildren());
-                break;
-            case $type instanceof BitStringType:
-                $bytes = $this->encodeBitString($type);
-                break;
-            case $type instanceof OidType:
-                $bytes = $this->encodeOid($type);
-                break;
-            case $type instanceof RelativeOidType:
-                $bytes = $this->encodeRelativeOid($type);
-                break;
-            case $type instanceof GeneralizedTimeType:
-                $bytes = $this->encodeGeneralizedTime($type);
-                break;
-            case $type instanceof UtcTimeType:
-                $bytes = $this->encodeUtcTime($type);
-                break;
-            case $type instanceof NullType:
-                $bytes = '';
-                break;
-            default:
-                throw new EncoderException(sprintf(
-                    'The type "%s" is not currently supported.',
-                    get_class($type)
-                ));
-        }
+        # match($type::class) compiles to JMP_TABLE — O(1), so this is strictly for performance.
+        $tagNumber = $type->getTagNumber();
+        $isConstructed = $type->getIsConstructed();
+
+        $bytes = match ($type::class) {
+            OctetStringType::class,
+            Utf8StringType::class,
+            IA5StringType::class,
+            PrintableStringType::class,
+            NumericStringType::class,
+            GeneralStringType::class,
+            GraphicStringType::class,
+            VisibleStringType::class,
+            BmpStringType::class,
+            UniversalStringType::class,
+            TeletexStringType::class,
+            VideotexStringType::class,
+            CharacterStringType::class    => $type->getValue(),
+
+            SequenceType::class,
+            SequenceOfType::class         => $this->encodeConstructedType($type->getChildren()),
+
+            IntegerType::class,
+            EnumeratedType::class         => $this->encodeInteger($type),
+
+            SetOfType::class              => $this->encodeSetOf($type),
+            SetType::class                => $this->encodeSet($type),
+
+            BooleanType::class            => $type->getValue() ? self::BOOL_TRUE : self::BOOL_FALSE,
+            NullType::class               => '',
+            OidType::class                => $this->encodeOid($type),
+            BitStringType::class          => $this->encodeBitString($type),
+            RelativeOidType::class        => $this->encodeRelativeOid($type),
+            GeneralizedTimeType::class    => $this->encodeGeneralizedTime($type),
+            UtcTimeType::class            => $this->encodeUtcTime($type),
+            RealType::class               => $this->encodeReal($type),
+
+            default => throw new EncoderException(sprintf(
+                'The type "%s" is not currently supported.',
+                $type::class,
+            )),
+        };
+
         $length = strlen($bytes);
         $bytes = ($length < 128) ? chr($length) . $bytes : $this->encodeLongDefiniteLength($length) . $bytes;
 
         # The first byte of a tag always contains the class (bits 8 and 7) and whether it is constructed (bit 6).
-        $tag = $type->getTagClass() | ($type->getIsConstructed() ? AbstractType::CONSTRUCTED_TYPE : 0);
+        $tag = $type->getTagClass() | ($isConstructed ? AbstractType::CONSTRUCTED_TYPE : 0);
 
-        $this->validateNumericInt($type->getTagNumber());
-        # For a high tag (>=31) we flip the first 5 bits on (0x1f) to make the first byte, then the subsequent bytes is
-        # the VLV encoding of the tag number.
-        if ($type->getTagNumber() >= 31) {
-            $bytes = chr($tag | 0x1f) . $this->intToVlqBytes($type->getTagNumber()) . $bytes;
-        # For a tag less than 31, everything fits comfortably into a single byte.
-        } else {
-            $bytes = chr($tag | $type->getTagNumber()) . $bytes;
+        # Most things have an int tag < 31.
+        # This lets us skip numeric int validation in the vast majority of cases.
+        if (is_int($tagNumber) && $tagNumber < 31) {
+            return chr($tag | $tagNumber) . $bytes;
         }
 
-        return $bytes;
+        $this->validateNumericInt($tagNumber);
+        # High tag (>=31): set the first 5 bits to 0x1f, then VLQ-encode the tag number.
+        if ($tagNumber >= 31) {
+            return chr($tag | 0x1f) . $this->intToVlqBytes($tagNumber) . $bytes;
+        }
+
+        return chr($tag | (int) $tagNumber) . $bytes;
     }
 
     /**
@@ -312,12 +355,13 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param bool $isRoot
-     * @param null|int $tagType
-     * @param null|int $length
-     * @param null|bool $isConstructed
-     * @param null|int $class
-     * @return AbstractType
+     * @param int|null $tagType
+     * @param int|null $length
+     * @param bool|null $isConstructed
+     * @param int|null $class
+     *
+     * @return AbstractType<mixed>
+     *
      * @throws EncoderException
      * @throws PartialPduException
      */
@@ -541,8 +585,11 @@ class BerEncoder implements EncoderInterface
         $value = 0;
         $lshift = 0;
         $isBigInt = false;
+        $binary = (string) $this->binary;
+        $pos = $this->pos;
+        $maxLen = $this->maxLen;
 
-        for ($this->pos; $this->pos < $this->maxLen; $this->pos++) {
+        for (; $pos < $maxLen; $pos++) {
             if (!$isBigInt) {
                 $lshift = $value << 7;
                 # An overflow bitshift will result in a negative number or zero.
@@ -556,19 +603,24 @@ class BerEncoder implements EncoderInterface
             if ($isBigInt) {
                 $lshift = gmp_mul($value, gmp_pow('2', 7));
             }
-            $orVal = (ord($this->binary[$this->pos]) & 0x7f);
+            $byte = ord($binary[$pos]);
+            $orVal = $byte & 0x7f;
             if ($isBigInt) {
                 $value = gmp_or($lshift, gmp_init($orVal));
             } else {
                 $value = $lshift | $orVal;
             }
             # We have reached the last byte if the MSB is not set.
-            if ((ord($this->binary[$this->pos]) & 0x80) === 0) {
-                $this->pos++;
+            if (($byte & 0x80) === 0) {
+                $this->pos = $pos + 1;
 
-                return $isBigInt ? gmp_strval($value) : $value;
+                return $isBigInt
+                    ? gmp_strval($value)
+                    : $value;
             }
         }
+
+        $this->pos = $pos;
 
         throw new EncoderException('Expected an ending byte to decode a VLQ, but none was found.');
     }
@@ -685,7 +737,23 @@ class BerEncoder implements EncoderInterface
      */
     protected function encodeRelativeOid(RelativeOidType $type)
     {
-        $oids = explode('.', $type->getValue());
+        $value = $type->getValue();
+        if (isset(self::$relativeOidEncodeCache[$value])) {
+            return self::$relativeOidEncodeCache[$value];
+        }
+        if (count(self::$relativeOidEncodeCache) >= self::OID_CACHE_MAX) {
+            unset(self::$relativeOidEncodeCache[array_key_first(self::$relativeOidEncodeCache)]);
+        }
+
+        return self::$relativeOidEncodeCache[$value] = $this->doEncodeRelativeOid($value);
+    }
+
+    /**
+     * @throws EncoderException
+     */
+    private function doEncodeRelativeOid(string $value): string
+    {
+        $oids = explode('.', $value);
 
         $bytes = '';
         foreach ($oids as $oid) {
@@ -702,13 +770,29 @@ class BerEncoder implements EncoderInterface
      */
     protected function encodeOid(OidType $type)
     {
+        $value = $type->getValue();
+        if (isset(self::$oidEncodeCache[$value])) {
+            return self::$oidEncodeCache[$value];
+        }
+        if (count(self::$oidEncodeCache) >= self::OID_CACHE_MAX) {
+            unset(self::$oidEncodeCache[array_key_first(self::$oidEncodeCache)]);
+        }
+
+        return self::$oidEncodeCache[$value] = $this->doEncodeOid($value);
+    }
+
+    /**
+     * @throws EncoderException
+     */
+    private function doEncodeOid(string $value): string
+    {
         /** @var int[] $oids */
-        $oids = explode('.', $type->getValue());
+        $oids = explode('.', $value);
         $length = count($oids);
         if ($length < 2) {
             throw new EncoderException(sprintf(
                 'To encode the OID it must have at least 2 components: %s',
-                $type->getValue()
+                $value
             ));
         }
         if ($oids[0] > 2) {
@@ -774,21 +858,14 @@ class BerEncoder implements EncoderInterface
         }
 
         return $this->formatDateTime(
-            clone $type->getValue(),
+            DateTime::createFromInterface($type->getValue()),
             $type->getDateTimeFormat(),
             $type->getTimeZoneFormat(),
             $format
         );
     }
 
-    /**
-     * @param \DateTime $dateTime
-     * @param string $dateTimeFormat
-     * @param string $tzFormat
-     * @param string $format
-     * @return string
-     */
-    protected function formatDateTime(DateTime $dateTime, string $dateTimeFormat, string $tzFormat, string $format)
+    protected function formatDateTime(DateTime $dateTime, string $dateTimeFormat, string $tzFormat, string $format): string
     {
         if ($tzFormat === GeneralizedTimeType::TZ_LOCAL) {
             $dateTime->setTimezone(new DateTimeZone(date_default_timezone_get()));
@@ -890,7 +967,9 @@ class BerEncoder implements EncoderInterface
 
     /**
      * @param int $length
-     * @return array
+     *
+     * @return array{0: DateTime, 1: string, 2: string}
+     *
      * @throws EncoderException
      */
     protected function decodeGeneralizedTime($length): array
@@ -900,7 +979,9 @@ class BerEncoder implements EncoderInterface
 
     /**
      * @param int $length
-     * @return array
+     *
+     * @return array{0: DateTime, 1: string, 2: string}
+     *
      * @throws EncoderException
      */
     protected function decodeUtcTime($length): array
@@ -909,11 +990,11 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param string $format
-     * @param string $regex
-     * @param array $matchMap
+     * @param array<string, int> $matchMap
      * @param int $length
-     * @return array
+     *
+     * @return array{0: DateTime, 1: string, 2: string}
+     *
      * @throws EncoderException
      */
     protected function decodeTime(string $format, string $regex, array $matchMap, $length): array
@@ -963,10 +1044,10 @@ class BerEncoder implements EncoderInterface
     /**
      * Some encodings have specific restrictions. Allow them to override and validate this.
      *
-     * @param array $matches
-     * @param array $matchMap
+     * @param array<int, string> $matches
+     * @param array<string, int> $matchMap
      */
-    protected function validateDateFormat(array $matches, array $matchMap)
+    protected function validateDateFormat(array $matches, array $matchMap): void
     {
     }
 
@@ -980,6 +1061,18 @@ class BerEncoder implements EncoderInterface
         if ($length === 0) {
             throw new EncoderException('Zero length not permitted for an OID type.');
         }
+
+        $bytes = substr(
+            (string) $this->binary,
+            $this->pos,
+            $length,
+        );
+        if (isset(self::$oidDecodeCache[$bytes])) {
+            $this->pos += $length;
+
+            return self::$oidDecodeCache[$bytes];
+        }
+
         # We need to get the first part here, as it's used to determine the first 2 components.
         $startedAt = $this->pos;
         $firstPart = $this->getVlqBytesToInt();
@@ -996,9 +1089,13 @@ class BerEncoder implements EncoderInterface
 
         # We could potentially have nothing left to decode at this point.
         $oidLength = $length - ($this->pos - $startedAt);
-        $subIdentifiers = ($oidLength === 0) ? '' : '.' . $this->decodeRelativeOid($oidLength);
+        $subIdentifiers = ($oidLength === 0) ? '' : '.' . $this->decodeRelativeOidValue($oidLength);
 
-        return $oid . $subIdentifiers;
+        if (count(self::$oidDecodeCache) >= self::OID_CACHE_MAX) {
+            unset(self::$oidDecodeCache[array_key_first(self::$oidDecodeCache)]);
+        }
+
+        return self::$oidDecodeCache[$bytes] = $oid . $subIdentifiers;
     }
 
     /**
@@ -1011,6 +1108,29 @@ class BerEncoder implements EncoderInterface
         if ($length === 0) {
             throw new EncoderException('Zero length not permitted for an OID type.');
         }
+
+        $bytes = substr(
+            (string) $this->binary,
+            $this->pos,
+            $length,
+        );
+        if (isset(self::$relativeOidDecodeCache[$bytes])) {
+            $this->pos += $length;
+
+            return self::$relativeOidDecodeCache[$bytes];
+        }
+        if (count(self::$relativeOidDecodeCache) >= self::OID_CACHE_MAX) {
+            unset(self::$relativeOidDecodeCache[array_key_first(self::$relativeOidDecodeCache)]);
+        }
+
+        return self::$relativeOidDecodeCache[$bytes] = $this->decodeRelativeOidValue($length);
+    }
+
+    /**
+     * @throws EncoderException
+     */
+    private function decodeRelativeOidValue(int $length): string
+    {
         $oid = '';
         $endAt = $this->pos + $length;
 
@@ -1156,33 +1276,29 @@ class BerEncoder implements EncoderInterface
     /**
      * Encoding subsets may require specific ordering on set types. Allow this to be overridden.
      *
-     * @param SetType $set
-     * @return string
      * @throws EncoderException
      */
-    protected function encodeSet(SetType $set)
+    protected function encodeSet(SetType $set): string
     {
-        return $this->encodeConstructedType(...$set->getChildren());
+        return $this->encodeConstructedType($set->getChildren());
     }
 
     /**
      * Encoding subsets may require specific ordering on set of types. Allow this to be overridden.
      *
-     * @param SetOfType $set
-     * @return string
      * @throws EncoderException
      */
-    protected function encodeSetOf(SetOfType $set)
+    protected function encodeSetOf(SetOfType $set): string
     {
-        return $this->encodeConstructedType(...$set->getChildren());
+        return $this->encodeConstructedType($set->getChildren());
     }
 
     /**
-     * @param AbstractType ...$types
-     * @return string
+     * @param array<int, AbstractType<mixed>> $types
+     *
      * @throws EncoderException
      */
-    protected function encodeConstructedType(AbstractType ...$types)
+    protected function encodeConstructedType(array $types): string
     {
         $bytes = '';
 
@@ -1195,11 +1311,13 @@ class BerEncoder implements EncoderInterface
 
     /**
      * @param int $length
-     * @return array
+     *
+     * @return list<AbstractType<mixed>>
+     *
      * @throws EncoderException
      * @throws PartialPduException
      */
-    protected function decodeConstructedType($length)
+    protected function decodeConstructedType($length): array
     {
         $children = [];
         $endAt = $this->pos + $length;

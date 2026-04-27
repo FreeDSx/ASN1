@@ -25,8 +25,8 @@ interface EncoderInterface
     /**
      * Encode a type to its binary form.
      *
-     * @param AbstractType $type
-     * @return string
+     * @param AbstractType<mixed> $type
+     *
      * @throws EncoderException
      */
     public function encode(AbstractType $type): string;
@@ -36,6 +36,8 @@ interface EncoderInterface
      *
      * @param array<int, array<int, int>> $tagMap Tag class => (tag number => universal tag type).
      *
+     * @return AbstractType<mixed>
+     *
      * @throws EncoderException
      */
     public function complete(IncompleteType $type, int $tagType, array $tagMap = []): AbstractType;
@@ -44,6 +46,8 @@ interface EncoderInterface
      * Decode binary data to its ASN1 object representation.
      *
      * @param array<int, array<int, int>> $tagMap Tag class => (tag number => universal tag type).
+     *
+     * @return AbstractType<mixed>
      *
      * @throws EncoderException
      * @throws PartialPduException
