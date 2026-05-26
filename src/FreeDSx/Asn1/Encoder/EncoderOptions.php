@@ -18,8 +18,12 @@ namespace FreeDSx\Asn1\Encoder;
  */
 final readonly class EncoderOptions
 {
+    /**
+     * @param int $maxLength Reject a root PDU whose declared length exceeds this many bytes; 0 disables the limit.
+     */
     public function __construct(
         public string $bitstringPadding = '0',
+        public int $maxLength = 0,
     ) {
     }
 }

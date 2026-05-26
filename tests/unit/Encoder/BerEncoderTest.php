@@ -19,6 +19,7 @@ use FreeDSx\Asn1\Encoder\BerEncoder;
 use FreeDSx\Asn1\Encoder\EncoderOptions;
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\PartialPduException;
+use FreeDSx\Asn1\Exception\PduLengthException;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\BitStringType;
 use FreeDSx\Asn1\Type\BmpStringType;
@@ -84,6 +85,33 @@ final class BerEncoderTest extends TestCase
             '1',
             $subject->getOptions()->bitstringPadding,
         );
+    }
+
+    public function test_it_should_reject_a_root_pdu_whose_declared_length_exceeds_the_max_length(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxLength: 100));
+
+        $this->expectException(PduLengthException::class);
+
+        $subject->decode(hex2bin('3084000000c8'));
+    }
+
+    public function test_it_should_decode_a_root_pdu_within_the_max_length(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxLength: 1000));
+        $encoded = $subject->encode(new OctetStringType('foo'));
+
+        self::assertEquals(
+            new OctetStringType('foo'),
+            $subject->decode($encoded),
+        );
+    }
+
+    public function test_it_should_treat_an_oversized_declared_length_as_partial_when_no_max_length_is_set(): void
+    {
+        $this->expectException(PartialPduException::class);
+
+        $this->subject->decode(hex2bin('3084000000c8'));
     }
 
     public function test_it_should_decode_long_definite_length_when_the_length_is_the_exact_size_of_the_payload(): void
