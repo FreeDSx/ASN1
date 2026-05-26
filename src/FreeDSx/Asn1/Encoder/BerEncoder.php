@@ -15,6 +15,7 @@ use DateTimeZone;
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\InvalidArgumentException;
 use FreeDSx\Asn1\Exception\PartialPduException;
+use FreeDSx\Asn1\Exception\PduLengthException;
 use FreeDSx\Asn1\Type\AbstractTimeType;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type as EncodedType;
@@ -176,6 +177,8 @@ class BerEncoder implements EncoderInterface
      * {@inheritdoc}
      *
      * @return AbstractType<mixed>
+     *
+     * @throws PduLengthException
      */
     public function decode(
         string $binary,
@@ -364,6 +367,7 @@ class BerEncoder implements EncoderInterface
      *
      * @throws EncoderException
      * @throws PartialPduException
+     * @throws PduLengthException
      */
     protected function decodeBytes(bool $isRoot = false, $tagType = null, $length = null, $isConstructed = null, $class = null): AbstractType
     {
@@ -397,6 +401,16 @@ class BerEncoder implements EncoderInterface
             if ($length > 128) {
                 $length = $this->decodeLongDefiniteLength($length);
             }
+
+            # Reject an oversized root PDU on its declared length alone, before its body is buffered or decoded.
+            if ($isRoot && $this->options->maxLength > 0 && $length > $this->options->maxLength) {
+                throw new PduLengthException(sprintf(
+                    'The PDU length %d exceeds the maximum allowed length of %d.',
+                    $length,
+                    $this->options->maxLength,
+                ));
+            }
+
             $tagType = ($class === AbstractType::TAG_CLASS_UNIVERSAL) ? $tagNumber : ($this->tmpTagMap[$class][$tagNumber] ?? null);
 
             if (($this->maxLen - $this->pos) < $length) {
