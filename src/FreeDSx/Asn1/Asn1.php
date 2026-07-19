@@ -28,6 +28,7 @@ use FreeDSx\Asn1\Type\NumericStringType;
 use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\OidType;
 use FreeDSx\Asn1\Type\PrintableStringType;
+use FreeDSx\Asn1\Type\RawType;
 use FreeDSx\Asn1\Type\RealType;
 use FreeDSx\Asn1\Type\RelativeOidType;
 use FreeDSx\Asn1\Type\SequenceOfType;
@@ -115,6 +116,17 @@ class Asn1
     public static function octetString(string $string): OctetStringType
     {
         return new OctetStringType($string);
+    }
+
+    /**
+     * A pre-encoded element emitted verbatim by the encoder (tag, length, and content already included).
+     *
+     * @param string $value
+     * @return RawType
+     */
+    public static function raw(string $value): RawType
+    {
+        return new RawType($value);
     }
 
     /**

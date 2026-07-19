@@ -31,6 +31,7 @@ use FreeDSx\Asn1\Type\NumericStringType;
 use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\OidType;
 use FreeDSx\Asn1\Type\PrintableStringType;
+use FreeDSx\Asn1\Type\RawType;
 use FreeDSx\Asn1\Type\RealType;
 use FreeDSx\Asn1\Type\RelativeOidType;
 use FreeDSx\Asn1\Type\SequenceOfType;
@@ -148,6 +149,14 @@ final class Asn1Test extends TestCase
         self::assertEquals(
             new OctetStringType('foo'),
             Asn1::octetString('foo'),
+        );
+    }
+
+    public function test_it_should_construct_a_raw_type(): void
+    {
+        self::assertEquals(
+            new RawType("\x04\x03abc"),
+            Asn1::raw("\x04\x03abc"),
         );
     }
 
