@@ -35,6 +35,7 @@ use FreeDSx\Asn1\Type\NumericStringType;
 use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\OidType;
 use FreeDSx\Asn1\Type\PrintableStringType;
+use FreeDSx\Asn1\Type\RawType;
 use FreeDSx\Asn1\Type\RealType;
 use FreeDSx\Asn1\Type\RelativeOidType;
 use FreeDSx\Asn1\Type\SequenceOfType;
@@ -92,6 +93,8 @@ use function substr;
  */
 class BerEncoder implements EncoderInterface
 {
+    use LengthEncodingTrait;
+
     /**
      * Used to represent a bool false binary string.
      */
@@ -224,6 +227,11 @@ class BerEncoder implements EncoderInterface
      */
     public function encode(AbstractType $type): string
     {
+        # A raw type is already fully encoded (tag, length, and content); emit it verbatim.
+        if ($type::class === RawType::class) {
+            return $type->getValue();
+        }
+
         # match($type::class) compiles to JMP_TABLE — O(1), so this is strictly for performance.
         $tagNumber = $type->getTagNumber();
         $isConstructed = $type->getIsConstructed();
@@ -701,21 +709,6 @@ class BerEncoder implements EncoderInterface
      * @return string
      * @throws EncoderException
      */
-    protected function encodeLongDefiniteLength(int $num)
-    {
-        $bytes = '';
-        while ($num) {
-            $bytes = (chr((int) ($num % 256))) . $bytes;
-            $num = (int) ($num / 256);
-        }
-
-        $length = strlen($bytes);
-        if ($length >= 127) {
-            throw new EncoderException('The encoded length cannot be greater than or equal to 127 bytes');
-        }
-
-        return chr(0x80 | $length) . $bytes;
-    }
 
     /**
      * @param BitStringType $type

@@ -37,6 +37,7 @@ use FreeDSx\Asn1\Type\NumericStringType;
 use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\OidType;
 use FreeDSx\Asn1\Type\PrintableStringType;
+use FreeDSx\Asn1\Type\RawType;
 use FreeDSx\Asn1\Type\RealType;
 use FreeDSx\Asn1\Type\RelativeOidType;
 use FreeDSx\Asn1\Type\SequenceType;
@@ -1721,5 +1722,26 @@ final class BerEncoderTest extends TestCase
         $this->expectException(EncoderException::class);
 
         $this->subject->encode((new IntegerType(1))->setTagNumber('foo'));
+    }
+
+    public function test_it_should_emit_a_raw_type_verbatim(): void
+    {
+        $preEncoded = $this->subject->encode(new OctetStringType('hello'));
+
+        self::assertSame(
+            $preEncoded,
+            $this->subject->encode(new RawType($preEncoded)),
+        );
+    }
+
+    public function test_it_should_encode_a_spliced_raw_type_identically_to_the_equivalent_type(): void
+    {
+        $octet = new OctetStringType('hello');
+        $preEncoded = $this->subject->encode($octet);
+
+        self::assertSame(
+            $this->subject->encode(new SequenceType(new IntegerType(7), $octet)),
+            $this->subject->encode(new SequenceType(new IntegerType(7), new RawType($preEncoded))),
+        );
     }
 }
