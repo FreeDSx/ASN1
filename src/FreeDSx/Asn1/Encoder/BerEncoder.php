@@ -1216,6 +1216,33 @@ class BerEncoder implements EncoderInterface
         if ($length === 0) {
             throw new EncoderException('Zero length not permitted for an integer type.');
         }
+        if ($length > PHP_INT_SIZE) {
+            return $this->decodeLongInteger($length);
+        }
+
+        # Two's complement fits a native int, so sign-extend the first octet and shift in the rest.
+        $binary = (string) $this->binary;
+        $pos = $this->pos;
+        $int = ord($binary[$pos]);
+        if ($int > 127) {
+            $int -= 256;
+        }
+        for ($i = 1; $i < $length; $i++) {
+            $int = ($int << 8) | ord($binary[$pos + $i]);
+        }
+        $this->pos = $pos + $length;
+
+        return $int;
+    }
+
+    /**
+     * Decodes an integer longer than a native int, which requires GMP when the value does not fit.
+     *
+     * @return string|int
+     * @throws EncoderException
+     */
+    private function decodeLongInteger(int $length)
+    {
         $bytes = substr($this->binary, $this->pos, $length);
         $this->pos += $length;
 

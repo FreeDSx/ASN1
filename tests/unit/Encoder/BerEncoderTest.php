@@ -500,6 +500,22 @@ final class BerEncoderTest extends TestCase
         );
     }
 
+    public function test_it_should_decode_the_minimum_native_integer_as_an_int(): void
+    {
+        self::assertSame(
+            PHP_INT_MIN,
+            $this->subject->decode(hex2bin('02088000000000000000'))->getValue(),
+        );
+    }
+
+    public function test_it_should_decode_a_non_minimal_integer_longer_than_a_native_int(): void
+    {
+        self::assertSame(
+            PHP_INT_MAX,
+            $this->subject->decode(hex2bin('0209007FFFFFFFFFFFFFFF'))->getValue(),
+        );
+    }
+
     public function test_it_should_encode_a_big_int_negative_integer_type(): void
     {
         if (!extension_loaded('gmp')) {
