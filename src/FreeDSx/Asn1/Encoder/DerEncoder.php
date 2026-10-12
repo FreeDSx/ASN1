@@ -60,9 +60,18 @@ class DerEncoder extends BerEncoder
     /**
      * {@inheritdoc}
      */
-    protected function decodeLongDefiniteLength(int $length): int
-    {
-        $length = parent::decodeLongDefiniteLength($length);
+    protected function decodeLongDefiniteLength(
+        string $bytes,
+        int $pos,
+        int $end,
+        int $count,
+    ): int {
+        $length = parent::decodeLongDefiniteLength(
+            $bytes,
+            $pos,
+            $end,
+            $count,
+        );
 
         if ($length < 127) {
             throw new EncoderException('DER must be encoded using the shortest possible length form, but it is not.');

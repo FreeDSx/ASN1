@@ -93,7 +93,7 @@ use function substr;
  */
 class BerEncoder implements EncoderInterface
 {
-    use LengthEncodingTrait;
+    use BerEncodingTrait;
 
     /**
      * Used to represent a bool false binary string.
@@ -407,11 +407,15 @@ class BerEncoder implements EncoderInterface
         }
 
         $length = ord($this->binary[$this->pos++]);
-        if ($length === 128) {
-            throw new EncoderException('Indefinite length encoding is not currently supported.');
-        }
-        if ($length > 128) {
-            $length = $this->decodeLongDefiniteLength($length);
+        if ($length > 127) {
+            $count = $length & 0x7f;
+            $length = $this->decodeLongDefiniteLength(
+                (string) $this->binary,
+                $this->pos,
+                $this->maxLen,
+                $count,
+            );
+            $this->pos += $count;
         }
 
         # Reject an oversized root PDU on its declared length alone, before its body is buffered or decoded.
@@ -594,35 +598,6 @@ class BerEncoder implements EncoderInterface
         }
 
         return $type;
-    }
-
-    /**
-     * @param int $length
-     * @return int
-     * @throws EncoderException
-     * @throws PartialPduException
-     */
-    protected function decodeLongDefiniteLength(int $length): int
-    {
-        # The length of the length bytes is in the first 7 bits. So remove the MSB to get the value.
-        $lengthOfLength = $length & ~0x80;
-
-        # The value of 127 is marked as reserved in the spec
-        if ($lengthOfLength === 127) {
-            throw new EncoderException('The decoded length cannot be equal to 127 bytes.');
-        }
-        if ($lengthOfLength > ($this->maxLen - $this->pos)) {
-            throw new PartialPduException('Not enough data to decode the length.');
-        }
-        $endAt = $this->pos + $lengthOfLength;
-
-        # Base 256 encoded
-        $length = 0;
-        for ($this->pos; $this->pos < $endAt; $this->pos++) {
-            $length = $length * 256 + ord($this->binary[$this->pos]);
-        }
-
-        return $length;
     }
 
     /**
@@ -1249,17 +1224,12 @@ class BerEncoder implements EncoderInterface
             return $this->decodeLongInteger($length);
         }
 
-        # Two's complement fits a native int, so sign-extend the first octet and shift in the rest.
-        $binary = (string) $this->binary;
-        $pos = $this->pos;
-        $int = ord($binary[$pos]);
-        if ($int > 127) {
-            $int -= 256;
-        }
-        for ($i = 1; $i < $length; $i++) {
-            $int = ($int << 8) | ord($binary[$pos + $i]);
-        }
-        $this->pos = $pos + $length;
+        $int = $this->readNativeInteger(
+            (string) $this->binary,
+            $this->pos,
+            $length,
+        );
+        $this->pos += $length;
 
         return $int;
     }
@@ -1406,13 +1376,15 @@ class BerEncoder implements EncoderInterface
             }
 
             $length = ord($binary[$pos++]);
-            if ($length === 128) {
-                throw new EncoderException('Indefinite length encoding is not currently supported.');
-            }
-            if ($length > 128) {
-                $this->pos = $pos;
-                $length = $this->decodeLongDefiniteLength($length);
-                $pos = $this->pos;
+            if ($length > 127) {
+                $count = $length & 0x7f;
+                $length = $this->decodeLongDefiniteLength(
+                    $binary,
+                    $pos,
+                    $this->maxLen,
+                    $count,
+                );
+                $pos += $count;
             }
             if ($length > $endAt - $pos) {
                 throw new EncoderException(sprintf(
@@ -1472,7 +1444,13 @@ class BerEncoder implements EncoderInterface
                         $type = IntegerType::withTag(
                             $tagNumber,
                             $class,
-                            $this->decodeInteger($length),
+                            ($length > 0 && $length <= PHP_INT_SIZE)
+                                ? $this->readNativeInteger(
+                                    $binary,
+                                    $pos,
+                                    $length,
+                                )
+                                : $this->decodeInteger($length),
                         );
                         break;
                     case AbstractType::TAG_TYPE_ENUMERATED:
@@ -1482,7 +1460,13 @@ class BerEncoder implements EncoderInterface
                         $type = EnumeratedType::withTag(
                             $tagNumber,
                             $class,
-                            $this->decodeInteger($length),
+                            ($length > 0 && $length <= PHP_INT_SIZE)
+                                ? $this->readNativeInteger(
+                                    $binary,
+                                    $pos,
+                                    $length,
+                                )
+                                : $this->decodeInteger($length),
                         );
                         break;
                     case AbstractType::TAG_TYPE_BOOLEAN:
