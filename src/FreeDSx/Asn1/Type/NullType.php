@@ -23,7 +23,7 @@ class NullType extends AbstractType
 
     public function __construct()
     {
-        parent::__construct(null);
+        $this->value = null;
     }
 
     public function getValue(): null

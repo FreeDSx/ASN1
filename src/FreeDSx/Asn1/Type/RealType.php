@@ -23,7 +23,7 @@ class RealType extends AbstractType
 
     public function __construct(float $value)
     {
-        parent::__construct($value);
+        $this->value = $value;
     }
 
     /**

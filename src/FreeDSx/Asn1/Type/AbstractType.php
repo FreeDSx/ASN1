@@ -122,6 +122,8 @@ abstract class AbstractType implements Countable, IteratorAggregate
     protected $children = [];
 
     /**
+     * Subclasses assign the value directly for performance. Keep this constructor free of other logic.
+     *
      * @param T $value
      */
     public function __construct($value)

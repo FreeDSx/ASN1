@@ -23,7 +23,7 @@ class OidType extends AbstractType
 
     public function __construct(string $value)
     {
-        parent::__construct($value);
+        $this->value = $value;
     }
 
     public function getValue(): string

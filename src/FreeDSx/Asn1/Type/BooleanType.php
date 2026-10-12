@@ -23,7 +23,7 @@ class BooleanType extends AbstractType
 
     public function __construct(bool $value)
     {
-        parent::__construct($value);
+        $this->value = $value;
     }
 
     public function getValue(): bool

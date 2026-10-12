@@ -29,7 +29,7 @@ class IncompleteType extends AbstractType
         $this->tagNumber = $tagNumber;
         $this->taggingClass = $class;
         $this->isConstructed = $isConstructed;
-        parent::__construct($value);
+        $this->value = $value;
     }
 
     public function getValue(): string
