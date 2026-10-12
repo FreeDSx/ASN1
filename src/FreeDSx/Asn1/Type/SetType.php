@@ -40,6 +40,19 @@ class SetType extends AbstractType
     }
 
     /**
+     * Construct from a raw array of children.
+     *
+     * @param array<int, AbstractType<mixed>> $children
+     */
+    public static function fromChildren(array $children): static
+    {
+        $type = new static();
+        $type->children = $children;
+
+        return $type;
+    }
+
+    /**
      * X.680, 8.6
      *
      * Used to determine if the set is in canonical order, which is required by some encodings for a SET.
