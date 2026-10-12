@@ -38,6 +38,19 @@ class SequenceType extends AbstractType
     }
 
     /**
+     * Construct from a raw array of children.
+     *
+     * @param array<int, AbstractType<mixed>> $children
+     */
+    public static function fromChildren(array $children): static
+    {
+        $type = new static();
+        $type->children = $children;
+
+        return $type;
+    }
+
+    /**
      * @param int|string $tagNumber
      * @param array<int, AbstractType<mixed>> $children
      *

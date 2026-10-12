@@ -114,4 +114,15 @@ final class SequenceOfTypeTest extends TestCase
             ),
         );
     }
+
+    public function test_it_should_be_constructed_from_an_array_of_children(): void
+    {
+        self::assertEquals(
+            $this->subject,
+            SequenceOfType::fromChildren([
+                new IntegerType(1),
+                new OctetStringType('foo'),
+            ]),
+        );
+    }
 }
