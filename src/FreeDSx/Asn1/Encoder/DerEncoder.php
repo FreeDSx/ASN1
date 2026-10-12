@@ -29,6 +29,8 @@ class DerEncoder extends BerEncoder
     use CerDerTrait,
         SetTrait;
 
+    protected bool $validatesDecodedTypes = true;
+
     public function __construct(EncoderOptions $options = new EncoderOptions())
     {
         parent::__construct($options);
@@ -48,19 +50,11 @@ class DerEncoder extends BerEncoder
     /**
      * {@inheritdoc}
      *
-     * @param int|null $tagType
-     * @param int|null $length
-     * @param bool|null $isConstructed
-     * @param int|null $class
-     *
-     * @return AbstractType<mixed>
+     * @param AbstractType<mixed> $type
      */
-    protected function decodeBytes(bool $isRoot = false, $tagType = null, $length = null, $isConstructed = null, $class = null): AbstractType
+    protected function validateDecodedType(AbstractType $type): void
     {
-        $type = parent::decodeBytes($isRoot, $tagType, $length, $isConstructed, $class);
         $this->validate($type);
-
-        return $type;
     }
 
     /**

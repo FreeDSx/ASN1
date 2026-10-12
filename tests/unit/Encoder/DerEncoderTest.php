@@ -18,12 +18,14 @@ use FreeDSx\Asn1\Asn1;
 use FreeDSx\Asn1\Encoder\DerEncoder;
 use FreeDSx\Asn1\Encoders;
 use FreeDSx\Asn1\Exception\EncoderException;
+use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\BitStringType;
 use FreeDSx\Asn1\Type\BmpStringType;
 use FreeDSx\Asn1\Type\GeneralizedTimeType;
 use FreeDSx\Asn1\Type\GeneralStringType;
 use FreeDSx\Asn1\Type\GraphicStringType;
 use FreeDSx\Asn1\Type\IA5StringType;
+use FreeDSx\Asn1\Type\IncompleteType;
 use FreeDSx\Asn1\Type\NumericStringType;
 use FreeDSx\Asn1\Type\OctetStringType;
 use FreeDSx\Asn1\Type\PrintableStringType;
@@ -201,6 +203,30 @@ final class DerEncoderTest extends TestCase
         $this->expectExceptionMessage('The octet string must be primitive. It cannot be constructed.');
 
         $this->subject->decode(hex2bin('2403040101'));
+    }
+
+    public function test_it_should_only_allow_primitive_decoding_for_octetstrings_within_a_sequence(): void
+    {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage('The octet string must be primitive. It cannot be constructed.');
+
+        $this->subject->decode(hex2bin('3005' . '2403040101'));
+    }
+
+    public function test_it_should_only_allow_primitive_octetstrings_when_completing_a_type(): void
+    {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage('The octet string must be primitive. It cannot be constructed.');
+
+        $this->subject->complete(
+            new IncompleteType(
+                hex2bin('040101'),
+                0,
+                AbstractType::TAG_CLASS_CONTEXT_SPECIFIC,
+                true,
+            ),
+            AbstractType::TAG_TYPE_OCTET_STRING,
+        );
     }
 
     public function test_it_should_only_allow_primitive_encoding_for_restricted_character_strings_numeric(): void
