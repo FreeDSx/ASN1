@@ -276,7 +276,7 @@ class BerEncoder implements EncoderInterface
         };
 
         $length = strlen($bytes);
-        $bytes = ($length < 128) ? chr($length) . $bytes : $this->encodeLongDefiniteLength($length) . $bytes;
+        $lengthBytes = ($length < 128) ? chr($length) : $this->encodeLongDefiniteLength($length);
 
         # The first byte of a tag always contains the class (bits 8 and 7) and whether it is constructed (bit 6).
         $tag = $type->getTagClass() | ($isConstructed ? AbstractType::CONSTRUCTED_TYPE : 0);
@@ -284,16 +284,16 @@ class BerEncoder implements EncoderInterface
         # Most things have an int tag < 31.
         # This lets us skip numeric int validation in the vast majority of cases.
         if (is_int($tagNumber) && $tagNumber < 31) {
-            return chr($tag | $tagNumber) . $bytes;
+            return chr($tag | $tagNumber) . $lengthBytes . $bytes;
         }
 
         $this->validateNumericInt($tagNumber);
         # High tag (>=31): set the first 5 bits to 0x1f, then VLQ-encode the tag number.
         if ($tagNumber >= 31) {
-            return chr($tag | 0x1f) . $this->intToVlqBytes($tagNumber) . $bytes;
+            return chr($tag | 0x1f) . $this->intToVlqBytes($tagNumber) . $lengthBytes . $bytes;
         }
 
-        return chr($tag | (int) $tagNumber) . $bytes;
+        return chr($tag | (int) $tagNumber) . $lengthBytes . $bytes;
     }
 
     /**
