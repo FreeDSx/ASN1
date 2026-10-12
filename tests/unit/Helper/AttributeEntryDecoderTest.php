@@ -277,6 +277,22 @@ final class AttributeEntryDecoderTest extends TestCase
         ));
     }
 
+    public function test_it_returns_null_when_the_message_does_not_start_with_a_message_id(): void
+    {
+        self::assertNull($this->subject->decode(
+            hex2bin('3003' . '0401ff'),
+            self::APP_TAG,
+        ));
+    }
+
+    public function test_it_returns_null_for_an_empty_message(): void
+    {
+        self::assertNull($this->subject->decode(
+            hex2bin('3000'),
+            self::APP_TAG,
+        ));
+    }
+
     public function test_it_returns_null_when_the_message_id_is_larger_than_a_native_int(): void
     {
         self::assertNull($this->subject->decode(

@@ -165,6 +165,19 @@ final class DerEncoderTest extends TestCase
         $this->subject->decode(hex2bin('01810100'));
     }
 
+    public function test_it_should_decode_a_long_definite_length(): void
+    {
+        $value = str_repeat(
+            'a',
+            200,
+        );
+
+        self::assertEquals(
+            new OctetStringType($value),
+            $this->subject->decode(hex2bin('0481c8') . $value),
+        );
+    }
+
     public function test_it_should_not_allow_indefinite_length(): void
     {
         $this->expectException(EncoderException::class);

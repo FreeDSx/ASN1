@@ -54,6 +54,7 @@ class DerEncoder extends BerEncoder
      */
     protected function validateDecodedType(AbstractType $type): void
     {
+        parent::validateDecodedType($type);
         $this->validate($type);
     }
 

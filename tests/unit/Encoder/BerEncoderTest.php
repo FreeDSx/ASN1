@@ -41,6 +41,7 @@ use FreeDSx\Asn1\Type\RawType;
 use FreeDSx\Asn1\Type\RealType;
 use FreeDSx\Asn1\Type\RelativeOidType;
 use FreeDSx\Asn1\Type\SequenceType;
+use FreeDSx\Asn1\Type\SetType;
 use FreeDSx\Asn1\Type\TeletexStringType;
 use FreeDSx\Asn1\Type\UniversalStringType;
 use FreeDSx\Asn1\Type\UtcTimeType;
@@ -1676,6 +1677,94 @@ final class BerEncoderTest extends TestCase
         self::assertSame(
             5,
             $this->subject->getLastPosition(),
+        );
+    }
+
+    public function test_it_should_decode_a_set_within_a_sequence(): void
+    {
+        self::assertEquals(
+            new SequenceType(new SetType(new IntegerType(1))),
+            $this->subject->decode(hex2bin('3005' . '3103' . '020101')),
+        );
+    }
+
+    public function test_it_should_decode_an_enumerated_within_a_sequence(): void
+    {
+        self::assertEquals(
+            new SequenceType(new EnumeratedType(2)),
+            $this->subject->decode(hex2bin('3003' . '0a0102')),
+        );
+    }
+
+    #[DataProvider('malformedChildProvider')]
+    public function test_it_should_throw_when_a_child_within_a_sequence_is_malformed(
+        string $hex,
+        string $message,
+    ): void {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage($message);
+
+        $this->subject->decode(hex2bin($hex));
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function malformedChildProvider(): array
+    {
+        return [
+            'primitive sequence' => [
+                '3002' . '1000',
+                'The encoded sequence type is malformed.',
+            ],
+            'primitive set' => [
+                '3002' . '1100',
+                'The encoded set type is malformed.',
+            ],
+            'constructed integer' => [
+                '3002' . '2200',
+                'The encoded integer type is malformed.',
+            ],
+            'constructed enumerated' => [
+                '3002' . '2a00',
+                'The encoded enumerated type is malformed.',
+            ],
+            'zero length integer' => [
+                '3002' . '0200',
+                'Zero length not permitted for an integer type.',
+            ],
+            'zero length enumerated' => [
+                '3002' . '0a00',
+                'Zero length not permitted for an integer type.',
+            ],
+            'boolean longer than one octet' => [
+                '3004' . '01020000',
+                'The encoded boolean type is malformed.',
+            ],
+            'null with content' => [
+                '3003' . '050100',
+                'The encoded null type is malformed.',
+            ],
+        ];
+    }
+
+    public function test_it_should_throw_on_a_length_encoded_in_more_octets_than_a_native_int(): void
+    {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage('A length encoded in 8 octets is not supported.');
+
+        $this->subject->decode(hex2bin('0488' . '0000000000000001' . '00'));
+    }
+
+    public function test_it_should_encode_a_low_tag_number_given_as_a_numeric_string(): void
+    {
+        self::assertSame(
+            hex2bin('850161'),
+            $this->subject->encode(
+                (new OctetStringType('a'))
+                    ->setTagClass(AbstractType::TAG_CLASS_CONTEXT_SPECIFIC)
+                    ->setTagNumber('5'),
+            ),
         );
     }
 
