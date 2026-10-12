@@ -13,12 +13,10 @@ declare(strict_types=1);
 
 namespace FreeDSx\Asn1\Helper;
 
-use FreeDSx\Asn1\Encoder\LengthEncodingTrait;
+use FreeDSx\Asn1\Encoder\BerEncodingTrait;
 use FreeDSx\Asn1\Exception\EncoderException;
-use FreeDSx\Asn1\Type\AbstractType;
 
 use function chr;
-use function sprintf;
 use function strlen;
 
 /**
@@ -32,7 +30,7 @@ use function strlen;
  */
 final class AttributeEntryEncoder
 {
-    use LengthEncodingTrait;
+    use BerEncodingTrait;
 
     private const OCTET_STRING = "\x04";
 
@@ -90,24 +88,8 @@ final class AttributeEntryEncoder
 
         $bodyLength = strlen($body);
 
-        return $this->applicationTag($appTag)
+        return chr($this->applicationTag($appTag))
             . ($bodyLength < 128 ? chr($bodyLength) : $this->encodeLongDefiniteLength($bodyLength))
             . $body;
-    }
-
-    /**
-     * @throws EncoderException
-     */
-    private function applicationTag(int $appTag): string
-    {
-        # Application class (0x40) + constructed (0x20). The high-tag form is not needed for LDAP PDUs.
-        if ($appTag < 0 || $appTag >= 31) {
-            throw new EncoderException(sprintf(
-                'The application tag "%d" is not supported by the fast-path encoder.',
-                $appTag,
-            ));
-        }
-
-        return chr(AbstractType::TAG_CLASS_APPLICATION | AbstractType::CONSTRUCTED_TYPE | $appTag);
     }
 }
