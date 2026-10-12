@@ -31,8 +31,6 @@ trait BerEncodingTrait
 {
     /**
      * Long-form definite-length octet encoding.
-     *
-     * @throws EncoderException
      */
     protected function encodeLongDefiniteLength(int $num): string
     {
@@ -42,12 +40,7 @@ trait BerEncodingTrait
             $num >>= 8;
         }
 
-        $length = strlen($bytes);
-        if ($length >= 127) {
-            throw new EncoderException('The encoded length cannot be greater than or equal to 127 bytes');
-        }
-
-        return chr(0x80 | $length) . $bytes;
+        return chr(0x80 | strlen($bytes)) . $bytes;
     }
 
     /**
