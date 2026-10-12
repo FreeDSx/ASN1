@@ -34,7 +34,6 @@ class SequenceType extends AbstractType
      */
     public function __construct(...$types)
     {
-        parent::__construct(null);
         $this->children = $types;
     }
 
