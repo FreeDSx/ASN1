@@ -26,8 +26,8 @@ trait LengthEncodingTrait
     {
         $bytes = '';
         while ($num) {
-            $bytes = (chr((int) ($num % 256))) . $bytes;
-            $num = (int) ($num / 256);
+            $bytes = chr($num & 0xff) . $bytes;
+            $num >>= 8;
         }
 
         $length = strlen($bytes);

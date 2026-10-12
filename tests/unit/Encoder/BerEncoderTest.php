@@ -47,6 +47,7 @@ use FreeDSx\Asn1\Type\UtcTimeType;
 use FreeDSx\Asn1\Type\Utf8StringType;
 use FreeDSx\Asn1\Type\VideotexStringType;
 use FreeDSx\Asn1\Type\VisibleStringType;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class BerEncoderTest extends TestCase
@@ -145,6 +146,76 @@ final class BerEncoderTest extends TestCase
         self::assertSame(
             hex2bin('048301ffff') . $chars,
             $this->subject->encode(new OctetStringType($chars)),
+        );
+    }
+
+    #[DataProvider('lengthHeaderProvider')]
+    public function test_it_should_encode_the_length_across_length_boundaries(
+        int $length,
+        string $header,
+    ): void {
+        $value = str_repeat('a', $length);
+
+        self::assertSame(
+            hex2bin($header) . $value,
+            $this->subject->encode(new OctetStringType($value)),
+        );
+    }
+
+    /**
+     * @return array<string, array{int, string}>
+     */
+    public static function lengthHeaderProvider(): array
+    {
+        return [
+            '0 (empty)' => [
+                0,
+                '0400',
+            ],
+            '127 (short form max)' => [
+                127,
+                '047f',
+            ],
+            '128 (long form min)' => [
+                128,
+                '048180',
+            ],
+            '255 (one length octet max)' => [
+                255,
+                '0481ff',
+            ],
+            '256 (two length octets)' => [
+                256,
+                '04820100',
+            ],
+            '65535 (two length octets max)' => [
+                65535,
+                '0482ffff',
+            ],
+            '65536 (three length octets)' => [
+                65536,
+                '0483010000',
+            ],
+        ];
+    }
+
+    public function test_it_should_encode_nested_long_definite_lengths(): void
+    {
+        $value = str_repeat('a', 200);
+
+        self::assertSame(
+            hex2bin('3081cb' . '0481c8') . $value,
+            $this->subject->encode(new SequenceType(new OctetStringType($value))),
+        );
+    }
+
+    public function test_it_should_encode_a_high_tag_number_with_a_long_definite_length(): void
+    {
+        $value = str_repeat('a', 200);
+
+        self::assertSame(
+            hex2bin('1f8100' . '81c8') . $value,
+            $this->subject->encode((new OctetStringType($value))->setTagNumber(128)),
         );
     }
 
