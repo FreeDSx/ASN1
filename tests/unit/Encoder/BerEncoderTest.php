@@ -1590,6 +1590,95 @@ final class BerEncoderTest extends TestCase
         $this->subject->decode(hex2bin('30035f8080'));
     }
 
+    public function test_it_should_throw_when_a_child_overruns_its_parent(): void
+    {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage('The expected byte length was 5, but received 1.');
+
+        $this->subject->decode(hex2bin('3003' . '0405' . '6162636465'));
+    }
+
+    public function test_it_should_throw_when_a_nested_child_overruns_its_parent_but_not_the_root(): void
+    {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage('The expected byte length was 3, but received 0.');
+
+        $this->subject->decode(hex2bin('3007' . '3002' . '0403' . '616263'));
+    }
+
+    public function test_it_should_throw_when_a_child_has_no_length_byte(): void
+    {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage('Not enough data to decode the length of the element.');
+
+        $this->subject->decode(hex2bin('3001' . '04'));
+    }
+
+    public function test_it_should_throw_if_a_child_uses_indefinite_length_encoding(): void
+    {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage('Indefinite length encoding is not currently supported.');
+
+        $this->subject->decode(hex2bin('3002' . '3080'));
+    }
+
+    public function test_it_should_decode_mapped_and_unmapped_tags_within_a_sequence(): void
+    {
+        self::assertEquals(
+            new SequenceType(
+                (new OctetStringType('a'))
+                    ->setTagNumber(1)
+                    ->setTagClass(AbstractType::TAG_CLASS_APPLICATION),
+                new IncompleteType(
+                    'bcd',
+                    1,
+                    AbstractType::TAG_CLASS_CONTEXT_SPECIFIC,
+                    false,
+                ),
+            ),
+            $this->subject->decode(
+                hex2bin('3008' . '410161' . '8103626364'),
+                [AbstractType::TAG_CLASS_APPLICATION => [1 => AbstractType::TAG_TYPE_OCTET_STRING]],
+            ),
+        );
+    }
+
+    public function test_it_should_decode_a_high_tag_number_within_a_sequence(): void
+    {
+        self::assertEquals(
+            new SequenceType(new IncompleteType(
+                hex2bin('ff'),
+                128,
+                AbstractType::TAG_CLASS_CONTEXT_SPECIFIC,
+                false,
+            )),
+            $this->subject->decode(hex2bin('3005' . '9f8100' . '01ff')),
+        );
+    }
+
+    public function test_it_should_decode_other_types_within_a_sequence(): void
+    {
+        self::assertEquals(
+            new SequenceType(
+                new IntegerType(1),
+                new BooleanType(true),
+                new NullType(),
+                new Utf8StringType('a'),
+            ),
+            $this->subject->decode(hex2bin('300b' . '020101' . '0101ff' . '0500' . '0c0161')),
+        );
+    }
+
+    public function test_it_should_get_the_last_position_of_the_first_constructed_pdu_in_the_data(): void
+    {
+        $this->subject->decode(hex2bin('3003020101' . '3003020102'));
+
+        self::assertSame(
+            5,
+            $this->subject->getLastPosition(),
+        );
+    }
+
     public function test_it_should_encode_a_high_tag_number_properly(): void
     {
         self::assertSame(

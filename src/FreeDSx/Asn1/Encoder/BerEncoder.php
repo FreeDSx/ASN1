@@ -132,6 +132,11 @@ class BerEncoder implements EncoderInterface
     protected bool $isGmpAvailable;
 
     /**
+     * Whether each decoded type is passed to the validation hook (for encoding rules stricter than BER).
+     */
+    protected bool $validatesDecodedTypes = false;
+
+    /**
      * @var array<string, string> Dotted OID value => encoded bytes.
      */
     private static array $oidEncodeCache = [];
@@ -193,7 +198,7 @@ class BerEncoder implements EncoderInterface
         } elseif ($this->maxLen === 1) {
             throw new PartialPduException('Received only 1 byte of data.');
         }
-        $type = $this->decodeBytes(true);
+        $type = $this->decodeRoot();
         $this->stopEncoding();
 
         return $type;
@@ -211,10 +216,17 @@ class BerEncoder implements EncoderInterface
     ): AbstractType {
         $lastPos = $this->lastPos;
         $this->startEncoding($type->getValue(), $tagMap);
-        $newType = $this->decodeBytes(false, $tagType, $this->maxLen, $type->getIsConstructed(), AbstractType::TAG_CLASS_UNIVERSAL);
+        $newType = $this->decodeContent(
+            $tagType,
+            $type->getTagNumber(),
+            $type->getTagClass(),
+            $type->getIsConstructed(),
+            $this->maxLen,
+        );
+        if ($this->validatesDecodedTypes) {
+            $this->validateDecodedType($newType);
+        }
         $this->stopEncoding();
-        $newType->setTagNumber($type->getTagNumber())
-            ->setTagClass($type->getTagClass());
         $this->lastPos = $lastPos;
 
         return $newType;
@@ -366,10 +378,7 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param int|null $tagType
-     * @param int|null $length
-     * @param bool|null $isConstructed
-     * @param int|null $class
+     * Decodes the root element, where running out of data means the PDU is only partially received.
      *
      * @return AbstractType<mixed>
      *
@@ -377,73 +386,93 @@ class BerEncoder implements EncoderInterface
      * @throws PartialPduException
      * @throws PduLengthException
      */
-    protected function decodeBytes(bool $isRoot = false, $tagType = null, $length = null, $isConstructed = null, $class = null): AbstractType
+    protected function decodeRoot(): AbstractType
     {
-        $tagNumber = $tagType;
-        if ($tagType === null) {
-            $tag = ord($this->binary[$this->pos++]);
-            $class = $tag & 0xc0;
-            $isConstructed = (bool)($tag & AbstractType::CONSTRUCTED_TYPE);
-            $tagNumber = $tag & ~0xe0;
+        $tag = ord($this->binary[$this->pos++]);
+        $class = $tag & 0xc0;
+        $isConstructed = (bool) ($tag & AbstractType::CONSTRUCTED_TYPE);
+        $tagNumber = $tag & ~0xe0;
 
-            # Less than or equal to 30 is a low tag number represented in a single byte.
-            # A high tag number is determined using VLQ (like the OID identifier encoding) of the subsequent bytes.
-            if ($tagNumber > 30) {
-                try {
-                    $tagNumber = $this->getVlqBytesToInt();
-                    # It's possible we only got part of the VLQ for the high tag, as there is no way to know its ending length.
-                } catch (EncoderException $e) {
-                    if ($isRoot) {
-                        throw new PartialPduException(
-                            'Not enough data to decode the high tag number. No ending byte encountered for the VLQ bytes.'
-                        );
-                    }
-                    throw $e;
-                }
-            }
-
-            $length = ord($this->binary[$this->pos++]);
-            if ($length === 128) {
-                throw new EncoderException('Indefinite length encoding is not currently supported.');
-            }
-            if ($length > 128) {
-                $length = $this->decodeLongDefiniteLength($length);
-            }
-
-            # Reject an oversized root PDU on its declared length alone, before its body is buffered or decoded.
-            if ($isRoot && $this->options->maxLength > 0 && $length > $this->options->maxLength) {
-                throw new PduLengthException(sprintf(
-                    'The PDU length %d exceeds the maximum allowed length of %d.',
-                    $length,
-                    $this->options->maxLength,
-                ));
-            }
-
-            $tagType = ($class === AbstractType::TAG_CLASS_UNIVERSAL) ? $tagNumber : ($this->tmpTagMap[$class][$tagNumber] ?? null);
-
-            if (($this->maxLen - $this->pos) < $length) {
-                $message = sprintf(
-                    'The expected byte length was %s, but received %s.',
-                    $length,
-                    ($this->maxLen - $this->pos)
+        # Less than or equal to 30 is a low tag number represented in a single byte.
+        # A high tag number is determined using VLQ (like the OID identifier encoding) of the subsequent bytes.
+        if ($tagNumber > 30) {
+            try {
+                $tagNumber = $this->getVlqBytesToInt();
+                # It's possible we only got part of the VLQ for the high tag, as there is no way to know its ending length.
+            } catch (EncoderException) {
+                throw new PartialPduException(
+                    'Not enough data to decode the high tag number. No ending byte encountered for the VLQ bytes.'
                 );
-                if ($isRoot) {
-                    throw new PartialPduException($message);
-                } else {
-                    throw new EncoderException($message);
-                }
-            }
-
-            if ($tagType === null) {
-                $type = new IncompleteType(substr($this->binary, $this->pos, $length), $tagNumber, $class, $isConstructed);
-                $this->pos += $length;
-
-                return $type;
             }
         }
 
-        # Yes...this huge switch statement should be a separate method. However, it is faster inline when decoding
-        # lots of data (such as thousands of ASN.1 structures at a time).
+        $length = ord($this->binary[$this->pos++]);
+        if ($length === 128) {
+            throw new EncoderException('Indefinite length encoding is not currently supported.');
+        }
+        if ($length > 128) {
+            $length = $this->decodeLongDefiniteLength($length);
+        }
+
+        # Reject an oversized root PDU on its declared length alone, before its body is buffered or decoded.
+        if ($this->options->maxLength > 0 && $length > $this->options->maxLength) {
+            throw new PduLengthException(sprintf(
+                'The PDU length %d exceeds the maximum allowed length of %d.',
+                $length,
+                $this->options->maxLength,
+            ));
+        }
+
+        if (($this->maxLen - $this->pos) < $length) {
+            throw new PartialPduException(sprintf(
+                'The expected byte length was %s, but received %s.',
+                $length,
+                ($this->maxLen - $this->pos),
+            ));
+        }
+
+        $tagType = ($class === AbstractType::TAG_CLASS_UNIVERSAL)
+            ? $tagNumber
+            : ($this->tmpTagMap[$class][$tagNumber] ?? null);
+        if ($tagType === null) {
+            $type = new IncompleteType(
+                substr($this->binary, $this->pos, $length),
+                $tagNumber,
+                $class,
+                $isConstructed,
+            );
+            $this->pos += $length;
+        } else {
+            $type = $this->decodeContent(
+                $tagType,
+                $tagNumber,
+                $class,
+                $isConstructed,
+                $length,
+            );
+        }
+        if ($this->validatesDecodedTypes) {
+            $this->validateDecodedType($type);
+        }
+
+        return $type;
+    }
+
+    /**
+     * Decodes the content at the current position as the given universal tag type.
+     *
+     * @return AbstractType<mixed>
+     *
+     * @throws EncoderException
+     * @throws PartialPduException
+     */
+    protected function decodeContent(
+        int|string $tagType,
+        int|string|null $tagNumber,
+        int $class,
+        bool $isConstructed,
+        int $length,
+    ): AbstractType {
         switch ($tagType) {
             case AbstractType::TAG_TYPE_BOOLEAN:
                 if ($length !== 1 || $isConstructed) {
@@ -1344,22 +1373,168 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @param int $length
+     * Decodes the children of a constructed type, each of which must fit within the parent's length.
      *
      * @return list<AbstractType<mixed>>
      *
      * @throws EncoderException
      * @throws PartialPduException
      */
-    protected function decodeConstructedType($length): array
+    protected function decodeConstructedType(int $length): array
     {
+        $binary = (string) $this->binary;
+        $tagMap = $this->tmpTagMap;
+        $validate = $this->validatesDecodedTypes;
+        $pos = $this->pos;
+        $endAt = $pos + $length;
         $children = [];
-        $endAt = $this->pos + $length;
 
-        while ($this->pos < $endAt) {
-            $children[] = $this->decodeBytes();
+        # The most common types are decoded inline, as a method call per element is measurably slower on lots of data.
+        while ($pos < $endAt) {
+            $tag = ord($binary[$pos++]);
+            $class = $tag & 0xc0;
+            $isConstructed = ($tag & AbstractType::CONSTRUCTED_TYPE) !== 0;
+            $tagNumber = $tag & 0x1f;
+
+            if ($tagNumber === 0x1f) {
+                $this->pos = $pos;
+                $tagNumber = $this->getVlqBytesToInt();
+                $pos = $this->pos;
+            }
+            if ($pos >= $endAt) {
+                throw new EncoderException('Not enough data to decode the length of the element.');
+            }
+
+            $length = ord($binary[$pos++]);
+            if ($length === 128) {
+                throw new EncoderException('Indefinite length encoding is not currently supported.');
+            }
+            if ($length > 128) {
+                $this->pos = $pos;
+                $length = $this->decodeLongDefiniteLength($length);
+                $pos = $this->pos;
+            }
+            if ($length > $endAt - $pos) {
+                throw new EncoderException(sprintf(
+                    'The expected byte length was %s, but received %s.',
+                    $length,
+                    $endAt - $pos,
+                ));
+            }
+
+            $tagType = ($class === AbstractType::TAG_CLASS_UNIVERSAL)
+                ? $tagNumber
+                : ($tagMap[$class][$tagNumber] ?? null);
+
+            # Checked before the switch, as its loose comparison would match a null case to tag 0.
+            if ($tagType === null) {
+                $type = new IncompleteType(
+                    substr($binary, $pos, $length),
+                    $tagNumber,
+                    $class,
+                    $isConstructed,
+                );
+            } else {
+                $this->pos = $pos;
+                switch ($tagType) {
+                    case AbstractType::TAG_TYPE_OCTET_STRING:
+                        $type = OctetStringType::withTag(
+                            $tagNumber,
+                            $class,
+                            $isConstructed,
+                            substr($binary, $pos, $length),
+                        );
+                        break;
+                    case AbstractType::TAG_TYPE_SEQUENCE:
+                        if (!$isConstructed) {
+                            throw new EncoderException('The encoded sequence type is malformed.');
+                        }
+                        $type = SequenceType::withTag(
+                            $tagNumber,
+                            $class,
+                            $this->decodeConstructedType($length),
+                        );
+                        break;
+                    case AbstractType::TAG_TYPE_SET:
+                        if (!$isConstructed) {
+                            throw new EncoderException('The encoded set type is malformed.');
+                        }
+                        $type = SetType::withTag(
+                            $tagNumber,
+                            $class,
+                            $this->decodeConstructedType($length),
+                        );
+                        break;
+                    case AbstractType::TAG_TYPE_INTEGER:
+                        if ($isConstructed) {
+                            throw new EncoderException('The encoded integer type is malformed.');
+                        }
+                        $type = IntegerType::withTag(
+                            $tagNumber,
+                            $class,
+                            $this->decodeInteger($length),
+                        );
+                        break;
+                    case AbstractType::TAG_TYPE_ENUMERATED:
+                        if ($isConstructed) {
+                            throw new EncoderException('The encoded enumerated type is malformed.');
+                        }
+                        $type = EnumeratedType::withTag(
+                            $tagNumber,
+                            $class,
+                            $this->decodeInteger($length),
+                        );
+                        break;
+                    case AbstractType::TAG_TYPE_BOOLEAN:
+                        if ($length !== 1 || $isConstructed) {
+                            throw new EncoderException('The encoded boolean type is malformed.');
+                        }
+                        $type = BooleanType::withTag(
+                            $tagNumber,
+                            $class,
+                            $this->decodeBoolean(),
+                        );
+                        break;
+                    case AbstractType::TAG_TYPE_NULL:
+                        if ($length !== 0 || $isConstructed) {
+                            throw new EncoderException('The encoded null type is malformed.');
+                        }
+                        $type = NullType::withTag(
+                            $tagNumber,
+                            $class,
+                        );
+                        break;
+                    default:
+                        $type = $this->decodeContent(
+                            $tagType,
+                            $tagNumber,
+                            $class,
+                            $isConstructed,
+                            $length,
+                        );
+                }
+            }
+            if ($validate) {
+                $this->validateDecodedType($type);
+            }
+
+            $children[] = $type;
+            # The element's declared length is authoritative, regardless of how much a content decoder read.
+            $pos += $length;
         }
+        $this->pos = $pos;
 
         return $children;
+    }
+
+    /**
+     * Validates a decoded type, for encoding rules with restrictions beyond BER.
+     *
+     * @param AbstractType<mixed> $type
+     *
+     * @throws EncoderException
+     */
+    protected function validateDecodedType(AbstractType $type): void
+    {
     }
 }
