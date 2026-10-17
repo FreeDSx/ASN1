@@ -15,6 +15,7 @@ use DateTimeZone;
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\InvalidArgumentException;
 use FreeDSx\Asn1\Exception\PartialPduException;
+use FreeDSx\Asn1\Exception\PduDepthException;
 use FreeDSx\Asn1\Exception\PduLengthException;
 use FreeDSx\Asn1\Type\AbstractTimeType;
 use FreeDSx\Asn1\Type\AbstractType;
@@ -176,6 +177,11 @@ class BerEncoder implements EncoderInterface
      */
     protected $binary;
 
+    /**
+     * The nesting level of the constructed type currently being decoded.
+     */
+    private int $depth = 0;
+
     public function __construct(protected EncoderOptions $options = new EncoderOptions())
     {
         $this->isGmpAvailable = extension_loaded('gmp');
@@ -261,25 +267,25 @@ class BerEncoder implements EncoderInterface
             UniversalStringType::class,
             TeletexStringType::class,
             VideotexStringType::class,
-            CharacterStringType::class    => $type->getValue(),
+            CharacterStringType::class => $type->getValue(),
 
             SequenceType::class,
-            SequenceOfType::class         => $this->encodeConstructedType($type->getChildren()),
+            SequenceOfType::class => $this->encodeConstructedType($type->getChildren()),
 
             IntegerType::class,
-            EnumeratedType::class         => $this->encodeInteger($type),
+            EnumeratedType::class => $this->encodeInteger($type),
 
-            SetOfType::class              => $this->encodeSetOf($type),
-            SetType::class                => $this->encodeSet($type),
+            SetOfType::class => $this->encodeSetOf($type),
+            SetType::class => $this->encodeSet($type),
 
-            BooleanType::class            => $type->getValue() ? self::BOOL_TRUE : self::BOOL_FALSE,
-            NullType::class               => '',
-            OidType::class                => $this->encodeOid($type),
-            BitStringType::class          => $this->encodeBitString($type),
-            RelativeOidType::class        => $this->encodeRelativeOid($type),
-            GeneralizedTimeType::class    => $this->encodeGeneralizedTime($type),
-            UtcTimeType::class            => $this->encodeUtcTime($type),
-            RealType::class               => $this->encodeReal($type),
+            BooleanType::class => $type->getValue() ? self::BOOL_TRUE : self::BOOL_FALSE,
+            NullType::class => '',
+            OidType::class => $this->encodeOid($type),
+            BitStringType::class => $this->encodeBitString($type),
+            RelativeOidType::class => $this->encodeRelativeOid($type),
+            GeneralizedTimeType::class => $this->encodeGeneralizedTime($type),
+            UtcTimeType::class => $this->encodeUtcTime($type),
+            RealType::class => $this->encodeReal($type),
 
             default => throw new EncoderException(sprintf(
                 'The type "%s" is not currently supported.',
@@ -365,6 +371,7 @@ class BerEncoder implements EncoderInterface
         $this->binary = $binary;
         $this->lastPos = null;
         $this->pos = 0;
+        $this->depth = 0;
         $this->maxLen = strlen($this->binary);
     }
 
@@ -1349,9 +1356,17 @@ class BerEncoder implements EncoderInterface
      *
      * @throws EncoderException
      * @throws PartialPduException
+     * @throws PduDepthException
      */
     protected function decodeConstructedType(int $length): array
     {
+        if (++$this->depth > $this->options->maxDepth) {
+            throw new PduDepthException(sprintf(
+                'The constructed type nesting depth exceeds the maximum allowed depth of %d.',
+                $this->options->maxDepth,
+            ));
+        }
+
         $binary = (string) $this->binary;
         $tagMap = $this->tmpTagMap;
         $validate = $this->validatesDecodedTypes;
@@ -1507,6 +1522,7 @@ class BerEncoder implements EncoderInterface
             $pos += $length;
         }
         $this->pos = $pos;
+        --$this->depth;
 
         return $children;
     }
