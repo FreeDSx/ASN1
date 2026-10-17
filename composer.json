@@ -25,8 +25,8 @@
     "phpstan/phpstan-phpunit": "^2.0",
     "phpstan/extension-installer": "^1.4",
     "symfony/console": "^6.4",
-    "symplify/easy-coding-standard": "^9.4",
-    "squizlabs/php_codesniffer": "^3.7",
+    "symplify/easy-coding-standard": "^13.3",
+    "squizlabs/php_codesniffer": "^3.13.6",
     "slevomat/coding-standard": "^7.2"
   },
   "suggest": {
@@ -56,6 +56,10 @@
     ],
     "analyse-tests": [
       "phpstan --memory-limit=-1 analyse -c phpstan.tests.neon"
+    ],
+    "cs-check": [
+      "phpcs --standard=ruleset.xml --extensions=php --tab-width=4 -sp src --runtime-set ignore_warnings_on_exit 1",
+      "ecs check"
     ],
     "cs-fix": [
       "phpcbf --standard=ruleset.xml --extensions=php --tab-width=4 -sp src",
