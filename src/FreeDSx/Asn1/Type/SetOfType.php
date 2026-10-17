@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -15,6 +16,4 @@ namespace FreeDSx\Asn1\Type;
  *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
-class SetOfType extends SetType
-{
-}
+class SetOfType extends SetType {}

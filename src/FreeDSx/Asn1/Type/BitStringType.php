@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -91,7 +92,7 @@ class BitStringType extends AbstractType
      */
     public static function fromInteger(
         int $int,
-        ?int $minLength = null
+        ?int $minLength = null,
     ): self {
         $pieces = str_split(decbin($int), 8);
         $num = count($pieces);
@@ -117,7 +118,7 @@ class BitStringType extends AbstractType
         $tagNumber,
         int $class,
         bool $isConstructed,
-        string $value = ''
+        string $value = '',
     ): self {
         $type = new self($value);
         $type->taggingClass = $class;

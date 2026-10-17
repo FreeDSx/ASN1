@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -85,7 +86,7 @@ class AbstractTimeType extends AbstractType
     public function __construct(
         ?DateTimeInterface $dateTime,
         string $dateFormat,
-        string $tzFormat
+        string $tzFormat,
     ) {
         $this->setDateTimeFormat($dateFormat);
         $this->setTimeZoneFormat($tzFormat);
@@ -121,7 +122,7 @@ class AbstractTimeType extends AbstractType
             throw new InvalidArgumentException(sprintf(
                 'The timezone format %s is not valid. It must be one of: %s',
                 $tzFormat,
-                implode(', ', $this->validTzFormats)
+                implode(', ', $this->validTzFormats),
             ));
         }
         $this->tzFormat = $tzFormat;
@@ -143,7 +144,7 @@ class AbstractTimeType extends AbstractType
             throw new InvalidArgumentException(sprintf(
                 'The datetime format %s is not valid. It must be one of: %s',
                 $dateFormat,
-                implode(', ', $this->validDateFormats)
+                implode(', ', $this->validDateFormats),
             ));
         }
         $this->dateFormat = $dateFormat;

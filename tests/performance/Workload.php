@@ -207,7 +207,7 @@ final class Workload
     {
         mt_srand(self::SEED);
 
-        return static fn (): int => mt_rand();
+        return static fn(): int => mt_rand();
     }
 
     /**

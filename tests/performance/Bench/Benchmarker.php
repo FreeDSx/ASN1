@@ -96,7 +96,7 @@ final class Benchmarker
                 ? self::LDAP_TAG_MAP
                 : [];
             $encodedCorpus = array_map(
-                static fn (AbstractType $t): string => $encoder->encode($t),
+                static fn(AbstractType $t): string => $encoder->encode($t),
                 $payloads,
             );
             $payloadCount = count($payloads);

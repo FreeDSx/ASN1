@@ -27,8 +27,7 @@ final readonly class WorkloadResult
         public OpResult $encode,
         public OpResult $decode,
         public OpResult $roundTrip,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{payloads: int, encoded_bytes: int, encode: array<string, mixed>, decode: array<string, mixed>, round_trip: array<string, mixed>}
@@ -59,24 +58,6 @@ final readonly class WorkloadResult
     }
 
     /**
-     * @return array<string, mixed>
-     */
-    private static function stringKeyedArray(mixed $value): array
-    {
-        if (!is_array($value)) {
-            return [];
-        }
-        $out = [];
-        foreach ($value as $key => $entry) {
-            if (is_string($key)) {
-                $out[$key] = $entry;
-            }
-        }
-
-        return $out;
-    }
-
-    /**
      * @return list<string>
      */
     public static function operations(): array
@@ -92,5 +73,23 @@ final readonly class WorkloadResult
             'round_trip' => $this->roundTrip,
             default => throw new InvalidArgumentException("Unknown operation: $name"),
         };
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function stringKeyedArray(mixed $value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+        $out = [];
+        foreach ($value as $key => $entry) {
+            if (is_string($key)) {
+                $out[$key] = $entry;
+            }
+        }
+
+        return $out;
     }
 }

@@ -54,7 +54,7 @@ final class Aggregator
                 $sign = $median >= 0 ? 1 : -1;
                 $sameDir = count(array_filter(
                     $deltas,
-                    static fn (float $d): bool => $sign === 1 ? $d >= 0 : $d <= 0,
+                    static fn(float $d): bool => $sign === 1 ? $d >= 0 : $d <= 0,
                 ));
 
                 $rows[] = new AggregatedRow(

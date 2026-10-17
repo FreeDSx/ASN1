@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -56,7 +57,7 @@ interface EncoderInterface
      */
     public function decode(
         string $binary,
-        array $tagMap = []
+        array $tagMap = [],
     ): AbstractType;
 
     /**

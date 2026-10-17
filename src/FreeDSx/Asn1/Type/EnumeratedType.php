@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -49,9 +50,8 @@ class EnumeratedType extends AbstractType
     public static function withTag(
         $tagNumber,
         int $class,
-        $value
-    ): self
-    {
+        $value,
+    ): self {
         $type = new self($value);
         $type->tagNumber = $tagNumber;
         $type->taggingClass = $class;

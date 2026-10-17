@@ -26,8 +26,7 @@ final readonly class AggregatedRow
         public float  $maxDeltaPct,
         public int    $sameDirectionCount,
         public int    $totalPairs,
-    ) {
-    }
+    ) {}
 
     public function consistencyPct(): float
     {
@@ -40,7 +39,7 @@ final readonly class AggregatedRow
 
     public function isSignificant(
         float $thresholdPct,
-        float $consistencyPct
+        float $consistencyPct,
     ): bool {
         return abs($this->medianDeltaPct) >= $thresholdPct
             && $this->consistencyPct() >= $consistencyPct;
@@ -48,14 +47,14 @@ final readonly class AggregatedRow
 
     public function isRegression(
         float $thresholdPct,
-        float $consistencyPct
+        float $consistencyPct,
     ): bool {
         return $this->isSignificant($thresholdPct, $consistencyPct) && $this->medianDeltaPct > 0;
     }
 
     public function isImprovement(
         float $thresholdPct,
-        float $consistencyPct
+        float $consistencyPct,
     ): bool {
         return $this->isSignificant($thresholdPct, $consistencyPct) && $this->medianDeltaPct < 0;
     }

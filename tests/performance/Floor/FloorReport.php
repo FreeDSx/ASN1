@@ -30,8 +30,7 @@ final readonly class FloorReport
         public string $runner,
         public int $marginPct,
         public array $budget,
-    ) {
-    }
+    ) {}
 
     public static function fromFile(string $path): self
     {

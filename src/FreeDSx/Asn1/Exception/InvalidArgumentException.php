@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -10,6 +11,6 @@
 
 namespace FreeDSx\Asn1\Exception;
 
-class InvalidArgumentException extends \InvalidArgumentException
-{
-}
+use InvalidArgumentException as BaseInvalidArgumentException;
+
+class InvalidArgumentException extends BaseInvalidArgumentException {}

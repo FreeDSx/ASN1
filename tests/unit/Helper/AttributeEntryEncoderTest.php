@@ -146,7 +146,7 @@ final class AttributeEntryEncoderTest extends TestCase
         $partialAttributes = Asn1::sequenceOf();
         foreach ($attributes as [$description, $values]) {
             $valueTypes = array_map(
-                static fn (string $value): OctetStringType => Asn1::octetString($value),
+                static fn(string $value): OctetStringType => Asn1::octetString($value),
                 $values,
             );
             $partialAttributes->addChild(Asn1::sequence(

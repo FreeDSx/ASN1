@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -59,9 +60,8 @@ class SequenceType extends AbstractType
     public static function withTag(
         $tagNumber,
         int $class,
-        array $children = []
-    )
-    {
+        array $children = [],
+    ) {
         $type = new static();
         $type->children = $children;
         $type->tagNumber = $tagNumber;

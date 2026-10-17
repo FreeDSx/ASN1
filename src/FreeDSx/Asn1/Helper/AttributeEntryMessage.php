@@ -29,6 +29,5 @@ final readonly class AttributeEntryMessage
         public string $primaryId,
         public array $attributes,
         public int $length,
-    ) {
-    }
+    ) {}
 }

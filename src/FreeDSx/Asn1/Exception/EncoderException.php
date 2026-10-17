@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -17,6 +18,4 @@ use Exception;
  *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
-class EncoderException extends Exception
-{
-}
+class EncoderException extends Exception {}
