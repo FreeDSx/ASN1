@@ -33,8 +33,12 @@ class DerEncoder extends BerEncoder
 
     public function __construct(EncoderOptions $options = new EncoderOptions())
     {
-        parent::__construct($options);
-        $this->setOptions(new EncoderOptions(bitstringPadding: '0'));
+        # DER requires zero padding for bit strings, but the caller's decode limits are kept.
+        parent::__construct(new EncoderOptions(
+            bitstringPadding: '0',
+            maxLength: $options->maxLength,
+            maxDepth: $options->maxDepth,
+        ));
     }
 
     /**

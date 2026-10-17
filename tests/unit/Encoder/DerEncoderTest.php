@@ -16,8 +16,11 @@ namespace Tests\Unit\FreeDSx\Asn1\Encoder;
 use DateTime;
 use FreeDSx\Asn1\Asn1;
 use FreeDSx\Asn1\Encoder\DerEncoder;
+use FreeDSx\Asn1\Encoder\EncoderOptions;
 use FreeDSx\Asn1\Encoders;
 use FreeDSx\Asn1\Exception\EncoderException;
+use FreeDSx\Asn1\Exception\PduDepthException;
+use FreeDSx\Asn1\Exception\PduLengthException;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\BitStringType;
 use FreeDSx\Asn1\Type\BmpStringType;
@@ -44,6 +47,34 @@ final class DerEncoderTest extends TestCase
     protected function setUp(): void
     {
         $this->subject = new DerEncoder();
+    }
+
+    public function test_it_should_keep_the_max_length_passed_to_the_constructor(): void
+    {
+        $subject = new DerEncoder(new EncoderOptions(maxLength: 100));
+
+        $this->expectException(PduLengthException::class);
+
+        $subject->decode(hex2bin('3081c8'));
+    }
+
+    public function test_it_should_keep_the_max_depth_passed_to_the_constructor(): void
+    {
+        $subject = new DerEncoder(new EncoderOptions(maxDepth: 2));
+
+        $this->expectException(PduDepthException::class);
+
+        $subject->decode(hex2bin('300430023000'));
+    }
+
+    public function test_it_should_force_zero_bitstring_padding_regardless_of_the_options_passed(): void
+    {
+        $subject = new DerEncoder(new EncoderOptions(bitstringPadding: '1'));
+
+        self::assertSame(
+            '0',
+            $subject->getOptions()->bitstringPadding,
+        );
     }
 
     public function test_it_should_encode_a_bit_string(): void
