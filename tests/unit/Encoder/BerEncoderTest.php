@@ -19,6 +19,7 @@ use FreeDSx\Asn1\Encoder\BerEncoder;
 use FreeDSx\Asn1\Encoder\EncoderOptions;
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\PartialPduException;
+use FreeDSx\Asn1\Exception\PduDepthException;
 use FreeDSx\Asn1\Exception\PduLengthException;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\BitStringType;
@@ -78,6 +79,10 @@ final class BerEncoderTest extends TestCase
             '0',
             $this->subject->getOptions()->bitstringPadding,
         );
+        self::assertSame(
+            16,
+            $this->subject->getOptions()->maxDepth,
+        );
     }
 
     public function test_it_should_accept_options_via_the_constructor(): void
@@ -115,6 +120,91 @@ final class BerEncoderTest extends TestCase
         $this->expectException(PartialPduException::class);
 
         $this->subject->decode(hex2bin('3084000000c8'));
+    }
+
+    public function test_it_should_reject_constructed_types_nested_beyond_the_max_depth(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxDepth: 2));
+
+        $this->expectException(PduDepthException::class);
+        $this->expectExceptionMessage('The constructed type nesting depth exceeds the maximum allowed depth of 2.');
+
+        $subject->decode(hex2bin('300430023000'));
+    }
+
+    public function test_it_should_decode_constructed_types_nested_to_the_max_depth(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxDepth: 3));
+
+        self::assertEquals(
+            new SequenceType(new SequenceType(new SequenceType())),
+            $subject->decode(hex2bin('300430023000')),
+        );
+    }
+
+    public function test_it_should_count_sets_towards_the_max_depth(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxDepth: 2));
+
+        $this->expectException(PduDepthException::class);
+
+        $subject->decode(hex2bin('310431023100'));
+    }
+
+    public function test_it_should_count_tag_mapped_constructed_types_towards_the_max_depth(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxDepth: 2));
+
+        $this->expectException(PduDepthException::class);
+
+        $subject->decode(
+            hex2bin('600460026000'),
+            [AbstractType::TAG_CLASS_APPLICATION => [0 => AbstractType::TAG_TYPE_SEQUENCE]],
+        );
+    }
+
+    public function test_it_should_enforce_the_max_depth_when_completing_an_incomplete_type(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxDepth: 2));
+
+        $this->expectException(PduDepthException::class);
+
+        $subject->complete(
+            new IncompleteType(
+                hex2bin('30023000'),
+                0,
+                AbstractType::TAG_CLASS_CONTEXT_SPECIFIC,
+                true,
+            ),
+            AbstractType::TAG_TYPE_SEQUENCE,
+        );
+    }
+
+    public function test_it_should_reset_the_depth_after_a_rejected_decode(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxDepth: 2));
+        try {
+            $subject->decode(hex2bin('300430023000'));
+            self::fail('Expected the decode to exceed the max depth.');
+        } catch (PduDepthException) {
+        }
+
+        self::assertEquals(
+            new SequenceType(new SequenceType()),
+            $subject->decode(hex2bin('30023000')),
+        );
+    }
+
+    public function test_it_should_reject_nesting_beyond_the_default_max_depth(): void
+    {
+        $type = new SequenceType();
+        for ($i = 1; $i < 17; $i++) {
+            $type = new SequenceType($type);
+        }
+
+        $this->expectException(PduDepthException::class);
+
+        $this->subject->decode($this->subject->encode($type));
     }
 
     public function test_it_should_decode_long_definite_length_when_the_length_is_the_exact_size_of_the_payload(): void
