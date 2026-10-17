@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -29,6 +30,11 @@ abstract class AbstractStringType extends AbstractType
         $this->value = $value;
     }
 
+    public function __toString(): string
+    {
+        return $this->getValue();
+    }
+
     public function getValue(): string
     {
         return $this->value;
@@ -42,11 +48,6 @@ abstract class AbstractStringType extends AbstractType
         $this->value = $value;
 
         return $this;
-    }
-
-    public function __toString(): string
-    {
-        return $this->getValue();
     }
 
     public function isCharacterRestricted(): bool

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -47,9 +48,8 @@ class RealType extends AbstractType
     public static function withTag(
         $tagNumber,
         int $class,
-        float $value
-    ): self
-    {
+        float $value,
+    ): self {
         $type = new self($value);
         $type->tagNumber = $tagNumber;
         $type->taggingClass = $class;

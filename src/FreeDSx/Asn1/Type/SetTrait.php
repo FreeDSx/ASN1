@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -59,7 +60,7 @@ trait SetTrait
             $children[AbstractType::TAG_CLASS_UNIVERSAL],
             $children[AbstractType::TAG_CLASS_APPLICATION],
             $children[AbstractType::TAG_CLASS_CONTEXT_SPECIFIC],
-            $children[AbstractType::TAG_CLASS_PRIVATE]
+            $children[AbstractType::TAG_CLASS_PRIVATE],
         );
     }
 }

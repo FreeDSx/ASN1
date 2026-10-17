@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -26,8 +27,8 @@ use FreeDSx\Asn1\Type\SetType;
  */
 class DerEncoder extends BerEncoder
 {
-    use CerDerTrait,
-        SetTrait;
+    use CerDerTrait;
+    use SetTrait;
 
     protected bool $validatesDecodedTypes = true;
 

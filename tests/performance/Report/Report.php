@@ -28,14 +28,13 @@ final readonly class Report
     public function __construct(
         public array $meta,
         public array $workloads,
-    ) {
-    }
+    ) {}
 
     public function toJson(): string
     {
         $payload = [
             'meta' => $this->meta,
-            'workloads' => array_map(static fn (WorkloadResult $w): array => $w->toArray(), $this->workloads),
+            'workloads' => array_map(static fn(WorkloadResult $w): array => $w->toArray(), $this->workloads),
         ];
 
         $json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);

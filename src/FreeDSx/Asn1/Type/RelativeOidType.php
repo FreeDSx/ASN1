@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -26,6 +27,11 @@ class RelativeOidType extends AbstractType
         $this->value = $value;
     }
 
+    public function __toString(): string
+    {
+        return $this->getValue();
+    }
+
     /**
      * @return $this
      */
@@ -41,20 +47,14 @@ class RelativeOidType extends AbstractType
         return $this->value;
     }
 
-    public function __toString(): string
-    {
-        return $this->getValue();
-    }
-
     /**
      * @param int|string $tagNumber
      */
     public static function withTag(
         $tagNumber,
         int $class,
-        string $value
-    ): self
-    {
+        string $value,
+    ): self {
         $type = new self($value);
         $type->tagNumber = $tagNumber;
         $type->taggingClass = $class;

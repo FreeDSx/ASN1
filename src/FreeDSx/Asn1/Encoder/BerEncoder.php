@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -49,6 +50,7 @@ use FreeDSx\Asn1\Type\UtcTimeType;
 use FreeDSx\Asn1\Type\Utf8StringType;
 use FreeDSx\Asn1\Type\VideotexStringType;
 use FreeDSx\Asn1\Type\VisibleStringType;
+
 use function bin2hex;
 use function bindec;
 use function chr;
@@ -138,26 +140,6 @@ class BerEncoder implements EncoderInterface
     protected bool $validatesDecodedTypes = false;
 
     /**
-     * @var array<string, string> Dotted OID value => encoded bytes.
-     */
-    private static array $oidEncodeCache = [];
-
-    /**
-     * @var array<string, string> Encoded bytes => dotted OID value.
-     */
-    private static array $oidDecodeCache = [];
-
-    /**
-     * @var array<string, string> Dotted relative OID value => encoded bytes.
-     */
-    private static array $relativeOidEncodeCache = [];
-
-    /**
-     * @var array<string, string> Encoded bytes => dotted relative OID value.
-     */
-    private static array $relativeOidDecodeCache = [];
-
-    /**
      * @var int
      */
     protected $pos;
@@ -178,6 +160,26 @@ class BerEncoder implements EncoderInterface
     protected $binary;
 
     /**
+     * @var array<string, string> Dotted OID value => encoded bytes.
+     */
+    private static array $oidEncodeCache = [];
+
+    /**
+     * @var array<string, string> Encoded bytes => dotted OID value.
+     */
+    private static array $oidDecodeCache = [];
+
+    /**
+     * @var array<string, string> Dotted relative OID value => encoded bytes.
+     */
+    private static array $relativeOidEncodeCache = [];
+
+    /**
+     * @var array<string, string> Encoded bytes => dotted relative OID value.
+     */
+    private static array $relativeOidDecodeCache = [];
+
+    /**
      * The nesting level of the constructed type currently being decoded.
      */
     private int $depth = 0;
@@ -196,7 +198,7 @@ class BerEncoder implements EncoderInterface
      */
     public function decode(
         string $binary,
-        array $tagMap = []
+        array $tagMap = [],
     ): AbstractType {
         $this->startEncoding($binary, $tagMap);
         if ($this->maxLen === 0) {
@@ -408,7 +410,7 @@ class BerEncoder implements EncoderInterface
                 # It's possible we only got part of the VLQ for the high tag, as there is no way to know its ending length.
             } catch (EncoderException) {
                 throw new PartialPduException(
-                    'Not enough data to decode the high tag number. No ending byte encountered for the VLQ bytes.'
+                    'Not enough data to decode the high tag number. No ending byte encountered for the VLQ bytes.',
                 );
             }
         }
@@ -711,7 +713,7 @@ class BerEncoder implements EncoderInterface
 
         throw new EncoderException(sprintf(
             'The value to encode for "%s" must be numeric.',
-            $integer
+            $integer,
         ));
     }
 
@@ -767,21 +769,6 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @throws EncoderException
-     */
-    private function doEncodeRelativeOid(string $value): string
-    {
-        $oids = explode('.', $value);
-
-        $bytes = '';
-        foreach ($oids as $oid) {
-            $bytes .= $this->intToVlqBytes($oid);
-        }
-
-        return $bytes;
-    }
-
-    /**
      * @param OidType $type
      * @return string
      * @throws EncoderException
@@ -797,43 +784,6 @@ class BerEncoder implements EncoderInterface
         }
 
         return self::$oidEncodeCache[$value] = $this->doEncodeOid($value);
-    }
-
-    /**
-     * @throws EncoderException
-     */
-    private function doEncodeOid(string $value): string
-    {
-        /** @var int[] $oids */
-        $oids = explode('.', $value);
-        $length = count($oids);
-        if ($length < 2) {
-            throw new EncoderException(sprintf(
-                'To encode the OID it must have at least 2 components: %s',
-                $value
-            ));
-        }
-        if ($oids[0] > 2) {
-            throw new EncoderException(sprintf(
-                'The value of the first OID component cannot be greater than 2. Received:  %s',
-                $oids[0]
-            ));
-        }
-
-        # The first and second components of the OID are represented using the formula: (X * 40) + Y
-        if ($oids[1] > self::MAX_SECOND_COMPONENT) {
-            $this->throwIfBigIntGmpNeeded(true);
-            $firstAndSecond = gmp_strval(gmp_add((string)($oids[0] * 40), $oids[1]));
-        } else {
-            $firstAndSecond = ($oids[0] * 40) + $oids[1];
-        }
-        $bytes = $this->intToVlqBytes($firstAndSecond);
-
-        for ($i = 2; $i < $length; $i++) {
-            $bytes .= $this->intToVlqBytes($oids[$i]);
-        }
-
-        return $bytes;
     }
 
     /**
@@ -879,7 +829,7 @@ class BerEncoder implements EncoderInterface
             DateTime::createFromInterface($type->getValue()),
             $type->getDateTimeFormat(),
             $type->getTimeZoneFormat(),
-            $format
+            $format,
         );
     }
 
@@ -1065,9 +1015,7 @@ class BerEncoder implements EncoderInterface
      * @param array<int, string> $matches
      * @param array<string, int> $matchMap
      */
-    protected function validateDateFormat(array $matches, array $matchMap): void
-    {
-    }
+    protected function validateDateFormat(array $matches, array $matchMap): void {}
 
     /**
      * @param int $length
@@ -1102,7 +1050,7 @@ class BerEncoder implements EncoderInterface
             $this->throwIfBigIntGmpNeeded($isBigInt);
             # In this case, the first identifier is always 2.
             # But there is no limit on the value of the second identifier.
-            $oid = '2.' . ($isBigInt ? gmp_strval(gmp_sub($firstPart, '80')) : (int)$firstPart - 80);
+            $oid = '2.' . ($isBigInt ? gmp_strval(gmp_sub($firstPart, '80')) : (int) $firstPart - 80);
         }
 
         # We could potentially have nothing left to decode at this point.
@@ -1145,21 +1093,6 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * @throws EncoderException
-     */
-    private function decodeRelativeOidValue(int $length): string
-    {
-        $oid = '';
-        $endAt = $this->pos + $length;
-
-        while ($this->pos < $endAt) {
-            $oid .= ($oid === '' ? '' : '.') . $this->getVlqBytesToInt();
-        }
-
-        return $oid;
-    }
-
-    /**
      * @return bool
      */
     protected function decodeBoolean(): bool
@@ -1180,14 +1113,14 @@ class BerEncoder implements EncoderInterface
         if ($unused > 7) {
             throw new EncoderException(sprintf(
                 'The unused bits in a bit string must be between 0 and 7, got: %s',
-                $unused
+                $unused,
             ));
         }
         if ($unused > 0 && $length < 1) {
             throw new EncoderException(sprintf(
                 'If the bit string is empty the unused bits must be set to 0. However, it is set to %s with %s octets.',
                 $unused,
-                $length
+                $length,
             ));
         }
         $length--;
@@ -1242,41 +1175,6 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * Decodes an integer longer than a native int, which requires GMP when the value does not fit.
-     *
-     * @return string|int
-     * @throws EncoderException
-     */
-    private function decodeLongInteger(int $length)
-    {
-        $bytes = substr($this->binary, $this->pos, $length);
-        $this->pos += $length;
-
-        $isNegative = (ord($bytes[0]) & 0x80);
-        # Need to reverse Two's Complement. Invert the bits...
-        if ($isNegative) {
-            for ($i = 0; $i < $length; $i++) {
-                $bytes[$i] = ~$bytes[$i];
-            }
-        }
-        $int = hexdec(bin2hex($bytes));
-
-        $isBigInt = is_float($int);
-        $this->throwIfBigIntGmpNeeded($isBigInt);
-        if ($isBigInt) {
-            $int = gmp_import($bytes);
-        }
-        $bytes = null;
-
-        # Complete Two's Complement by adding 1 and turning it negative...
-        if ($isNegative) {
-            $int = $isBigInt ? gmp_neg(gmp_add($int, '1')) : ($int + 1) * -1;
-        }
-
-        return $isBigInt ? gmp_strval($int) : $int;
-    }
-
-    /**
      * @param bool $isBigInt
      * @throws EncoderException
      */
@@ -1285,7 +1183,7 @@ class BerEncoder implements EncoderInterface
         if ($isBigInt && !$this->isGmpAvailable) {
             throw new EncoderException(sprintf(
                 'An integer higher than PHP_INT_MAX int (%s) was encountered and the GMP extension is not loaded.',
-                PHP_INT_MAX
+                PHP_INT_MAX,
             ));
         }
     }
@@ -1534,7 +1432,107 @@ class BerEncoder implements EncoderInterface
      *
      * @throws EncoderException
      */
-    protected function validateDecodedType(AbstractType $type): void
+    protected function validateDecodedType(AbstractType $type): void {}
+
+    /**
+     * @throws EncoderException
+     */
+    private function doEncodeRelativeOid(string $value): string
     {
+        $oids = explode('.', $value);
+
+        $bytes = '';
+        foreach ($oids as $oid) {
+            $bytes .= $this->intToVlqBytes($oid);
+        }
+
+        return $bytes;
+    }
+
+    /**
+     * @throws EncoderException
+     */
+    private function doEncodeOid(string $value): string
+    {
+        /** @var int[] $oids */
+        $oids = explode('.', $value);
+        $length = count($oids);
+        if ($length < 2) {
+            throw new EncoderException(sprintf(
+                'To encode the OID it must have at least 2 components: %s',
+                $value,
+            ));
+        }
+        if ($oids[0] > 2) {
+            throw new EncoderException(sprintf(
+                'The value of the first OID component cannot be greater than 2. Received:  %s',
+                $oids[0],
+            ));
+        }
+
+        # The first and second components of the OID are represented using the formula: (X * 40) + Y
+        if ($oids[1] > self::MAX_SECOND_COMPONENT) {
+            $this->throwIfBigIntGmpNeeded(true);
+            $firstAndSecond = gmp_strval(gmp_add((string) ($oids[0] * 40), $oids[1]));
+        } else {
+            $firstAndSecond = ($oids[0] * 40) + $oids[1];
+        }
+        $bytes = $this->intToVlqBytes($firstAndSecond);
+
+        for ($i = 2; $i < $length; $i++) {
+            $bytes .= $this->intToVlqBytes($oids[$i]);
+        }
+
+        return $bytes;
+    }
+
+    /**
+     * @throws EncoderException
+     */
+    private function decodeRelativeOidValue(int $length): string
+    {
+        $oid = '';
+        $endAt = $this->pos + $length;
+
+        while ($this->pos < $endAt) {
+            $oid .= ($oid === '' ? '' : '.') . $this->getVlqBytesToInt();
+        }
+
+        return $oid;
+    }
+
+    /**
+     * Decodes an integer longer than a native int, which requires GMP when the value does not fit.
+     *
+     * @return string|int
+     * @throws EncoderException
+     */
+    private function decodeLongInteger(int $length)
+    {
+        $bytes = substr($this->binary, $this->pos, $length);
+        $this->pos += $length;
+
+        $isNegative = (ord($bytes[0]) & 0x80);
+        # Need to reverse Two's Complement. Invert the bits...
+        if ($isNegative) {
+            for ($i = 0; $i < $length; $i++) {
+                $bytes[$i] = ~$bytes[$i];
+            }
+        }
+        $int = hexdec(bin2hex($bytes));
+
+        $isBigInt = is_float($int);
+        $this->throwIfBigIntGmpNeeded($isBigInt);
+        if ($isBigInt) {
+            $int = gmp_import($bytes);
+        }
+        $bytes = null;
+
+        # Complete Two's Complement by adding 1 and turning it negative...
+        if ($isNegative) {
+            $int = $isBigInt ? gmp_neg(gmp_add($int, '1')) : ($int + 1) * -1;
+        }
+
+        return $isBigInt ? gmp_strval($int) : $int;
     }
 }

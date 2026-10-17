@@ -26,7 +26,7 @@ final class Comparator
      */
     public function compare(
         Report $baseline,
-        Report $head
+        Report $head,
     ): array {
         $names = array_unique(array_merge(
             array_keys($baseline->workloads),
@@ -66,7 +66,7 @@ final class Comparator
      */
     public function regressions(
         array $rows,
-        float $thresholdPct
+        float $thresholdPct,
     ): array {
         $out = [];
 

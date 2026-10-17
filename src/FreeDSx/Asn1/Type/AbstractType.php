@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -13,6 +14,7 @@ namespace FreeDSx\Asn1\Type;
 use ArrayIterator;
 use Countable;
 use IteratorAggregate;
+
 use function count;
 
 /**

@@ -24,8 +24,7 @@ final readonly class ComparisonRow
         public string          $workload,
         public ?WorkloadResult $baseline,
         public ?WorkloadResult $head,
-    ) {
-    }
+    ) {}
 
     public function isComplete(): bool
     {

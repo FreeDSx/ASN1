@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -47,9 +48,8 @@ class BooleanType extends AbstractType
     public static function withTag(
         $tagNumber,
         int $class,
-        bool $value
-    ): self
-    {
+        bool $value,
+    ): self {
         $type = new self($value);
         $type->taggingClass = $class;
         $type->tagNumber = $tagNumber;

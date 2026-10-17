@@ -18,6 +18,4 @@ namespace FreeDSx\Asn1\Exception;
  *
  * @author Chad Sikorra <Chad.Sikorra@gmail.com>
  */
-class PduDepthException extends EncoderException
-{
-}
+class PduDepthException extends EncoderException {}

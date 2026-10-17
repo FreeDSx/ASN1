@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -36,9 +37,8 @@ class NullType extends AbstractType
      */
     public static function withTag(
         $tagNumber,
-        int $class
-    ): self
-    {
+        int $class,
+    ): self {
         $type = new self();
         $type->tagNumber = $tagNumber;
         $type->taggingClass = $class;

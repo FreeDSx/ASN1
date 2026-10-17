@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -13,6 +14,7 @@ namespace FreeDSx\Asn1\Encoder;
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Type\AbstractTimeType;
 use FreeDSx\Asn1\Type\SetOfType;
+
 use function count;
 use function end;
 use function ord;
@@ -21,7 +23,6 @@ use function str_pad;
 use function strcmp;
 use function strlen;
 use function usort;
-
 
 /**
  * Common restrictions on CER and DER encoding.
@@ -38,7 +39,7 @@ trait CerDerTrait
         if ($unused && $length && ord($this->binary[$this->pos + ($length - 1)]) !== 0 && ((8 - $length) << ord($this->binary[$this->pos + ($length - 1)])) !== 0) {
             throw new EncoderException(sprintf(
                 'The last %s unused bits of the bit string must be 0, but they are not.',
-                $unused
+                $unused,
             ));
         }
 
@@ -63,7 +64,7 @@ trait CerDerTrait
      */
     protected function encodeTime(
         AbstractTimeType $type,
-        string $format
+        string $format,
     ): string {
         $this->validateTimeType($type);
 
@@ -97,14 +98,14 @@ trait CerDerTrait
         if ($type->getTimeZoneFormat() !== AbstractTimeType::TZ_UTC) {
             throw new EncoderException(sprintf(
                 'Time must end in a Z, but it does not. It is set to "%s".',
-                $type->getTimeZoneFormat()
+                $type->getTimeZoneFormat(),
             ));
         }
         $dtFormat = $type->getDateTimeFormat();
         if (!($dtFormat === AbstractTimeType::FORMAT_SECONDS || $dtFormat === AbstractTimeType::FORMAT_FRACTIONS)) {
             throw new EncoderException(sprintf(
                 'Time must be specified to the seconds, but it is specified to "%s".',
-                $dtFormat
+                $dtFormat,
             ));
         }
     }
@@ -162,7 +163,7 @@ trait CerDerTrait
         usort($children, function ($a, $b) use ($padding) {
             return strcmp(
                 str_pad($a['original'], $padding, "\x00"),
-                str_pad($b['original'], $padding, "\x00")
+                str_pad($b['original'], $padding, "\x00"),
             );
         });
 

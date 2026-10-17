@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the FreeDSx ASN1 package.
  *
@@ -47,9 +48,8 @@ class OidType extends AbstractType
     public static function withTag(
         $tagNumber,
         int $class,
-        string $value
-    ): self
-    {
+        string $value,
+    ): self {
         $type = new self($value);
         $type->tagNumber = $tagNumber;
         $type->taggingClass = $class;

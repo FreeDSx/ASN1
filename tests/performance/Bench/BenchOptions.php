@@ -24,6 +24,5 @@ final readonly class BenchOptions
         public int     $warmup = 2,
         public int     $samples = 7,
         public int     $revs = 3,
-    ) {
-    }
+    ) {}
 }

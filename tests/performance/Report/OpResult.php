@@ -26,15 +26,14 @@ final readonly class OpResult
         public int   $maxNs,
         public float $opsPerSec,
         public float $nsPerPayload,
-    ) {
-    }
+    ) {}
 
     /**
      * @param list<int> $samplesNs Per-sample wall-clock duration in nanoseconds.
      */
     public static function fromSamples(
         array $samplesNs,
-        int $payloadCount
+        int $payloadCount,
     ): self {
         sort($samplesNs);
         $count = count($samplesNs);

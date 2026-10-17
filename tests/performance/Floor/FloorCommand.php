@@ -61,7 +61,7 @@ final class FloorCommand extends Command
 
     protected function execute(
         InputInterface $input,
-        OutputInterface $output
+        OutputInterface $output,
     ): int {
         $floorPath = Cast::toString($input->getOption('floor'));
         $samples   = Cast::toInt($input->getOption('samples'), 7);
@@ -105,7 +105,7 @@ final class FloorCommand extends Command
     private function renderAndJudge(
         FloorReport $floor,
         Report $report,
-        OutputInterface $output
+        OutputInterface $output,
     ): int {
         $output->writeln(sprintf(
             '%-22s %-11s %12s %12s   %s',
