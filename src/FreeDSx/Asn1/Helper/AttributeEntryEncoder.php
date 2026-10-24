@@ -17,7 +17,11 @@ use FreeDSx\Asn1\Encoder\BerEncodingTrait;
 use FreeDSx\Asn1\Exception\EncoderException;
 
 use function chr;
+use function ltrim;
+use function ord;
+use function pack;
 use function strlen;
+use function substr;
 
 /**
  * A dedicated BER encoder for optimizing attribute encoding in LDAP. The object graph of this library can be slow on
@@ -31,6 +35,8 @@ use function strlen;
 final class AttributeEntryEncoder
 {
     use BerEncodingTrait;
+
+    private const INTEGER = "\x02";
 
     private const OCTET_STRING = "\x04";
 
@@ -48,7 +54,7 @@ final class AttributeEntryEncoder
      * @param iterable<array{0: string, 1: array<string>}> $attributes Each entry is [description, values].
      * @throws EncoderException
      */
-    public function encode(
+    public function encodeEntry(
         int $appTag,
         string $primaryId,
         iterable $attributes,
@@ -77,6 +83,7 @@ final class AttributeEntryEncoder
                 . $attribute;
         }
 
+        // this is intentionally left duplicated for performance reasons.
         $primaryIdLength = strlen($primaryId);
         $attributeListLength = strlen($attributeList);
         $body = self::OCTET_STRING
@@ -91,5 +98,85 @@ final class AttributeEntryEncoder
         return chr($this->applicationTag($appTag))
             . ($bodyLength < 128 ? chr($bodyLength) : $this->encodeLongDefiniteLength($bodyLength))
             . $body;
+    }
+
+    /**
+     * Encodes the LDAPMessage of a message ID and the tagged attribute entry without controls.
+     *
+     * @param iterable<array{0: string, 1: array<string>}> $attributes Each entry is [description, values].
+     * @throws EncoderException
+     */
+    public function encodeMessage(
+        int $messageId,
+        int $appTag,
+        string $primaryId,
+        iterable $attributes,
+    ): string {
+        $id = $this->integerOctets($messageId);
+        $body = self::INTEGER
+            . chr(strlen($id))
+            . $id
+            . $this->encodeEntry(
+                $appTag,
+                $primaryId,
+                $attributes,
+            );
+        $bodyLength = strlen($body);
+
+        return self::SEQUENCE
+            . ($bodyLength < 128 ? chr($bodyLength) : $this->encodeLongDefiniteLength($bodyLength))
+            . $body;
+    }
+
+    /**
+     * The fewest two's complement octets holding the integer, as the type graph encodes it.
+     */
+    private function integerOctets(int $int): string
+    {
+        if ($int >= -0x80 && $int < 0x80) {
+            return chr($int & 0xff);
+        }
+        if ($int >= -0x8000 && $int < 0x8000) {
+            return pack(
+                'n',
+                $int,
+            );
+        }
+        if ($int >= -0x800000 && $int < 0x800000) {
+            return substr(
+                pack(
+                    'N',
+                    $int,
+                ),
+                1,
+            );
+        }
+        if ($int >= -0x80000000 && $int < 0x80000000) {
+            return pack(
+                'N',
+                $int,
+            );
+        }
+
+        return $this->wideIntegerOctets($int);
+    }
+
+    /**
+     * The fewest two's complement octets holding an integer wider than 32 bits.
+     */
+    private function wideIntegerOctets(int $int): string
+    {
+        $sign = $int < 0 ? "\xff" : "\x00";
+        $octets = ltrim(
+            pack(
+                'J',
+                $int,
+            ),
+            $sign,
+        );
+
+        return (ord($octets[0]) & 0x80) === (ord($sign) & 0x80)
+            ? $octets
+            : $sign . $octets;
     }
 }
