@@ -38,7 +38,7 @@ final class AttributeEntryEncoderTest extends TestCase
 
     public function test_it_encodes_a_typical_entry_identically(): void
     {
-        $this->assertEncodesIdentically(
+        $this->assertEncodesEntryIdentically(
             'cn=seed-1,dc=foo,dc=bar',
             [
                 ['cn', ['seed-1']],
@@ -52,7 +52,7 @@ final class AttributeEntryEncoderTest extends TestCase
 
     public function test_it_encodes_an_entry_with_no_attributes_identically(): void
     {
-        $this->assertEncodesIdentically(
+        $this->assertEncodesEntryIdentically(
             'dc=foo,dc=bar',
             [],
         );
@@ -60,7 +60,7 @@ final class AttributeEntryEncoderTest extends TestCase
 
     public function test_it_encodes_an_attribute_with_no_values_identically(): void
     {
-        $this->assertEncodesIdentically(
+        $this->assertEncodesEntryIdentically(
             'cn=empty,dc=foo,dc=bar',
             [['cn', []]],
         );
@@ -68,7 +68,7 @@ final class AttributeEntryEncoderTest extends TestCase
 
     public function test_it_encodes_multivalued_and_unicode_values_identically(): void
     {
-        $this->assertEncodesIdentically(
+        $this->assertEncodesEntryIdentically(
             'cn=Iván,dc=foo,dc=bar',
             [
                 ['member', ['cn=a,dc=foo', 'cn=b,dc=foo', 'cn=c,dc=foo']],
@@ -85,7 +85,7 @@ final class AttributeEntryEncoderTest extends TestCase
             $attributes[] = ["attr-{$i}", ["value-{$i}"]];
         }
 
-        $this->assertEncodesIdentically(
+        $this->assertEncodesEntryIdentically(
             'cn=wide,dc=foo,dc=bar',
             $attributes,
         );
@@ -94,7 +94,7 @@ final class AttributeEntryEncoderTest extends TestCase
     #[DataProvider('lengthBoundaryProvider')]
     public function test_it_encodes_values_across_length_boundaries_identically(int $length): void
     {
-        $this->assertEncodesIdentically(
+        $this->assertEncodesEntryIdentically(
             'cn=boundary,dc=foo,dc=bar',
             [
                 [str_repeat('d', $length), [str_repeat('v', $length)]],
@@ -121,17 +121,101 @@ final class AttributeEntryEncoderTest extends TestCase
     {
         $this->expectException(EncoderException::class);
 
-        $this->subject->encode(31, 'cn=x', []);
+        $this->subject->encodeEntry(
+            31,
+            'cn=x',
+            [],
+        );
+    }
+
+    #[DataProvider('messageIdProvider')]
+    public function test_it_encodes_a_message_identically_for_any_message_id(int $messageId): void
+    {
+        $this->assertEncodesMessageIdentically(
+            $messageId,
+            [['cn', ['foo']]],
+        );
+    }
+
+    public function test_it_encodes_a_message_with_a_long_form_length_identically(): void
+    {
+        $attributes = [];
+        for ($i = 0; $i < 60; $i++) {
+            $attributes[] = ["attr-{$i}", ["value-{$i}"]];
+        }
+
+        $this->assertEncodesMessageIdentically(
+            7,
+            $attributes,
+        );
+    }
+
+    /**
+     * @return array<string, array{int}>
+     */
+    public static function messageIdProvider(): array
+    {
+        return [
+            'zero' => [0],
+            'one octet at its limit' => [127],
+            'two octets with a leading zero' => [128],
+            'two octets at their limit' => [32767],
+            'three octets' => [32768],
+            'three octets at their limit' => [8388607],
+            'four octets' => [8388608],
+            'four octets at the RFC 4511 maximum' => [2147483647],
+            'five octets' => [2147483648],
+            'the native maximum' => [PHP_INT_MAX],
+            'negative one' => [-1],
+            'one negative octet at its limit' => [-128],
+            'two negative octets' => [-129],
+            'two negative octets at their limit' => [-32768],
+            'three negative octets' => [-32769],
+            'three negative octets at their limit' => [-8388608],
+            'four negative octets' => [-8388609],
+            'four negative octets at their limit' => [-2147483648],
+            'five negative octets' => [-2147483649],
+            'the native minimum plus one' => [PHP_INT_MIN + 1],
+        ];
     }
 
     /**
      * @param list<array{0: string, 1: list<string>}> $attributes
      */
-    private function assertEncodesIdentically(string $primaryId, array $attributes): void
+    private function assertEncodesMessageIdentically(
+        int $messageId,
+        array $attributes,
+    ): void {
+        self::assertSame(
+            $this->encoder->encode(Asn1::sequence(
+                Asn1::integer($messageId),
+                $this->buildGraph(
+                    self::APP_TAG,
+                    'cn=foo,dc=foo,dc=bar',
+                    $attributes,
+                ),
+            )),
+            $this->subject->encodeMessage(
+                $messageId,
+                self::APP_TAG,
+                'cn=foo,dc=foo,dc=bar',
+                $attributes,
+            ),
+        );
+    }
+
+    /**
+     * @param list<array{0: string, 1: list<string>}> $attributes
+     */
+    private function assertEncodesEntryIdentically(string $primaryId, array $attributes): void
     {
         self::assertSame(
             $this->encoder->encode($this->buildGraph(self::APP_TAG, $primaryId, $attributes)),
-            $this->subject->encode(self::APP_TAG, $primaryId, $attributes),
+            $this->subject->encodeEntry(
+                self::APP_TAG,
+                $primaryId,
+                $attributes,
+            ),
         );
     }
 
