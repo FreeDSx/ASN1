@@ -20,6 +20,7 @@ use FreeDSx\Asn1\Encoder\EncoderOptions;
 use FreeDSx\Asn1\Encoders;
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\PduDepthException;
+use FreeDSx\Asn1\Exception\PduElementsException;
 use FreeDSx\Asn1\Exception\PduLengthException;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\BitStringType;
@@ -65,6 +66,15 @@ final class DerEncoderTest extends TestCase
         $this->expectException(PduDepthException::class);
 
         $subject->decode(hex2bin('300430023000'));
+    }
+
+    public function test_it_should_keep_the_max_elements_passed_to_the_constructor(): void
+    {
+        $subject = new DerEncoder(new EncoderOptions(maxElements: 2));
+
+        $this->expectException(PduElementsException::class);
+
+        $subject->decode(hex2bin('3006050005000500'));
     }
 
     public function test_it_should_force_zero_bitstring_padding_regardless_of_the_options_passed(): void

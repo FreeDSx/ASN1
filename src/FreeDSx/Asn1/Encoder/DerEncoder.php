@@ -39,6 +39,7 @@ class DerEncoder extends BerEncoder
             bitstringPadding: '0',
             maxLength: $options->maxLength,
             maxDepth: $options->maxDepth,
+            maxElements: $options->maxElements,
         ));
     }
 
