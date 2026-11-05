@@ -20,6 +20,7 @@ use FreeDSx\Asn1\Encoder\EncoderOptions;
 use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\PartialPduException;
 use FreeDSx\Asn1\Exception\PduDepthException;
+use FreeDSx\Asn1\Exception\PduElementsException;
 use FreeDSx\Asn1\Exception\PduLengthException;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\BitStringType;
@@ -82,6 +83,10 @@ final class BerEncoderTest extends TestCase
         self::assertSame(
             16,
             $this->subject->getOptions()->maxDepth,
+        );
+        self::assertSame(
+            0,
+            $this->subject->getOptions()->maxElements,
         );
     }
 
@@ -205,6 +210,88 @@ final class BerEncoderTest extends TestCase
         $this->expectException(PduDepthException::class);
 
         $this->subject->decode($this->subject->encode($type));
+    }
+
+    public function test_it_should_reject_a_pdu_holding_more_elements_than_the_max_elements(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxElements: 2));
+
+        $this->expectException(PduElementsException::class);
+        $this->expectExceptionMessage('The PDU holds more than the maximum allowed 2 elements.');
+
+        $subject->decode(hex2bin('3006050005000500'));
+    }
+
+    public function test_it_should_decode_a_pdu_holding_exactly_the_max_elements(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxElements: 3));
+
+        self::assertEquals(
+            new SequenceType(
+                new NullType(),
+                new NullType(),
+                new NullType(),
+            ),
+            $subject->decode(hex2bin('3006050005000500')),
+        );
+    }
+
+    public function test_it_should_count_elements_across_every_nesting_level(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxElements: 2));
+
+        $this->expectException(PduElementsException::class);
+
+        $subject->decode(hex2bin('3006300205000500'));
+    }
+
+    public function test_it_should_enforce_the_max_elements_when_completing_an_incomplete_type(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxElements: 2));
+
+        $this->expectException(PduElementsException::class);
+
+        $subject->complete(
+            new IncompleteType(
+                hex2bin('050005000500'),
+                0,
+                AbstractType::TAG_CLASS_CONTEXT_SPECIFIC,
+                true,
+            ),
+            AbstractType::TAG_TYPE_SEQUENCE,
+        );
+    }
+
+    public function test_it_should_count_the_elements_of_each_decode_afresh(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxElements: 2));
+        $subject->decode(hex2bin('300405000500'));
+
+        self::assertEquals(
+            new SequenceType(
+                new NullType(),
+                new NullType(),
+            ),
+            $subject->decode(hex2bin('300405000500')),
+        );
+    }
+
+    public function test_it_should_reset_the_element_count_after_a_rejected_decode(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxElements: 2));
+        try {
+            $subject->decode(hex2bin('3006050005000500'));
+            self::fail('Expected the decode to exceed the max elements.');
+        } catch (PduElementsException) {
+        }
+
+        self::assertEquals(
+            new SequenceType(
+                new NullType(),
+                new NullType(),
+            ),
+            $subject->decode(hex2bin('300405000500')),
+        );
     }
 
     public function test_it_should_decode_long_definite_length_when_the_length_is_the_exact_size_of_the_payload(): void

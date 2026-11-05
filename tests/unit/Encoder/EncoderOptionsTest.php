@@ -26,4 +26,12 @@ final class EncoderOptionsTest extends TestCase
 
         new EncoderOptions(maxDepth: 0);
     }
+
+    public function test_it_should_reject_negative_max_elements(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The max elements cannot be negative, but received -1.');
+
+        new EncoderOptions(maxElements: -1);
+    }
 }

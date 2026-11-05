@@ -17,6 +17,7 @@ use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\InvalidArgumentException;
 use FreeDSx\Asn1\Exception\PartialPduException;
 use FreeDSx\Asn1\Exception\PduDepthException;
+use FreeDSx\Asn1\Exception\PduElementsException;
 use FreeDSx\Asn1\Exception\PduLengthException;
 use FreeDSx\Asn1\Type\AbstractTimeType;
 use FreeDSx\Asn1\Type\AbstractType;
@@ -183,6 +184,11 @@ class BerEncoder implements EncoderInterface
      * The nesting level of the constructed type currently being decoded.
      */
     private int $depth = 0;
+
+    /**
+     * The elements the current decode may still hold, counted down across every level of constructed types.
+     */
+    private int $elementBudget = PHP_INT_MAX;
 
     public function __construct(protected EncoderOptions $options = new EncoderOptions())
     {
@@ -374,6 +380,9 @@ class BerEncoder implements EncoderInterface
         $this->lastPos = null;
         $this->pos = 0;
         $this->depth = 0;
+        $this->elementBudget = $this->options->maxElements === 0
+            ? PHP_INT_MAX
+            : $this->options->maxElements;
         $this->maxLen = strlen($this->binary);
     }
 
@@ -1255,6 +1264,7 @@ class BerEncoder implements EncoderInterface
      * @throws EncoderException
      * @throws PartialPduException
      * @throws PduDepthException
+     * @throws PduElementsException
      */
     protected function decodeConstructedType(int $length): array
     {
@@ -1268,12 +1278,21 @@ class BerEncoder implements EncoderInterface
         $binary = (string) $this->binary;
         $tagMap = $this->tmpTagMap;
         $validate = $this->validatesDecodedTypes;
+        # Counted in a local for speed and handed to each nested decode through the property.
+        $budget = $this->elementBudget;
         $pos = $this->pos;
         $endAt = $pos + $length;
         $children = [];
 
         # The most common types are decoded inline, as a method call per element is measurably slower on lots of data.
         while ($pos < $endAt) {
+            # Counted before the element is built, so a PDU of many small elements is refused before it fills memory.
+            if (--$budget < 0) {
+                throw new PduElementsException(sprintf(
+                    'The PDU holds more than the maximum allowed %d elements.',
+                    $this->options->maxElements,
+                ));
+            }
             $tag = ord($binary[$pos++]);
             $class = $tag & 0xc0;
             $isConstructed = ($tag & AbstractType::CONSTRUCTED_TYPE) !== 0;
@@ -1334,21 +1353,25 @@ class BerEncoder implements EncoderInterface
                         if (!$isConstructed) {
                             throw new EncoderException('The encoded sequence type is malformed.');
                         }
+                        $this->elementBudget = $budget;
                         $type = SequenceType::withTag(
                             $tagNumber,
                             $class,
                             $this->decodeConstructedType($length),
                         );
+                        $budget = $this->elementBudget;
                         break;
                     case AbstractType::TAG_TYPE_SET:
                         if (!$isConstructed) {
                             throw new EncoderException('The encoded set type is malformed.');
                         }
+                        $this->elementBudget = $budget;
                         $type = SetType::withTag(
                             $tagNumber,
                             $class,
                             $this->decodeConstructedType($length),
                         );
+                        $budget = $this->elementBudget;
                         break;
                     case AbstractType::TAG_TYPE_INTEGER:
                         if ($isConstructed) {
@@ -1402,6 +1425,7 @@ class BerEncoder implements EncoderInterface
                         );
                         break;
                     default:
+                        $this->elementBudget = $budget;
                         $type = $this->decodeContent(
                             $tagType,
                             $tagNumber,
@@ -1409,6 +1433,7 @@ class BerEncoder implements EncoderInterface
                             $isConstructed,
                             $length,
                         );
+                        $budget = $this->elementBudget;
                 }
             }
             if ($validate) {
@@ -1419,6 +1444,7 @@ class BerEncoder implements EncoderInterface
             # The element's declared length is authoritative, regardless of how much a content decoder read.
             $pos += $length;
         }
+        $this->elementBudget = $budget;
         $this->pos = $pos;
         --$this->depth;
 
