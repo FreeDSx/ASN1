@@ -44,7 +44,6 @@ final class AttributeEntryDecoder
     /**
      * Decodes the message with the tagged attribute entry, or null when its shape needs the type graph instead.
      *
-     * @throws PartialPduException
      * @throws EncoderException
      */
     public function decode(
@@ -99,7 +98,6 @@ final class AttributeEntryDecoder
 
     /**
      * @throws EncoderException
-     * @throws PartialPduException
      */
     private function decodeMessage(
         string $bytes,
@@ -171,7 +169,6 @@ final class AttributeEntryDecoder
      * @return list<array{0: string, 1: list<string>}>
      *
      * @throws EncoderException
-     * @throws PartialPduException
      */
     private function decodeAttributes(
         string $bytes,
@@ -243,7 +240,6 @@ final class AttributeEntryDecoder
      * Reads the header of an element that must have the given tag and fit before the end offset, returning its length.
      *
      * @throws EncoderException
-     * @throws PartialPduException
      */
     private function expect(
         string $bytes,

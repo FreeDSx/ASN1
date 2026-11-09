@@ -47,7 +47,6 @@ trait BerEncodingTrait
      * Long-form definite-length decoding of the count of octets at the position, which the caller advances past.
      *
      * @throws EncoderException
-     * @throws PartialPduException
      */
     protected function decodeLongDefiniteLength(
         string $bytes,
