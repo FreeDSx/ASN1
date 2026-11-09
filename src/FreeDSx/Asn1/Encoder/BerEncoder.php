@@ -190,6 +190,16 @@ class BerEncoder implements EncoderInterface
      */
     private int $elementBudget = PHP_INT_MAX;
 
+    /**
+     * The element budget the current decode started with.
+     */
+    private int $elementStart = PHP_INT_MAX;
+
+    /**
+     * The elements the last successful decode or complete held.
+     */
+    private int $lastElementCount = 0;
+
     public function __construct(protected EncoderOptions $options = new EncoderOptions())
     {
         $this->isGmpAvailable = extension_loaded('gmp');
@@ -369,6 +379,14 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
+     * The elements held within the type the last successful decode or complete produced, not counting that type.
+     */
+    public function getLastElementCount(): int
+    {
+        return $this->lastElementCount;
+    }
+
+    /**
      * @param array<int, array<int, int>> $tagMap Tag class => (tag number => universal tag type).
      */
     protected function startEncoding(
@@ -383,6 +401,8 @@ class BerEncoder implements EncoderInterface
         $this->elementBudget = $this->options->maxElements === 0
             ? PHP_INT_MAX
             : $this->options->maxElements;
+        $this->elementStart = $this->elementBudget;
+        $this->lastElementCount = 0;
         $this->maxLen = strlen($this->binary);
     }
 
@@ -393,6 +413,7 @@ class BerEncoder implements EncoderInterface
         $this->maxLen = 0;
         $this->lastPos = $this->pos;
         $this->pos = 0;
+        $this->lastElementCount = $this->elementStart - $this->elementBudget;
     }
 
     /**
