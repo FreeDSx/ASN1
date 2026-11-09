@@ -294,6 +294,119 @@ final class BerEncoderTest extends TestCase
         );
     }
 
+    public function test_it_should_report_the_elements_the_last_decode_held(): void
+    {
+        $this->subject->decode(hex2bin('3006050005000500'));
+
+        self::assertSame(
+            3,
+            $this->subject->getLastElementCount(),
+        );
+    }
+
+    public function test_it_should_report_the_elements_of_every_nesting_level(): void
+    {
+        $this->subject->decode(hex2bin('3006300205000500'));
+
+        self::assertSame(
+            3,
+            $this->subject->getLastElementCount(),
+        );
+    }
+
+    public function test_it_should_report_an_incomplete_type_as_one_element(): void
+    {
+        $this->subject->decode(hex2bin('3006a00405000500'));
+
+        self::assertSame(
+            1,
+            $this->subject->getLastElementCount(),
+        );
+    }
+
+    public function test_it_should_report_no_elements_for_a_primitive_root(): void
+    {
+        $this->subject->decode(hex2bin('0500'));
+
+        self::assertSame(
+            0,
+            $this->subject->getLastElementCount(),
+        );
+    }
+
+    public function test_it_should_report_the_elements_a_completed_type_held(): void
+    {
+        $this->subject->complete(
+            new IncompleteType(
+                hex2bin('050005000500'),
+                0,
+                AbstractType::TAG_CLASS_CONTEXT_SPECIFIC,
+                true,
+            ),
+            AbstractType::TAG_TYPE_SEQUENCE,
+        );
+
+        self::assertSame(
+            3,
+            $this->subject->getLastElementCount(),
+        );
+    }
+
+    public function test_it_should_report_no_elements_for_a_completed_primitive(): void
+    {
+        $this->subject->complete(
+            new IncompleteType(
+                'foo',
+                0,
+                AbstractType::TAG_CLASS_CONTEXT_SPECIFIC,
+            ),
+            AbstractType::TAG_TYPE_OCTET_STRING,
+        );
+
+        self::assertSame(
+            0,
+            $this->subject->getLastElementCount(),
+        );
+    }
+
+    public function test_it_should_report_the_elements_held_under_a_max_elements(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxElements: 3));
+        $subject->decode(hex2bin('3006050005000500'));
+
+        self::assertSame(
+            3,
+            $subject->getLastElementCount(),
+        );
+    }
+
+    public function test_it_should_report_no_elements_after_a_rejected_decode(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxElements: 2));
+        $subject->decode(hex2bin('300405000500'));
+        try {
+            $subject->decode(hex2bin('3006050005000500'));
+            self::fail('Expected the decode to exceed the max elements.');
+        } catch (PduElementsException) {
+        }
+
+        self::assertSame(
+            0,
+            $subject->getLastElementCount(),
+        );
+    }
+
+    public function test_it_should_keep_the_element_count_when_encoding(): void
+    {
+        $this->subject->decode(hex2bin('3006050005000500'));
+        $this->subject->encode(new SequenceType(new NullType()));
+
+        self::assertSame(
+            3,
+            $this->subject->getLastElementCount(),
+        );
+    }
+
     public function test_it_should_decode_long_definite_length_when_the_length_is_the_exact_size_of_the_payload(): void
     {
         $tagAndLength = hex2bin('3084000000350201');

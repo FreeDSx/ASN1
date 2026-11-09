@@ -77,6 +77,16 @@ final class DerEncoderTest extends TestCase
         $subject->decode(hex2bin('3006050005000500'));
     }
 
+    public function test_it_should_report_the_elements_the_last_decode_held(): void
+    {
+        $this->subject->decode(hex2bin('3006050005000500'));
+
+        self::assertSame(
+            3,
+            $this->subject->getLastElementCount(),
+        );
+    }
+
     public function test_it_should_force_zero_bitstring_padding_regardless_of_the_options_passed(): void
     {
         $subject = new DerEncoder(new EncoderOptions(bitstringPadding: '1'));
