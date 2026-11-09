@@ -210,7 +210,7 @@ class BerEncoder implements EncoderInterface
      *
      * @return AbstractType<mixed>
      *
-     * @throws PduLengthException
+     * @throws EncoderException
      */
     public function decode(
         string $binary,
@@ -422,8 +422,6 @@ class BerEncoder implements EncoderInterface
      * @return AbstractType<mixed>
      *
      * @throws EncoderException
-     * @throws PartialPduException
-     * @throws PduLengthException
      */
     protected function decodeRoot(): AbstractType
     {
@@ -507,7 +505,6 @@ class BerEncoder implements EncoderInterface
      * @return AbstractType<mixed>
      *
      * @throws EncoderException
-     * @throws PartialPduException
      */
     protected function decodeContent(
         int|string $tagType,
@@ -1283,9 +1280,6 @@ class BerEncoder implements EncoderInterface
      * @return list<AbstractType<mixed>>
      *
      * @throws EncoderException
-     * @throws PartialPduException
-     * @throws PduDepthException
-     * @throws PduElementsException
      */
     protected function decodeConstructedType(int $length): array
     {

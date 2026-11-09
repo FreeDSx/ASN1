@@ -12,8 +12,6 @@
 namespace FreeDSx\Asn1\Encoder;
 
 use FreeDSx\Asn1\Exception\EncoderException;
-use FreeDSx\Asn1\Exception\PartialPduException;
-use FreeDSx\Asn1\Exception\PduLengthException;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\IncompleteType;
 
@@ -52,8 +50,6 @@ interface EncoderInterface
      * @return AbstractType<mixed>
      *
      * @throws EncoderException
-     * @throws PartialPduException
-     * @throws PduLengthException
      */
     public function decode(
         string $binary,
