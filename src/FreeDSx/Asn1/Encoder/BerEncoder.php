@@ -211,6 +211,7 @@ class BerEncoder implements EncoderInterface
      * @return AbstractType<mixed>
      *
      * @throws EncoderException
+     * @throws InvalidArgumentException
      */
     public function decode(
         string $binary,
@@ -440,6 +441,10 @@ class BerEncoder implements EncoderInterface
                 throw new PartialPduException(
                     'Not enough data to decode the high tag number. No ending byte encountered for the VLQ bytes.',
                 );
+            }
+            # The high tag number can use up every byte received so far, leaving none for the length.
+            if ($this->pos >= $this->maxLen) {
+                throw new PartialPduException('Not enough data to decode the length.');
             }
         }
 
@@ -1065,6 +1070,10 @@ class BerEncoder implements EncoderInterface
 
             return self::$oidDecodeCache[$bytes];
         }
+        # An OID must end on a byte with bit 8 clear (X.690 8.19.2), which every cached one already does.
+        if ((ord($bytes[-1]) & 0x80) !== 0) {
+            throw new EncoderException('The encoded OID is malformed. Its last subidentifier has no ending byte.');
+        }
 
         # We need to get the first part here, as it's used to determine the first 2 components.
         $startedAt = $this->pos;
@@ -1112,6 +1121,12 @@ class BerEncoder implements EncoderInterface
 
             return self::$relativeOidDecodeCache[$bytes];
         }
+        # A relative OID must end on a byte with bit 8 clear (X.690 8.20.2), which every cached one already does.
+        if ((ord($bytes[-1]) & 0x80) !== 0) {
+            throw new EncoderException(
+                'The encoded relative OID is malformed. Its last subidentifier has no ending byte.',
+            );
+        }
         if (count(self::$relativeOidDecodeCache) >= self::OID_CACHE_MAX) {
             unset(self::$relativeOidDecodeCache[array_key_first(self::$relativeOidDecodeCache)]);
         }
@@ -1134,6 +1149,10 @@ class BerEncoder implements EncoderInterface
      */
     protected function decodeBitString($length): string
     {
+        # X.690 8.6.2 always starts the contents with the octet counting the unused bits.
+        if ($length < 1) {
+            throw new EncoderException('The encoded bit string is malformed. It has no unused bits octet.');
+        }
         # The first byte represents the number of unused bits at the end.
         $unused = ord($this->binary[$this->pos++]);
 
@@ -1143,11 +1162,11 @@ class BerEncoder implements EncoderInterface
                 $unused,
             ));
         }
-        if ($unused > 0 && $length < 1) {
+        # X.690 8.6.2.3: an empty bit string is the unused bits octet alone, set to zero.
+        if ($unused > 0 && $length === 1) {
             throw new EncoderException(sprintf(
-                'If the bit string is empty the unused bits must be set to 0. However, it is set to %s with %s octets.',
+                'If the bit string is empty the unused bits must be set to 0. However, it is set to %s.',
                 $unused,
-                $length,
             ));
         }
         $length--;

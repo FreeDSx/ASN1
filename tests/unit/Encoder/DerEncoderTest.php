@@ -113,6 +113,14 @@ final class DerEncoderTest extends TestCase
         );
     }
 
+    public function test_it_should_not_allow_a_bit_string_without_its_unused_bits_octet(): void
+    {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage('The encoded bit string is malformed. It has no unused bits octet.');
+
+        $this->subject->decode(hex2bin('300403000400'));
+    }
+
     public function test_it_should_only_allow_0_or_255_for_a_bool_when_decoding(): void
     {
         $this->expectException(EncoderException::class);
