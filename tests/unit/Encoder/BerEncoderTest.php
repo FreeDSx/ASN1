@@ -127,6 +127,14 @@ final class BerEncoderTest extends TestCase
         $this->subject->decode(hex2bin('3084000000c8'));
     }
 
+    public function test_it_should_treat_a_high_tag_number_without_a_length_as_partial(): void
+    {
+        $this->expectException(PartialPduException::class);
+        $this->expectExceptionMessage('Not enough data to decode the length.');
+
+        $this->subject->decode(hex2bin('1f8101'));
+    }
+
     public function test_it_should_reject_constructed_types_nested_beyond_the_max_depth(): void
     {
         $subject = new BerEncoder(new EncoderOptions(maxDepth: 2));
@@ -1015,6 +1023,36 @@ final class BerEncoderTest extends TestCase
         );
     }
 
+    #[DataProvider('bitStringsWithoutUnusedBitsOctet')]
+    public function test_it_should_not_allow_a_bit_string_without_its_unused_bits_octet(string $hex): void
+    {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage('The encoded bit string is malformed. It has no unused bits octet.');
+
+        $this->subject->decode(hex2bin($hex));
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function bitStringsWithoutUnusedBitsOctet(): array
+    {
+        return [
+            'at the end of the data' => ['0300'],
+            'followed by another element' => ['300403000400'],
+        ];
+    }
+
+    public function test_it_should_not_allow_unused_bits_in_an_empty_bit_string(): void
+    {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage(
+            'If the bit string is empty the unused bits must be set to 0. However, it is set to 5.',
+        );
+
+        $this->subject->decode(hex2bin('030105'));
+    }
+
     public function test_it_should_decode_an_oid_with_a_bigint(): void
     {
         if (!extension_loaded('gmp')) {
@@ -1691,6 +1729,34 @@ final class BerEncoderTest extends TestCase
             new RelativeOidType('268435455'),
             $this->subject->decode(hex2bin('0d04ffffff7f')),
         );
+    }
+
+    #[DataProvider('oidsEndingInsideASubidentifier')]
+    public function test_it_should_not_allow_an_oid_whose_last_subidentifier_has_no_ending_byte(
+        string $hex,
+        string $message,
+    ): void {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage($message);
+
+        $this->subject->decode(hex2bin($hex));
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function oidsEndingInsideASubidentifier(): array
+    {
+        $oid = 'The encoded OID is malformed. Its last subidentifier has no ending byte.';
+        $relativeOid = 'The encoded relative OID is malformed. Its last subidentifier has no ending byte.';
+
+        return [
+            'an oid followed by more data' => ['06018104', $oid],
+            'an oid followed by another element' => ['30050601810400', $oid],
+            'an oid ending inside a later subidentifier' => ['3006060229810400', $oid],
+            'a relative oid followed by more data' => ['0d018104', $relativeOid],
+            'a relative oid followed by another element' => ['30050d01810400', $relativeOid],
+        ];
     }
 
     public function test_it_should_decode_a_relative_oid_with_a_bigint_value(): void
