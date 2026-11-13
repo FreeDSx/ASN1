@@ -1848,6 +1848,52 @@ final class BerEncoderTest extends TestCase
         $this->subject->decode(hex2bin('048301ff'));
     }
 
+    /**
+     * @return iterable<string, array{string, int}>
+     */
+    public static function partialPduProvider(): iterable
+    {
+        yield 'short form length' => ['30050401', 7];
+        yield 'long form length' => ['3084000000c8', 206];
+    }
+
+    #[DataProvider('partialPduProvider')]
+    public function test_a_partial_pdu_reports_the_bytes_of_the_whole_pdu(
+        string $hex,
+        int $pduLength,
+    ): void {
+        try {
+            $this->subject->decode((string) hex2bin($hex));
+            self::fail('The PDU should have been partial.');
+        } catch (PartialPduException $e) {
+            self::assertSame(
+                $pduLength,
+                $e->getPduLength(),
+            );
+        }
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function partialLengthProvider(): iterable
+    {
+        yield 'only the tag' => ['30'];
+        yield 'part of a long form length' => ['048301ff'];
+        yield 'a high tag number without a length' => ['1f8101'];
+    }
+
+    #[DataProvider('partialLengthProvider')]
+    public function test_a_partial_pdu_whose_length_has_not_arrived_reports_no_length(string $hex): void
+    {
+        try {
+            $this->subject->decode((string) hex2bin($hex));
+            self::fail('The PDU should have been partial.');
+        } catch (PartialPduException $e) {
+            self::assertNull($e->getPduLength());
+        }
+    }
+
     public function test_it_should_not_throw_a_partial_pdu_exception_when_data_is_complete(): void
     {
         $result = $this->subject->decode(

@@ -72,11 +72,14 @@ final class AttributeEntryDecoder
             $pos += $count;
         }
         if ($length > $received - $pos) {
-            throw new PartialPduException(sprintf(
-                'The expected byte length was %d, but received %d.',
-                $length,
-                $received - $pos,
-            ));
+            throw new PartialPduException(
+                sprintf(
+                    'The expected byte length was %d, but received %d.',
+                    $length,
+                    $received - $pos,
+                ),
+                pduLength: $pos + $length,
+            );
         }
 
         # The message is fully received, so running out of data within it means it is malformed.

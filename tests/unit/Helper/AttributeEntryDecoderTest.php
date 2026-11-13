@@ -336,6 +336,33 @@ final class AttributeEntryDecoderTest extends TestCase
         );
     }
 
+    public function test_a_partial_message_reports_the_bytes_of_the_whole_message(): void
+    {
+        $bytes = $this->encodeMessage(
+            1,
+            self::APP_TAG,
+            'cn=partial,dc=foo,dc=bar',
+            [['cn', ['partial']]],
+        );
+
+        try {
+            $this->subject->decode(
+                substr(
+                    $bytes,
+                    0,
+                    10,
+                ),
+                self::APP_TAG,
+            );
+            self::fail('The message should have been partial.');
+        } catch (PartialPduException $e) {
+            self::assertSame(
+                strlen($bytes),
+                $e->getPduLength(),
+            );
+        }
+    }
+
     public function test_it_throws_an_encoder_exception_when_a_value_is_not_an_octet_string(): void
     {
         $bytes = $this->encoder->encode(Asn1::sequence(
