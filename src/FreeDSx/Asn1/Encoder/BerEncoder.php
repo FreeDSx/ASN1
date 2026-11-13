@@ -470,11 +470,14 @@ class BerEncoder implements EncoderInterface
         }
 
         if (($this->maxLen - $this->pos) < $length) {
-            throw new PartialPduException(sprintf(
-                'The expected byte length was %s, but received %s.',
-                $length,
-                ($this->maxLen - $this->pos),
-            ));
+            throw new PartialPduException(
+                sprintf(
+                    'The expected byte length was %s, but received %s.',
+                    $length,
+                    ($this->maxLen - $this->pos),
+                ),
+                pduLength: $this->pos + $length,
+            );
         }
 
         $tagType = ($class === AbstractType::TAG_CLASS_UNIVERSAL)
