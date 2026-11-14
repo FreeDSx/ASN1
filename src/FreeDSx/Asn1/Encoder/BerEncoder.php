@@ -653,33 +653,23 @@ class BerEncoder implements EncoderInterface
     protected function getVlqBytesToInt()
     {
         $value = 0;
-        $lshift = 0;
         $isBigInt = false;
         $binary = (string) $this->binary;
         $pos = $this->pos;
         $maxLen = $this->maxLen;
 
         for (; $pos < $maxLen; $pos++) {
-            if (!$isBigInt) {
-                $lshift = $value << 7;
-                # An overflow bitshift will result in a negative number or zero.
-                # This will check if GMP is available and flip it to a bigint safe method in one shot.
-                if ($value > 0 && $lshift <= 0) {
-                    $isBigInt = true;
-                    $this->throwIfBigIntGmpNeeded(true);
-                    $value = gmp_init($value);
-                }
-            }
-            if ($isBigInt) {
-                $lshift = gmp_mul($value, gmp_pow('2', 7));
+            # A number that would pass PHP_INT_MAX when shifted moves to GMP before the shift.
+            if (!$isBigInt && $value > (PHP_INT_MAX >> 7)) {
+                $isBigInt = true;
+                $this->throwIfBigIntGmpNeeded(true);
+                $value = gmp_init($value);
             }
             $byte = ord($binary[$pos]);
             $orVal = $byte & 0x7f;
-            if ($isBigInt) {
-                $value = gmp_or($lshift, gmp_init($orVal));
-            } else {
-                $value = $lshift | $orVal;
-            }
+            $value = $isBigInt
+                ? gmp_or(gmp_mul($value, gmp_pow('2', 7)), gmp_init($orVal))
+                : ($value << 7) | $orVal;
             # We have reached the last byte if the MSB is not set.
             if (($byte & 0x80) === 0) {
                 $this->pos = $pos + 1;

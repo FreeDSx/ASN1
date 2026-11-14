@@ -1078,6 +1078,30 @@ final class BerEncoderTest extends TestCase
         );
     }
 
+    public function test_it_should_decode_an_oid_component_larger_than_a_native_int_to_its_full_value(): void
+    {
+        if (!extension_loaded('gmp')) {
+            self::markTestSkipped('The GMP extension must be loaded for bigint tests.');
+        }
+
+        self::assertEquals(
+            new OidType('1.3.6.1.4.1.18446744073709551744'),
+            $this->subject->decode((string) hex2bin('060f2b0601040182808080808080808100')),
+        );
+    }
+
+    public function test_it_should_decode_a_second_oid_component_larger_than_a_native_int_to_its_full_value(): void
+    {
+        if (!extension_loaded('gmp')) {
+            self::markTestSkipped('The GMP extension must be loaded for bigint tests.');
+        }
+
+        self::assertEquals(
+            new OidType('2.18446744073709551744'),
+            $this->subject->decode((string) hex2bin('060a82808080808080808150')),
+        );
+    }
+
     public function test_it_should_decode_an_oid(): void
     {
         self::assertEquals(
@@ -1772,6 +1796,18 @@ final class BerEncoderTest extends TestCase
         );
     }
 
+    public function test_it_should_decode_a_relative_oid_value_larger_than_a_native_int_to_its_full_value(): void
+    {
+        if (!extension_loaded('gmp')) {
+            self::markTestSkipped('The GMP extension must be loaded for bigint tests.');
+        }
+
+        self::assertEquals(
+            new RelativeOidType('18446744073709551744'),
+            $this->subject->decode((string) hex2bin('0d0a82808080808080808100')),
+        );
+    }
+
     public function test_it_should_decode_an_unknown_type(): void
     {
         $incompleteType = new IncompleteType(
@@ -1971,6 +2007,25 @@ final class BerEncoderTest extends TestCase
                 false,
             ),
             $subject->decode(hex2bin('5f81ffffffffffffffff7f0101')),
+        );
+    }
+
+    public function test_it_should_decode_a_tag_number_larger_than_a_native_int_to_its_full_value(): void
+    {
+        if (!extension_loaded('gmp')) {
+            self::markTestSkipped('The GMP extension must be loaded for bigint tests.');
+        }
+
+        $subject = new BerEncoder(new EncoderOptions(maxTagNumber: 0));
+
+        self::assertEquals(
+            new IncompleteType(
+                '',
+                '18446744073709551744',
+                AbstractType::TAG_CLASS_APPLICATION,
+                false,
+            ),
+            $subject->decode((string) hex2bin('5f8280808080808080810000')),
         );
     }
 
