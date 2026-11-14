@@ -2162,6 +2162,112 @@ final class BerEncoderTest extends TestCase
         }
     }
 
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function childLengthNotSupportedProvider(): iterable
+    {
+        yield 'a reserved length' => [
+            '300204ff',
+            'The decoded length cannot be equal to 127 bytes.',
+        ];
+        yield 'a length in too many octets' => [
+            '30020488',
+            'A length encoded in 8 octets is not supported.',
+        ];
+    }
+
+    #[DataProvider('childLengthNotSupportedProvider')]
+    public function test_it_should_name_why_a_child_length_is_refused_before_whether_it_fits_its_parent(
+        string $hex,
+        string $message,
+    ): void {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage($message);
+
+        $this->subject->decode((string) hex2bin($hex));
+    }
+
+    public function test_it_should_refuse_a_tag_number_that_never_ends_by_default(): void
+    {
+        $this->expectException(PduTagNumberException::class);
+
+        $this->subject->decode((string) hex2bin('5f' . str_repeat('81', 9)));
+    }
+
+    public function test_without_a_max_tag_number_a_root_tag_still_arriving_is_partial(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxTagNumber: 0));
+
+        $this->expectException(PartialPduException::class);
+
+        $subject->decode((string) hex2bin('5f8181'));
+    }
+
+    public function test_without_a_max_tag_number_a_child_tag_that_never_ends_is_malformed(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxTagNumber: 0));
+
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage('Not enough data to decode the tag number of the element.');
+
+        $subject->decode((string) hex2bin('30035f8181'));
+    }
+
+    public function test_without_a_max_tag_number_a_root_tag_within_the_max_length_is_partial(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(
+            maxLength: 100,
+            maxTagNumber: 0,
+        ));
+
+        $this->expectException(PartialPduException::class);
+
+        $subject->decode((string) hex2bin('5f' . str_repeat('81', 100)));
+    }
+
+    public function test_without_a_max_tag_number_a_root_tag_past_the_max_length_is_refused(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(
+            maxLength: 100,
+            maxTagNumber: 0,
+        ));
+
+        $this->expectException(PduLengthException::class);
+        $this->expectExceptionMessage('The PDU tag alone exceeds the maximum allowed length of 100.');
+
+        $subject->decode((string) hex2bin('5f' . str_repeat('81', 101)));
+    }
+
+    public function test_it_should_decode_a_three_octet_tag_number_at_the_maximum_allowed(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxTagNumber: 16_384));
+
+        self::assertSame(
+            16_384,
+            $subject->decode((string) hex2bin('5f8180000101'))->getTagNumber(),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function threeOctetTagNumberPastTheMaximumProvider(): iterable
+    {
+        yield 'one past the maximum' => ['5f8180010101'];
+        yield 'one that can only end past the maximum while still arriving' => ['5fff80'];
+    }
+
+    #[DataProvider('threeOctetTagNumberPastTheMaximumProvider')]
+    public function test_it_should_refuse_a_three_octet_tag_number_past_the_maximum_allowed(string $hex): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxTagNumber: 16_384));
+
+        $this->expectException(PduTagNumberException::class);
+
+        $subject->decode((string) hex2bin($hex));
+    }
+
     public function test_it_should_throw_when_a_child_overruns_its_parent(): void
     {
         $this->expectException(EncoderException::class);

@@ -26,7 +26,7 @@ final readonly class EncoderOptions
      * @param int $maxLength Reject a root PDU whose declared length exceeds this many bytes; 0 disables the limit.
      * @param int $maxDepth Reject constructed types nested deeper than this many levels within a single decode.
      * @param int $maxElements Reject a single decode holding more than this many elements; 0 disables the limit.
-     * @param int $maxTagNumber Reject a tag numbered above this, at least 30; 0 allows any, using GMP past PHP_INT_MAX.
+     * @param int $maxTagNumber Reject a tag numbered above this, at least 30; 0 allows any tag up to $maxLength octets.
      *
      * @throws InvalidArgumentException
      */
@@ -51,7 +51,7 @@ final readonly class EncoderOptions
             ));
         }
 
-        # A lower maximum could not reject a tag numbered up to 30, which is always a single octet.
+        # Tags numbered up to 30 always use a single octet, where a lower maximum could not reach them.
         if ($maxTagNumber !== 0 && $maxTagNumber < 30) {
             throw new InvalidArgumentException(sprintf(
                 'The max tag number must be 0 or at least 30, but received %d.',
@@ -68,11 +68,11 @@ final readonly class EncoderOptions
     public function withBitstringPadding(string $bitstringPadding): self
     {
         return new self(
-            $bitstringPadding,
-            $this->maxLength,
-            $this->maxDepth,
-            $this->maxElements,
-            $this->maxTagNumber,
+            bitstringPadding: $bitstringPadding,
+            maxLength: $this->maxLength,
+            maxDepth: $this->maxDepth,
+            maxElements: $this->maxElements,
+            maxTagNumber: $this->maxTagNumber,
         );
     }
 }
