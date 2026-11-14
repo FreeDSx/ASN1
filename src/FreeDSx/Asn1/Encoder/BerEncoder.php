@@ -120,6 +120,9 @@ class BerEncoder implements EncoderInterface
      */
     private const OID_CACHE_MAX = 1024;
 
+    /**
+     * Why a root PDU is partial when its high tag number has not reached its last octet.
+     */
     private const TAG_NUMBER_NOT_ENDED
         = 'Not enough data to decode the high tag number. No ending byte encountered for the VLQ bytes.';
 
@@ -1334,7 +1337,7 @@ class BerEncoder implements EncoderInterface
 
             if ($tagNumber === 0x1f) {
                 $this->pos = $pos;
-                # The parent has fully arrived, so a tag running out within it is malformed rather than partial.
+                # A tag running out within a parent that has fully arrived is malformed rather than partial.
                 try {
                     $tagNumber = $this->decodeHighTagNumber($endAt);
                 } catch (PartialPduException $e) {
@@ -1352,16 +1355,20 @@ class BerEncoder implements EncoderInterface
             $length = ord($binary[$pos++]);
             if ($length > 127) {
                 $count = $length & 0x7f;
-                # The parent has fully arrived, so length octets running past it are malformed rather than partial.
-                if ($count > $endAt - $pos) {
-                    throw new EncoderException('Not enough data to decode the length of the element.');
+                # Length octets running past a parent that has fully arrived are malformed rather than partial.
+                try {
+                    $length = $this->decodeLongDefiniteLength(
+                        $binary,
+                        $pos,
+                        $endAt,
+                        $count,
+                    );
+                } catch (PartialPduException $e) {
+                    throw new EncoderException(
+                        'Not enough data to decode the length of the element.',
+                        previous: $e,
+                    );
                 }
-                $length = $this->decodeLongDefiniteLength(
-                    $binary,
-                    $pos,
-                    $endAt,
-                    $count,
-                );
                 $pos += $count;
             }
             if ($length > $endAt - $pos) {
@@ -1549,12 +1556,12 @@ class BerEncoder implements EncoderInterface
 
         for ($pos = $this->pos; $pos < $endAt; $pos++) {
             $octet = ord($binary[$pos]);
-            # Kept at or below the maximum shifted down, so shifting it back never passes PHP_INT_MAX.
+            # Shifting never passes PHP_INT_MAX for a number at most the maximum shifted down.
             $tagNumber = ($tagNumber << 7) | ($octet & 0x7f);
             $isLastOctet = ($octet & 0x80) === 0;
             # Any further octet multiplies it by at least 128.
             if ($tagNumber > ($isLastOctet ? $maxTagNumber : $maxTagNumber >> 7)) {
-                $this->refuseTagNumberPast($maxTagNumber);
+                $this->refuseTagNumber($maxTagNumber);
             }
             if ($isLastOctet) {
                 $this->pos = $pos + 1;
@@ -1567,16 +1574,24 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * Decodes a tag number of any size, which needs GMP past PHP_INT_MAX.
+     * Decodes a tag number of any size up to the max length, using GMP past PHP_INT_MAX.
      *
      * @throws PartialPduException
+     * @throws PduLengthException when the tag alone is longer than the max length.
      * @throws EncoderException
      */
     private function decodeUnboundedTagNumber(int $endAt): string|int
     {
         $binary = (string) $this->binary;
+        $maxLength = $this->options->maxLength;
 
         for ($pos = $this->pos; $pos < $endAt; $pos++) {
+            if ($maxLength > 0 && $pos - $this->pos >= $maxLength) {
+                throw new PduLengthException(sprintf(
+                    'The PDU tag alone exceeds the maximum allowed length of %d.',
+                    $maxLength,
+                ));
+            }
             if ((ord($binary[$pos]) & 0x80) === 0) {
                 return $this->getVlqBytesToInt();
             }
@@ -1586,12 +1601,12 @@ class BerEncoder implements EncoderInterface
     }
 
     /**
-     * Without a maximum, only PHP_INT_MAX bounds a tag number when GMP is not loaded.
+     * Refuses a tag number past the maximum, or past PHP_INT_MAX when there is no maximum and GMP is not loaded.
      *
      * @throws PduTagNumberException
      * @throws EncoderException
      */
-    private function refuseTagNumberPast(int $maxTagNumber): never
+    private function refuseTagNumber(int $maxTagNumber): never
     {
         if ($this->options->maxTagNumber === 0) {
             $this->throwIfBigIntGmpNeeded(true);
