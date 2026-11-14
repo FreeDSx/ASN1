@@ -19,6 +19,7 @@ use FreeDSx\Asn1\Exception\PartialPduException;
 use FreeDSx\Asn1\Exception\PduDepthException;
 use FreeDSx\Asn1\Exception\PduElementsException;
 use FreeDSx\Asn1\Exception\PduLengthException;
+use FreeDSx\Asn1\Exception\PduTagNumberException;
 use FreeDSx\Asn1\Type\AbstractTimeType;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type as EncodedType;
@@ -118,6 +119,9 @@ class BerEncoder implements EncoderInterface
      * Per-cache entry cap for OID memoization.
      */
     private const OID_CACHE_MAX = 1024;
+
+    private const TAG_NUMBER_NOT_ENDED
+        = 'Not enough data to decode the high tag number. No ending byte encountered for the VLQ bytes.';
 
     /**
      * @var array<int, array<int, int>> Tag class => (tag number => universal tag type).
@@ -434,14 +438,7 @@ class BerEncoder implements EncoderInterface
         # Less than or equal to 30 is a low tag number represented in a single byte.
         # A high tag number is determined using VLQ (like the OID identifier encoding) of the subsequent bytes.
         if ($tagNumber > 30) {
-            try {
-                $tagNumber = $this->getVlqBytesToInt();
-                # It's possible we only got part of the VLQ for the high tag, as there is no way to know its ending length.
-            } catch (EncoderException) {
-                throw new PartialPduException(
-                    'Not enough data to decode the high tag number. No ending byte encountered for the VLQ bytes.',
-                );
-            }
+            $tagNumber = $this->decodeHighTagNumber($this->maxLen);
             # The high tag number can use up every byte received so far, leaving none for the length.
             if ($this->pos >= $this->maxLen) {
                 throw new PartialPduException('Not enough data to decode the length.');
@@ -1337,7 +1334,15 @@ class BerEncoder implements EncoderInterface
 
             if ($tagNumber === 0x1f) {
                 $this->pos = $pos;
-                $tagNumber = $this->getVlqBytesToInt();
+                # The parent has fully arrived, so a tag running out within it is malformed rather than partial.
+                try {
+                    $tagNumber = $this->decodeHighTagNumber($endAt);
+                } catch (PartialPduException $e) {
+                    throw new EncoderException(
+                        'Not enough data to decode the tag number of the element.',
+                        previous: $e,
+                    );
+                }
                 $pos = $this->pos;
             }
             if ($pos >= $endAt) {
@@ -1496,6 +1501,103 @@ class BerEncoder implements EncoderInterface
      * @throws EncoderException
      */
     protected function validateDecodedType(AbstractType $type): void {}
+
+    /**
+     * Decodes a tag number in the high-tag-number form, held to its shortest encoding as X.690 8.1.2 requires.
+     *
+     * @throws PartialPduException when the octets end before the tag number does.
+     * @throws PduTagNumberException when the tag number is larger than the maximum allowed.
+     * @throws EncoderException when it is not in its shortest encoding, or passes PHP_INT_MAX without GMP.
+     */
+    private function decodeHighTagNumber(int $endAt): string|int
+    {
+        if ($this->pos < $endAt && ord((string) $this->binary[$this->pos]) === 0x80) {
+            throw new EncoderException('The tag number cannot begin with a zero octet.');
+        }
+
+        $maxTagNumber = $this->options->maxTagNumber;
+        $tagNumber = $maxTagNumber === 0 && $this->isGmpAvailable
+            ? $this->decodeUnboundedTagNumber($endAt)
+            : $this->decodeBoundedTagNumber(
+                $endAt,
+                $maxTagNumber === 0 ? PHP_INT_MAX : $maxTagNumber,
+            );
+        if (is_int($tagNumber) && $tagNumber < 31) {
+            throw new EncoderException('A tag number below 31 must be encoded in a single octet.');
+        }
+
+        return $tagNumber;
+    }
+
+    /**
+     * Builds the tag number an octet at a time, refusing it as soon as it can only end above the maximum.
+     *
+     * @throws PartialPduException
+     * @throws PduTagNumberException
+     * @throws EncoderException
+     */
+    private function decodeBoundedTagNumber(
+        int $endAt,
+        int $maxTagNumber,
+    ): int {
+        $binary = (string) $this->binary;
+        $tagNumber = 0;
+
+        for ($pos = $this->pos; $pos < $endAt; $pos++) {
+            $octet = ord($binary[$pos]);
+            # Kept at or below the maximum shifted down, so shifting it back never passes PHP_INT_MAX.
+            $tagNumber = ($tagNumber << 7) | ($octet & 0x7f);
+            $isLastOctet = ($octet & 0x80) === 0;
+            # Any further octet multiplies it by at least 128.
+            if ($tagNumber > ($isLastOctet ? $maxTagNumber : $maxTagNumber >> 7)) {
+                $this->refuseTagNumberPast($maxTagNumber);
+            }
+            if ($isLastOctet) {
+                $this->pos = $pos + 1;
+
+                return $tagNumber;
+            }
+        }
+
+        throw new PartialPduException(self::TAG_NUMBER_NOT_ENDED);
+    }
+
+    /**
+     * Decodes a tag number of any size, which needs GMP past PHP_INT_MAX.
+     *
+     * @throws PartialPduException
+     * @throws EncoderException
+     */
+    private function decodeUnboundedTagNumber(int $endAt): string|int
+    {
+        $binary = (string) $this->binary;
+
+        for ($pos = $this->pos; $pos < $endAt; $pos++) {
+            if ((ord($binary[$pos]) & 0x80) === 0) {
+                return $this->getVlqBytesToInt();
+            }
+        }
+
+        throw new PartialPduException(self::TAG_NUMBER_NOT_ENDED);
+    }
+
+    /**
+     * Without a maximum, only PHP_INT_MAX bounds a tag number when GMP is not loaded.
+     *
+     * @throws PduTagNumberException
+     * @throws EncoderException
+     */
+    private function refuseTagNumberPast(int $maxTagNumber): never
+    {
+        if ($this->options->maxTagNumber === 0) {
+            $this->throwIfBigIntGmpNeeded(true);
+        }
+
+        throw new PduTagNumberException(sprintf(
+            'The tag number exceeds the maximum allowed tag number of %d.',
+            $maxTagNumber,
+        ));
+    }
 
     /**
      * @throws EncoderException

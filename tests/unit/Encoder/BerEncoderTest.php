@@ -22,6 +22,7 @@ use FreeDSx\Asn1\Exception\PartialPduException;
 use FreeDSx\Asn1\Exception\PduDepthException;
 use FreeDSx\Asn1\Exception\PduElementsException;
 use FreeDSx\Asn1\Exception\PduLengthException;
+use FreeDSx\Asn1\Exception\PduTagNumberException;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\BitStringType;
 use FreeDSx\Asn1\Type\BmpStringType;
@@ -1958,8 +1959,10 @@ final class BerEncoderTest extends TestCase
         );
     }
 
-    public function test_it_should_handle_decoding_a_high_big_int_tag_number(): void
+    public function test_it_should_handle_decoding_a_high_big_int_tag_number_without_a_max_tag_number(): void
     {
+        $subject = new BerEncoder(new EncoderOptions(maxTagNumber: 0));
+
         self::assertEquals(
             new IncompleteType(
                 hex2bin('01'),
@@ -1967,8 +1970,28 @@ final class BerEncoderTest extends TestCase
                 AbstractType::TAG_CLASS_APPLICATION,
                 false,
             ),
-            $this->subject->decode(hex2bin('5f81ffffffffffffffff7f0101')),
+            $subject->decode(hex2bin('5f81ffffffffffffffff7f0101')),
         );
+    }
+
+    public function test_it_should_decode_a_tag_number_up_to_php_int_max_by_default(): void
+    {
+        self::assertEquals(
+            new IncompleteType(
+                hex2bin('01'),
+                PHP_INT_MAX,
+                AbstractType::TAG_CLASS_APPLICATION,
+                false,
+            ),
+            $this->subject->decode((string) hex2bin('5fffffffffffffffff7f0101')),
+        );
+    }
+
+    public function test_it_should_refuse_a_tag_number_past_php_int_max_by_default(): void
+    {
+        $this->expectException(PduTagNumberException::class);
+
+        $this->subject->decode((string) hex2bin('5f81808080808080808000' . '0101'));
     }
 
     public function test_it_should_handle_encoding_a_high_big_int_tag_number(): void
@@ -1983,14 +2006,131 @@ final class BerEncoderTest extends TestCase
     {
         $this->expectException(PartialPduException::class);
 
-        $this->subject->decode(hex2bin('5f8080'));
+        $this->subject->decode(hex2bin('5f8181'));
     }
 
     public function test_it_should_throw_an_encoder_exception_on_a_non_root_type_with_no_high_tag_ending(): void
     {
         $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage('Not enough data to decode the tag number of the element.');
 
-        $this->subject->decode(hex2bin('30035f8080'));
+        $this->subject->decode(hex2bin('30035f8181'));
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function tagNumberNotInItsShortestFormProvider(): iterable
+    {
+        yield 'a root tag beginning with a zero octet' => [
+            '5f800101',
+            'The tag number cannot begin with a zero octet.',
+        ];
+        yield 'a root tag still arriving that began with a zero octet' => [
+            '5f80',
+            'The tag number cannot begin with a zero octet.',
+        ];
+        yield 'a child tag beginning with a zero octet' => [
+            '30045f800100',
+            'The tag number cannot begin with a zero octet.',
+        ];
+        yield 'a root tag below 31 in the high form' => [
+            '5f1e0101',
+            'A tag number below 31 must be encoded in a single octet.',
+        ];
+        yield 'a child tag below 31 in the high form' => [
+            '30045f1e0101',
+            'A tag number below 31 must be encoded in a single octet.',
+        ];
+    }
+
+    #[DataProvider('tagNumberNotInItsShortestFormProvider')]
+    public function test_it_should_refuse_a_tag_number_not_in_its_shortest_form_as_malformed(
+        string $hex,
+        string $message,
+    ): void {
+        try {
+            $this->subject->decode((string) hex2bin($hex));
+            self::fail('The tag number should have been refused.');
+        } catch (EncoderException $e) {
+            self::assertSame(
+                [false, $message],
+                [$e instanceof PartialPduException, $e->getMessage()],
+            );
+        }
+    }
+
+    public function test_it_should_decode_a_tag_number_at_the_maximum_allowed(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxTagNumber: 200));
+
+        self::assertEquals(
+            new IncompleteType(
+                hex2bin('01'),
+                200,
+                AbstractType::TAG_CLASS_APPLICATION,
+                false,
+            ),
+            $subject->decode((string) hex2bin('5f81480101')),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function tagNumberPastTheMaximumProvider(): iterable
+    {
+        yield 'a root tag' => ['5f81490101'];
+        yield 'a root tag still arriving' => ['5f818181'];
+        yield 'a child tag' => ['30055f81490100'];
+    }
+
+    #[DataProvider('tagNumberPastTheMaximumProvider')]
+    public function test_it_should_refuse_a_tag_number_past_the_maximum_allowed(string $hex): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxTagNumber: 200));
+
+        $this->expectException(PduTagNumberException::class);
+        $this->expectExceptionMessage('The tag number exceeds the maximum allowed tag number of 200.');
+
+        $subject->decode((string) hex2bin($hex));
+    }
+
+    public function test_a_root_tag_still_arriving_within_the_maximum_allowed_is_partial(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxTagNumber: 200));
+
+        $this->expectException(PartialPduException::class);
+
+        $subject->decode((string) hex2bin('5f81'));
+    }
+
+    public function test_a_max_tag_number_of_30_refuses_a_high_form_tag_at_its_first_octet(): void
+    {
+        $subject = new BerEncoder(new EncoderOptions(maxTagNumber: 30));
+
+        $this->expectException(PduTagNumberException::class);
+
+        $subject->decode((string) hex2bin('5f81'));
+    }
+
+    public function test_it_should_refuse_a_child_tag_that_runs_past_its_parent(): void
+    {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage('Not enough data to decode the tag number of the element.');
+
+        $this->subject->decode((string) hex2bin('3006' . '30025f81' . '0100'));
+    }
+
+    public function test_it_should_hold_a_child_tag_of_a_type_completed_later_to_its_shortest_form(): void
+    {
+        $this->expectException(EncoderException::class);
+        $this->expectExceptionMessage('The tag number cannot begin with a zero octet.');
+
+        $this->subject->complete(
+            (new IncompleteType((string) hex2bin('5f800101')))->setIsConstructed(true),
+            AbstractType::TAG_TYPE_SEQUENCE,
+        );
     }
 
     public function test_it_should_throw_when_a_child_overruns_its_parent(): void

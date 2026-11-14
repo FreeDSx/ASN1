@@ -22,6 +22,7 @@ use FreeDSx\Asn1\Exception\EncoderException;
 use FreeDSx\Asn1\Exception\PduDepthException;
 use FreeDSx\Asn1\Exception\PduElementsException;
 use FreeDSx\Asn1\Exception\PduLengthException;
+use FreeDSx\Asn1\Exception\PduTagNumberException;
 use FreeDSx\Asn1\Type\AbstractType;
 use FreeDSx\Asn1\Type\BitStringType;
 use FreeDSx\Asn1\Type\BmpStringType;
@@ -75,6 +76,15 @@ final class DerEncoderTest extends TestCase
         $this->expectException(PduElementsException::class);
 
         $subject->decode(hex2bin('3006050005000500'));
+    }
+
+    public function test_it_should_keep_the_max_tag_number_passed_to_the_constructor(): void
+    {
+        $subject = new DerEncoder(new EncoderOptions(maxTagNumber: 200));
+
+        $this->expectException(PduTagNumberException::class);
+
+        $subject->decode((string) hex2bin('5f81490101'));
     }
 
     public function test_it_should_report_the_elements_the_last_decode_held(): void
