@@ -1352,10 +1352,14 @@ class BerEncoder implements EncoderInterface
             $length = ord($binary[$pos++]);
             if ($length > 127) {
                 $count = $length & 0x7f;
+                # The parent has fully arrived, so length octets running past it are malformed rather than partial.
+                if ($count > $endAt - $pos) {
+                    throw new EncoderException('Not enough data to decode the length of the element.');
+                }
                 $length = $this->decodeLongDefiniteLength(
                     $binary,
                     $pos,
-                    $this->maxLen,
+                    $endAt,
                     $count,
                 );
                 $pos += $count;

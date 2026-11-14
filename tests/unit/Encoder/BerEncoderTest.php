@@ -2133,6 +2133,35 @@ final class BerEncoderTest extends TestCase
         );
     }
 
+    public function test_it_should_refuse_a_child_length_that_runs_past_its_parent_as_malformed(): void
+    {
+        try {
+            $this->subject->decode((string) hex2bin('3003' . '048201'));
+            self::fail('The length should have been refused.');
+        } catch (EncoderException $e) {
+            self::assertSame(
+                [false, 'Not enough data to decode the length of the element.'],
+                [$e instanceof PartialPduException, $e->getMessage()],
+            );
+        }
+    }
+
+    public function test_it_should_refuse_a_child_length_running_past_a_type_completed_later_as_malformed(): void
+    {
+        try {
+            $this->subject->complete(
+                (new IncompleteType((string) hex2bin('048201')))->setIsConstructed(true),
+                AbstractType::TAG_TYPE_SEQUENCE,
+            );
+            self::fail('The length should have been refused.');
+        } catch (EncoderException $e) {
+            self::assertSame(
+                [false, 'Not enough data to decode the length of the element.'],
+                [$e instanceof PartialPduException, $e->getMessage()],
+            );
+        }
+    }
+
     public function test_it_should_throw_when_a_child_overruns_its_parent(): void
     {
         $this->expectException(EncoderException::class);
